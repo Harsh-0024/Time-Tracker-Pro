@@ -2,12 +2,18 @@ from flask import Flask, render_template, request
 import pandas as pd
 import requests
 from datetime import datetime, timedelta, date
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from the .env file
+load_dotenv()
 
 app = Flask(__name__)
 
 # --- CONFIG ---
-SHEETY_API_URL = "https://api.sheety.co/332ad00039a2b49efc712475559e8035/timeTracker/sheet1"
-
+# Now we get the URL securely.
+# If it can't find it, it returns None (so we know something is wrong).
+SHEETY_API_URL = os.getenv("SHEETY_ENDPOINT")
 
 def fetch_and_process_data():
     """Fetches and cleans data."""
