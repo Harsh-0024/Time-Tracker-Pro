@@ -280,8 +280,8 @@
                     </div>
                 </div>
             </div>
-            <div class="md:hidden flex items-center gap-3">
-                <button onclick="viewFullDay()" class="px-5 py-3 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-lg">
+            <div class="md:hidden flex items-center gap-3 mb-4">
+                <button onclick="viewFullDay()" class="px-5 py-3 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-lg active:scale-[0.98] transition-transform">
                     View Full Day
                 </button>
             </div>
@@ -522,6 +522,31 @@
             </div>
         </div>
     </nav>
+
+    <!-- Mobile Filter Sheet -->
+    <div id="mobileFilterBackdrop" class="fixed inset-0 bg-black/30 backdrop-blur-sm opacity-0 pointer-events-none md:hidden transition-opacity duration-200"></div>
+    <div id="mobileFilterSheet" class="fixed inset-x-0 bottom-0 translate-y-full md:hidden transition-transform duration-300 z-50">
+        <div class="mx-auto max-w-7xl">
+            <div class="bg-[#FEFCF8] border-t border-[rgba(148,126,86,0.25)] rounded-t-2xl shadow-2xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="text-sm font-semibold text-gray-700">Filters</div>
+                    <button id="mobileFilterClose" class="px-3 py-1 rounded-full text-xs text-gray-600 border border-slate-200 active:scale-[0.98] transition">
+                        Close
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <button class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-gray-700 active:scale-[0.98] transition" onclick="applyFilter('all', 'All Tasks')">All Tasks</button>
+                    <button class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-gray-700 active:scale-[0.98] transition" onclick="applyFilter('imp', 'Important Work')">Important</button>
+                    <button class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-gray-700 active:scale-[0.98] transition" onclick="applyFilter('urg', 'Urgent Work')">Urgent</button>
+                    <button class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-gray-700 active:scale-[0.98] transition" onclick="applyFilter('imp_and_urg', 'Important & Urgent')">Important & Urgent</button>
+                    <button class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-gray-700 active:scale-[0.98] transition" onclick="applyFilter('imp_not_urg', 'Important, Not Urgent')">Important, Not Urgent</button>
+                    <button class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-gray-700 active:scale-[0.98] transition" onclick="applyFilter('urg_not_imp', 'Urgent, Not Important')">Urgent, Not Important</button>
+                </div>
+                <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">By Category</div>
+                <div id="mobileTagFilters" class="grid grid-cols-2 gap-2"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal for Task Details -->
     <div id="taskModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -926,7 +951,49 @@
             if (homeBtn) homeBtn.onclick = () => { smoothScrollTo('top'); setActiveNav('navHome'); };
             if (matrixBtn) matrixBtn.onclick = () => { smoothScrollTo('matrix'); setActiveNav('navMatrix'); };
             if (tagsBtn) tagsBtn.onclick = () => { smoothScrollTo('tags'); setActiveNav('navTags'); };
-            if (filterBtn) filterBtn.onclick = () => { window.toggleDropdown(); setActiveNav('navFilter'); };
+            if (filterBtn) {
+                filterBtn.onclick = () => {
+                    openMobileFilter();
+                    setActiveNav('navFilter');
+                };
+                ['touchstart','mousedown'].forEach(evt => {
+                    filterBtn.addEventListener(evt, () => filterBtn.classList.add('bg-slate-100'));
+                });
+                ['touchend','mouseup','mouseleave'].forEach(evt => {
+                    filterBtn.addEventListener(evt, () => filterBtn.classList.remove('bg-slate-100'));
+                });
+            }
+
+            function openMobileFilter() {
+                try {
+                    const sheet = document.getElementById('mobileFilterSheet');
+                    const backdrop = document.getElementById('mobileFilterBackdrop');
+                    if (!sheet || !backdrop) return;
+                    backdrop.classList.remove('pointer-events-none');
+                    backdrop.classList.add('opacity-100');
+                    sheet.classList.remove('translate-y-full');
+                } catch (e) {
+                    setGlobalLoading(false, 'Unable to open filters');
+                    console.error(e);
+                }
+            }
+            function closeMobileFilter() {
+                try {
+                    const sheet = document.getElementById('mobileFilterSheet');
+                    const backdrop = document.getElementById('mobileFilterBackdrop');
+                    if (!sheet || !backdrop) return;
+                    sheet.classList.add('translate-y-full');
+                    backdrop.classList.remove('opacity-100');
+                    backdrop.classList.add('pointer-events-none');
+                } catch (e) {
+                    setGlobalLoading(false, 'Unable to close filters');
+                    console.error(e);
+                }
+            }
+            const mobileFilterClose = document.getElementById('mobileFilterClose');
+            const mobileBackdrop = document.getElementById('mobileFilterBackdrop');
+            if (mobileFilterClose) mobileFilterClose.onclick = closeMobileFilter;
+            if (mobileBackdrop) mobileBackdrop.onclick = closeMobileFilter;
 
             const observerTargets = [
                 { id: 'top', btn: 'navHome' },
@@ -963,19 +1030,37 @@
             });
 
             // Load tag filters
-            fetch(`/api/tags?date=${window.currentDate}&period=${window.currentPeriod}`)
-            .then(r => r.json())
+            const tagUrl = `/api/tags?date=${window.currentDate}&period=${window.currentPeriod}`;
+            if (!navigator.onLine) {
+                setGlobalLoading(false, 'You are offline. Filters may be limited.');
+            }
+            fetch(tagUrl)
+            .then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
             .then(data => {
                 const container = document.getElementById('tagFilters');
+                const mobileContainer = document.getElementById('mobileTagFilters');
+                const appendTag = (target, tag) => {
+                    const item = document.createElement(target === mobileContainer ? 'button' : 'div');
+                    item.className = target === mobileContainer 
+                        ? 'px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-gray-700 active:scale-[0.98] transition'
+                        : 'dropdown-item';
+                    item.textContent = `${tag.name} (${tag.hours}h)`;
+                    item.onclick = () => window.applyFilter('tag', tag.name, tag.name);
+                    target.appendChild(item);
+                };
                 if (data.tags && data.tags.length > 0) {
                     data.tags.forEach(tag => {
-                        const item = document.createElement('div');
-                        item.className = 'dropdown-item';
-                        item.textContent = `${tag.name} (${tag.hours}h)`;
-                        item.onclick = () => window.applyFilter('tag', tag.name, tag.name);
-                        container.appendChild(item);
+                        if (container) appendTag(container, tag);
+                        if (mobileContainer) appendTag(mobileContainer, tag);
                     });
                 }
+            })
+            .catch(err => {
+                console.error('Tag fetch failed:', err);
+                setGlobalLoading(false, 'Failed to load tags');
             });
 
             window.dateCursor = new Date(window.currentDate);
