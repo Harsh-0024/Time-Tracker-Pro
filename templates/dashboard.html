@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Time Tracker Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -154,11 +154,37 @@
             filter: brightness(0.98);
         }
     </style>
+    <style>
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
 </head>
-<body>
+<body class="antialiased">
+
+    <div id="globalLoading" class="fixed bottom-4 right-4 z-50 hidden">
+        <div class="px-4 py-2 rounded-full bg-gray-900/90 text-xs text-gray-100 shadow-lg flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span>Loading insights…</span>
+        </div>
+    </div>
+
+    <div id="globalError" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 hidden">
+        <div class="px-4 py-2 rounded-full bg-red-600 text-xs text-white shadow-lg">
+            <span id="globalErrorText"></span>
+        </div>
+    </div>
 
     <!-- Minimal Header -->
-    <header class="bg-white/90 backdrop-blur border-b border-slate-200 shadow-sm">
+    <header class="bg-white/90 backdrop-blur border-b border-slate-200 shadow-sm" role="banner">
         <div class="max-w-7xl mx-auto px-8 py-6">
             <div class="flex items-center justify-between">
                 <div>
@@ -201,7 +227,7 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-8 py-12">
+    <main class="max-w-7xl mx-auto px-8 py-12" role="main">
         
         <!-- Month Header & Controls -->
         <div class="mb-12">
@@ -378,9 +404,9 @@
                         <h3 class="text-xl font-light text-gray-900 mb-1">Time by Category</h3>
                         <p class="text-xs text-gray-500">Tag distribution</p>
                     </div>
-                    <div class="relative w-full h-64 flex items-center justify-center">
+                    <div class="relative w-full h-64 flex items-center justify-center" role="img" aria-label="Time spent by tag category">
                         {% if tags.labels %}
-                        <canvas id="tagChart"></canvas>
+                        <canvas id="tagChart" aria-hidden="true"></canvas>
                         {% else %}
                         <div class="text-center">
                             <div class="text-5xl text-gray-200 mb-3">∅</div>
@@ -428,8 +454,8 @@
     </main>
 
     <!-- Modal for Task Details -->
-    <div id="taskModal" class="modal">
-        <div class="modal-content p-8">
+    <div id="taskModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content p-8" role="document">
             <div class="flex justify-between items-center mb-6">
                 <h2 id="modalTitle" class="text-2xl font-semibold text-gray-900"></h2>
                 <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition">
@@ -549,13 +575,34 @@
             return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
         }
 
+        function setGlobalLoading(isLoading, errorMessage = '') {
+            const loadingEl = document.getElementById('globalLoading');
+            const errorEl = document.getElementById('globalError');
+            const errorText = document.getElementById('globalErrorText');
+            if (!loadingEl || !errorEl || !errorText) return;
+            if (isLoading) {
+                loadingEl.classList.remove('hidden');
+                errorEl.classList.add('hidden');
+                errorText.textContent = '';
+            } else {
+                loadingEl.classList.add('hidden');
+                if (errorMessage) {
+                    errorText.textContent = errorMessage;
+                    errorEl.classList.remove('hidden');
+                    setTimeout(() => {
+                        errorEl.classList.add('hidden');
+                    }, 4000);
+                }
+            }
+        }
+
         window.applyFilter = function(filterType, title, tagName = '') {
             console.log('applyFilter called:', filterType, title, tagName);
             window.closeDropdown();
             const url = `/api/tasks?date=${window.currentDate}&period=${window.currentPeriod}&filter=${filterType}${tagName ? '&tag=' + encodeURIComponent(tagName) : ''}`;
             
             console.log('Fetching:', url);
-            
+            setGlobalLoading(true);
             fetch(url)
                 .then(r => {
                     console.log('Response status:', r.status);
@@ -566,11 +613,12 @@
                 })
                 .then(data => {
                     console.log('Data received:', data);
+                    setGlobalLoading(false);
                     window.showModal(title, data, filterType);
                 })
                 .catch(error => {
                     console.error('Error fetching tasks:', error);
-                    alert('Error loading tasks: ' + error.message);
+                    setGlobalLoading(false, 'Error loading tasks: ' + error.message);
                 });
         };
 
