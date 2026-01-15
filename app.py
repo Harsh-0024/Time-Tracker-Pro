@@ -69,11 +69,19 @@ class TimeLogParser:
             parts = raw_text.split('.', 1)
             task_name = parts[0].strip()
             meta_part = parts[1].strip()
+
+            # 1. Check Flags
             is_urg = 'urg' in meta_part.lower()
             is_imp = 'imp' in meta_part.lower()
+
+            # 2. Extract Tag (This is the fix: IGNORING urg/imp)
             if meta_part:
                 words = meta_part.split()
-                if words: tag = words[0].capitalize()
+                # Filter out reserved keywords (case insensitive)
+                valid_words = [w for w in words if w.lower() not in ['urg', 'imp']]
+
+                if valid_words:
+                    tag = valid_words[0].capitalize()
 
         # LOGIC: End Time
         # Rule: Explicit time in text IS ALWAYS THE END TIME.
@@ -470,6 +478,23 @@ def get_tags():
     
     tag_stats.sort(key=lambda x: x['hours'], reverse=True)
     return jsonify({'tags': tag_stats})
+
+
+@app.route('/hard-reset')
+def hard_reset():
+    """
+    Manually forces a complete wipe and rebuild of the database
+    using the latest parser logic.
+    """
+    try:
+        # This function already drops the table and recreates it
+        sync_cloud_data()
+        return jsonify({
+            "status": "success",
+            "message": "Database has been completely wiped and rebuilt from Google Sheets."
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == '__main__':

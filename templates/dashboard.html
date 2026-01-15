@@ -535,12 +535,19 @@
         };
 
         const TAG_COLOR_MAP = {
-            'Work': '#1D4ED8',
-            'Necessity': '#16A34A',
-            'Waste': '#E11D48',
-            'Urgent': '#F97316',
-            'Important': '#6366F1'
+            'Work': '#16A34A',
+            'Important': '#22C55E',
+            'Necessity': '#A16207',
+            'Urgent': '#DC2626',
+            'Waste': '#9F1239'
         };
+
+        function normalizeTagName(tag) {
+            if (!tag) return 'Unlabeled';
+            const trimmed = String(tag).trim();
+            if (!trimmed) return 'Unlabeled';
+            return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+        }
 
         window.applyFilter = function(filterType, title, tagName = '') {
             console.log('applyFilter called:', filterType, title, tagName);
@@ -572,8 +579,18 @@
             if (!container || !window.modalData) return;
             const hidden = window.hiddenTags || {};
             const tasks = window.modalData.tasks || [];
+            const filterType = window.modalFilterType || 'all';
+            const getKey = (task) => {
+                if (filterType === 'tag') {
+                    if (task.urgent && task.important) return 'Critical';
+                    if (task.important && !task.urgent) return 'Growth';
+                    if (task.urgent && !task.important) return 'Drudgery';
+                    return 'Waste';
+                }
+                return normalizeTagName(task.tag);
+            };
             const active = Object.keys(hidden).length
-                ? tasks.filter(t => !hidden[t.tag])
+                ? tasks.filter(t => !hidden[getKey(t)])
                 : tasks.slice();
             if (active.length === 0) {
                 container.innerHTML = '<div class="text-center py-8 text-gray-400">No tasks found</div>';
@@ -587,7 +604,11 @@
                 let displayTag = task.tag;
                 let tagClass = 'px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-700';
                 if (!task.important && !task.urgent && task.tag === 'Waste') {
-                    tagClass = 'px-2 py-0.5 bg-rose-50 rounded-full text-xs text-rose-700';
+                    tagClass = 'px-2 py-0.5 bg-slate-100 rounded-full text-xs text-slate-700';
+                } else if (task.tag === 'Necessity') {
+                    tagClass = 'px-2 py-0.5 bg-amber-50 rounded-full text-xs text-amber-800';
+                } else if (task.tag === 'Work') {
+                    tagClass = 'px-2 py-0.5 bg-emerald-50 rounded-full text-xs text-emerald-700';
                 }
                 html += `
                     <div class="luxury-card rounded-xl p-4">
@@ -617,36 +638,91 @@
             window.modalFilterType = filterType;
             window.hiddenTags = window.hiddenTags || {};
             document.getElementById('modalTitle').textContent = title;
+
+            const totalHours = data.total_hours || 0;
+            let growthHours = 0;
+            let drudgeryHours = 0;
+            let wasteHours = 0;
+            data.tasks.forEach(task => {
+                const d = task.duration || 0;
+                if (task.important && !task.urgent) {
+                    growthHours += d;
+                } else if (task.urgent && !task.important) {
+                    drudgeryHours += d;
+                } else if (!task.urgent && !task.important) {
+                    wasteHours += d;
+                }
+            });
+            const base = totalHours || (growthHours + drudgeryHours + wasteHours) || 1;
+            const growthPct = Math.round((growthHours / base) * 100);
+            const drudgeryPct = Math.round((drudgeryHours / base) * 100);
+            const wastePct = Math.round((wasteHours / base) * 100);
+
             const statsHtml = `
                 <div class="text-center">
-                    <div class="text-2xl font-light text-gray-900">${data.total_hours}</div>
-                    <div class="text-xs text-gray-500 mt-1">Total Hours</div>
+                    <div class="text-2xl font-light text-gray-900">${growthHours.toFixed(1)}h</div>
+                    <div class="text-xs text-gray-500 mt-1">${growthPct}% discipline (imp, not urgent)</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-2xl font-light text-gray-900">${data.count}</div>
-                    <div class="text-xs text-gray-500 mt-1">Tasks</div>
+                    <div class="text-2xl font-light text-gray-900">${drudgeryHours.toFixed(1)}h</div>
+                    <div class="text-xs text-gray-500 mt-1">${drudgeryPct}% reactive (urg, not important)</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-2xl font-light text-gray-900">${data.tasks.length > 0 ? (data.total_hours / data.count).toFixed(2) : 0}</div>
-                    <div class="text-xs text-gray-500 mt-1">Avg Hours/Task</div>
+                    <div class="text-2xl font-light text-gray-900">${wasteHours.toFixed(1)}h</div>
+                    <div class="text-xs text-gray-500 mt-1">${wastePct}% waste (neither)</div>
                 </div>
             `;
             document.getElementById('modalStats').innerHTML = statsHtml;
             const chartContainer = document.getElementById('modalChart');
             chartContainer.innerHTML = '<canvas id="filterChart"></canvas>';
             if (data.tasks.length > 0) {
-                const tagGroups = {};
-                data.tasks.forEach(task => {
-                    if (!tagGroups[task.tag]) {
-                        tagGroups[task.tag] = 0;
-                    }
-                    tagGroups[task.tag] += task.duration;
-                });
                 const ctx = document.getElementById('filterChart').getContext('2d');
-                const labels = Object.keys(tagGroups);
-                const values = Object.values(tagGroups);
-                const palette = ['#111827', '#16A34A', '#F59E0B', '#E11D48', '#64748B', '#0369A1', '#7C3AED', '#F97316'];
-                const colors = labels.map((label, idx) => TAG_COLOR_MAP[label] || palette[idx % palette.length]);
+                let labels = [];
+                let values = [];
+                let colors = [];
+
+                if (window.modalFilterType === 'tag') {
+                    const quadrantGroups = {
+                        Growth: 0,
+                        Critical: 0,
+                        Drudgery: 0,
+                        Waste: 0
+                    };
+                    data.tasks.forEach(task => {
+                        const d = task.duration || 0;
+                        if (task.urgent && task.important) {
+                            quadrantGroups.Critical += d;
+                        } else if (task.important && !task.urgent) {
+                            quadrantGroups.Growth += d;
+                        } else if (task.urgent && !task.important) {
+                            quadrantGroups.Drudgery += d;
+                        } else {
+                            quadrantGroups.Waste += d;
+                        }
+                    });
+                    labels = ['Growth', 'Critical', 'Drudgery', 'Waste'];
+                    values = labels.map(label => quadrantGroups[label]);
+                    const quadrantColors = {
+                        Growth: '#16A34A',
+                        Critical: '#F97316',
+                        Drudgery: '#6B7280',
+                        Waste: '#9F1239'
+                    };
+                    colors = labels.map(label => quadrantColors[label]);
+                } else {
+                    const tagGroups = {};
+                    data.tasks.forEach(task => {
+                        const key = normalizeTagName(task.tag);
+                        if (!tagGroups[key]) {
+                            tagGroups[key] = 0;
+                        }
+                        tagGroups[key] += task.duration;
+                    });
+                    labels = Object.keys(tagGroups);
+                    values = Object.values(tagGroups);
+                    const palette = ['#111827', '#16A34A', '#F59E0B', '#E11D48', '#64748B', '#0369A1', '#7C3AED', '#F97316'];
+                    colors = labels.map((label, idx) => TAG_COLOR_MAP[label] || palette[idx % palette.length]);
+                }
                 const chart = new Chart(ctx, {
                     type: 'pie',
                     data: {
