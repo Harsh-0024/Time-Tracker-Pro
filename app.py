@@ -206,6 +206,9 @@ def fetch_local_data():
         for _, row in df.iterrows():
             start = pd.to_datetime(f"{row['start_date']} {row['start_time']}")
             end = pd.to_datetime(f"{row['end_date']} {row['end_time']}")
+            tag_value = row['tags']
+            if tag_value == 'General' and not row['urg'] and not row['imp']:
+                tag_value = 'Waste'
             final_rows.append({
                 'id': row['id'],
                 'date': start.date(),
@@ -215,7 +218,7 @@ def fetch_local_data():
                 'end_datetime': end,
                 'task': row['task'],
                 'duration': row['duration'],
-                'tag': row['tags'],
+                'tag': tag_value,
                 'urgent': bool(row['urg']),
                 'important': bool(row['imp'])
             })

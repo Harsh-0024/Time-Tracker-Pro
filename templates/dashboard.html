@@ -373,8 +373,7 @@
 
             <!-- Sidebar -->
             <div class="space-y-8">
-                <!-- Tags Chart -->
-                <div class="luxury-card rounded-2xl p-8">
+                <div class="luxury-card rounded-2xl p-8 {% if tags.labels %}cursor-pointer{% endif %}" {% if tags.labels %}onclick="window.applyFilter('all', 'By Category')"{% endif %}>
                     <div class="mb-6">
                         <h3 class="text-xl font-light text-gray-900 mb-1">Time by Category</h3>
                         <p class="text-xs text-gray-500">Tag distribution</p>
@@ -404,11 +403,11 @@
                     </div>
                     <div class="flex items-end gap-2 h-32">
                         {% for day in week_days %}
-                        <div class="flex-1 flex flex-col items-center">
+                        <div class="flex-1 flex flex-col items-center cursor-pointer" onclick="window.location.href='/?date={{ day.full_str }}&period=day'">
                             <div class="text-xs text-gray-400 mb-2 font-medium">{{ day.day_name }}</div>
                             <div class="w-full bg-gray-100 rounded-t-lg flex-1 flex items-end relative group">
                                 {% set day_hours = day.hours if day.hours else 0 %}
-                                {% set max_day_hours = 8 %}
+                                {% set max_day_hours = 24 %}
                                 {% set height_pct = ((day_hours / max_day_hours) * 100) if day_hours > 0 else 5 %}
                                 <div class="w-full rounded-t-lg transition-all duration-300 {% if day.is_selected %}yellow-accent{% else %}bg-gray-300 group-hover:bg-gray-400{% endif %}" 
                                      style="height: {{ height_pct }}%"></div>
@@ -535,6 +534,14 @@
             window.applyFilter(quadrant, name);
         };
 
+        const TAG_COLOR_MAP = {
+            'Work': '#1D4ED8',
+            'Necessity': '#16A34A',
+            'Waste': '#E11D48',
+            'Urgent': '#F97316',
+            'Important': '#6366F1'
+        };
+
         window.applyFilter = function(filterType, title, tagName = '') {
             console.log('applyFilter called:', filterType, title, tagName);
             window.closeDropdown();
@@ -560,16 +567,56 @@
                 });
         };
 
-        window.showModal = function(title, data, filterType) {
-            console.log('Showing modal:', title, data);
-            const modal = document.getElementById('taskModal');
-            if (!modal) {
-                console.error('Modal element not found!');
+        window.renderModalTasks = function() {
+            const container = document.getElementById('modalTasks');
+            if (!container || !window.modalData) return;
+            const hidden = window.hiddenTags || {};
+            const tasks = window.modalData.tasks || [];
+            const active = Object.keys(hidden).length
+                ? tasks.filter(t => !hidden[t.tag])
+                : tasks.slice();
+            if (active.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-gray-400">No tasks found</div>';
                 return;
             }
+            let html = '';
+            active.forEach(task => {
+                const badges = [];
+                if (task.important) badges.push('<span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-full">Important</span>');
+                if (task.urgent) badges.push('<span class="px-2 py-1 bg-red-50 text-red-700 text-xs rounded-full">Urgent</span>');
+                let displayTag = task.tag;
+                let tagClass = 'px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-700';
+                if (!task.important && !task.urgent && task.tag === 'Waste') {
+                    tagClass = 'px-2 py-0.5 bg-rose-50 rounded-full text-xs text-rose-700';
+                }
+                html += `
+                    <div class="luxury-card rounded-xl p-4">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="font-medium text-gray-900 mb-1">${task.task}</div>
+                                <div class="flex items-center gap-3 text-sm text-gray-500">
+                                    <span>${task.start_time} - ${task.end_time}</span>
+                                    <span class="${tagClass}">${displayTag}</span>
+                                    ${badges.join('')}
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-semibold text-gray-900">${task.duration}h</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        };
+
+        window.showModal = function(title, data, filterType) {
+            const modal = document.getElementById('taskModal');
+            if (!modal) return;
+            window.modalData = data;
+            window.modalFilterType = filterType;
+            window.hiddenTags = window.hiddenTags || {};
             document.getElementById('modalTitle').textContent = title;
-            
-            // Stats
             const statsHtml = `
                 <div class="text-center">
                     <div class="text-2xl font-light text-gray-900">${data.total_hours}</div>
@@ -585,13 +632,9 @@
                 </div>
             `;
             document.getElementById('modalStats').innerHTML = statsHtml;
-
-            // Chart
             const chartContainer = document.getElementById('modalChart');
             chartContainer.innerHTML = '<canvas id="filterChart"></canvas>';
-            
             if (data.tasks.length > 0) {
-                // Group by tag
                 const tagGroups = {};
                 data.tasks.forEach(task => {
                     if (!tagGroups[task.tag]) {
@@ -599,18 +642,18 @@
                     }
                     tagGroups[task.tag] += task.duration;
                 });
-
                 const ctx = document.getElementById('filterChart').getContext('2d');
-                new Chart(ctx, {
+                const labels = Object.keys(tagGroups);
+                const values = Object.values(tagGroups);
+                const palette = ['#111827', '#16A34A', '#F59E0B', '#E11D48', '#64748B', '#0369A1', '#7C3AED', '#F97316'];
+                const colors = labels.map((label, idx) => TAG_COLOR_MAP[label] || palette[idx % palette.length]);
+                const chart = new Chart(ctx, {
                     type: 'pie',
                     data: {
-                        labels: Object.keys(tagGroups),
+                        labels: labels,
                         datasets: [{
-                            data: Object.values(tagGroups),
-                            backgroundColor: [
-                                '#10B981', '#F59E0B', '#78716C', '#F43F5E',
-                                '#6366F1', '#8B5CF6', '#EC4899', '#14B8A6'
-                            ]
+                            data: values,
+                            backgroundColor: colors
                         }]
                     },
                     options: {
@@ -618,44 +661,43 @@
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                position: 'bottom'
+                                position: 'bottom',
+                                onClick: function(e, legendItem, legend) {
+                                    const ci = legend.chart;
+                                    const index = legendItem.index;
+                                    const label = ci.data.labels[index];
+                                    const currentlyVisible = ci.getDataVisibility(index) !== false;
+                                    ci.toggleDataVisibility(index);
+                                    ci.update();
+                                    if (!window.hiddenTags) window.hiddenTags = {};
+                                    if (currentlyVisible) {
+                                        window.hiddenTags[label] = true;
+                                    } else {
+                                        delete window.hiddenTags[label];
+                                    }
+                                    window.renderModalTasks();
+                                }
                             }
+                        },
+                        onClick: function(evt, elements) {
+                            if (!elements || !elements.length) return;
+                            const index = elements[0].index;
+                            const label = chart.data.labels[index];
+                            const currentlyVisible = chart.getDataVisibility(index) !== false;
+                            chart.toggleDataVisibility(index);
+                            chart.update();
+                            if (!window.hiddenTags) window.hiddenTags = {};
+                            if (currentlyVisible) {
+                                window.hiddenTags[label] = true;
+                            } else {
+                                delete window.hiddenTags[label];
+                            }
+                            window.renderModalTasks();
                         }
                     }
                 });
             }
-
-            // Tasks list
-            let tasksHtml = '';
-            if (data.tasks.length === 0) {
-                tasksHtml = '<div class="text-center py-8 text-gray-400">No tasks found</div>';
-            } else {
-                data.tasks.forEach(task => {
-                    const badges = [];
-                    if (task.important) badges.push('<span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded">Important</span>');
-                    if (task.urgent) badges.push('<span class="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">Urgent</span>');
-                    
-                    tasksHtml += `
-                        <div class="luxury-card rounded-xl p-4">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <div class="font-medium text-gray-900 mb-1">${task.task}</div>
-                                    <div class="flex items-center gap-3 text-sm text-gray-500">
-                                        <span>${task.start_time} - ${task.end_time}</span>
-                                        <span class="px-2 py-0.5 bg-gray-100 rounded text-xs">${task.tag}</span>
-                                        ${badges.join('')}
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="font-semibold text-gray-900">${task.duration}h</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            document.getElementById('modalTasks').innerHTML = tasksHtml;
-
+            window.renderModalTasks();
             document.getElementById('taskModal').classList.add('active');
         };
 
@@ -702,17 +744,17 @@
             window.renderDateGrid();
 
             {% if tags.labels %}
-            const ctx = document.getElementById('tagChart').getContext('2d');
-            new Chart(ctx, {
+            const tagCtx = document.getElementById('tagChart').getContext('2d');
+            const tagPalette = ['#111827', '#16A34A', '#F59E0B', '#E11D48', '#64748B', '#0369A1', '#7C3AED', '#F97316'];
+            const tagLabels = {{ tags.labels | safe }};
+            const tagColors = tagLabels.map((label, idx) => TAG_COLOR_MAP[label] || tagPalette[idx % tagPalette.length]);
+            const tagChart = new Chart(tagCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: {{ tags.labels | safe }},
+                    labels: tagLabels,
                     datasets: [{
                         data: {{ tags.data | safe }},
-                        backgroundColor: [
-                            '#10B981', '#F59E0B', '#78716C', '#F43F5E',
-                            '#6366F1', '#8B5CF6', '#EC4899', '#14B8A6'
-                        ],
+                        backgroundColor: tagColors,
                         borderWidth: 0,
                         hoverOffset: 8
                     }]
@@ -741,6 +783,13 @@
                     }
                 }
             });
+            tagChart.options.onClick = function(evt, elements) {
+                if (!elements || !elements.length) return;
+                const index = elements[0].index;
+                const label = tagChart.data.labels[index];
+                window.applyFilter('tag', label, label);
+            };
+            tagChart.update();
             {% endif %}
         }); // End DOMContentLoaded
     </script>
