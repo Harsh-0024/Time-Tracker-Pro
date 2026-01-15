@@ -209,8 +209,8 @@ def fetch_local_data():
             final_rows.append({
                 'id': row['id'],
                 'date': start.date(),
-                'start_time': start.strftime("%H:%M"),
-                'end_time': end.strftime("%H:%M"),
+                'start_time': start.strftime("%I:%M %p"),
+                'end_time': end.strftime("%I:%M %p"),
                 'start_datetime': start,
                 'end_datetime': end,
                 'task': row['task'],
