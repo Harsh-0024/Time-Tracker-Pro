@@ -718,6 +718,17 @@ def sync_status():
         logger.exception("Sync status error: %s", exc)
         return jsonify({"error": str(exc)}), 500
 
+@app.route("/sync-now")
+def sync_now():
+    if not require_api_auth(dict(request.headers)):
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    try:
+        sync_cloud_data(force=True)
+        return jsonify({"status": "success", "message": "Synced latest data from cloud"})
+    except Exception as exc:
+        logger.exception("Sync now error: %s", exc)
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
 
 @app.route("/hard-reset")
 def hard_reset():
