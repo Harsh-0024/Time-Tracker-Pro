@@ -447,6 +447,12 @@ def dashboard():
     selected_date = parse_date_param(date_str)
 
     df = fetch_local_data()
+    if df.empty:
+        try:
+            sync_cloud_data(force=True)
+            df = fetch_local_data()
+        except Exception as exc:
+            logger.exception("Backfill sync failed: %s", exc)
 
     start_date, end_date = get_period_range(selected_date, period)
 
@@ -526,6 +532,12 @@ def get_tasks():
     selected_date = parse_date_param(date_str)
 
     df = fetch_local_data()
+    if df.empty:
+        try:
+            sync_cloud_data(force=True)
+            df = fetch_local_data()
+        except Exception as exc:
+            logger.exception("Backfill sync failed (tasks): %s", exc)
 
     if df.empty:
         return jsonify(
@@ -617,6 +629,12 @@ def get_tags():
     selected_date = parse_date_param(date_str)
 
     df = fetch_local_data()
+    if df.empty:
+        try:
+            sync_cloud_data(force=True)
+            df = fetch_local_data()
+        except Exception as exc:
+            logger.exception("Backfill sync failed (tags): %s", exc)
 
     start_date, end_date = get_period_range(selected_date, period)
 
