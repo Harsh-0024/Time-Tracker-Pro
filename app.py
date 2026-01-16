@@ -11,6 +11,7 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, make_response
+from io import StringIO
 
 load_dotenv()
 
@@ -220,6 +221,13 @@ def sync_cloud_data(force: bool = False) -> None:
 
     try:
         response = requests.get(url, timeout=15)
+        # Check for 402 Payment Required before raising
+        if response.status_code == 402:
+            logger.warning("Sheety API returned 402 Payment Required. Skipping sync for extended period. "
+                         "Consider upgrading Sheety plan or using alternative sync method.")
+            # Set a longer backoff (24 hours) for payment required errors
+            _LAST_SYNC_FAIL_TS = now - timedelta(hours=23)  # Will allow retry after 24 hours
+            return
         response.raise_for_status()
         data = response.json()
         if "sheet1" not in data:
@@ -322,6 +330,15 @@ def sync_cloud_data(force: bool = False) -> None:
         logger.info("Sync complete: strict end times enforced for %s rows", len(final_rows))
     except requests.RequestException as exc:
         _LAST_SYNC_FAIL_TS = now
+        # Handle 402 Payment Required specially - don't spam logs
+        if hasattr(exc, 'response') and exc.response is not None and exc.response.status_code == 402:
+            # For 402 errors, extend the backoff period significantly
+            # This prevents constant retry attempts when Sheety quota is exhausted
+            logger.warning("Sheety API returned 402 Payment Required. Skipping sync for extended period. "
+                         "Consider upgrading Sheety plan or using alternative sync method.")
+            # Set a longer backoff (24 hours) for payment required errors
+            _LAST_SYNC_FAIL_TS = now - timedelta(hours=23)  # Will allow retry after 24 hours
+            return
         logger.error("Network error during cloud sync: %s", exc)
     except Exception as exc:
         _LAST_SYNC_FAIL_TS = now
@@ -716,6 +733,152 @@ def hard_reset():
         )
     except Exception as exc:
         logger.exception("Hard reset error: %s", exc)
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+
+@app.route("/api/import-csv", methods=["POST"])
+def import_csv():
+    """Import data from CSV format (Google Sheets export)"""
+    if not require_api_auth(dict(request.headers)):
+        return jsonify({"status": "error", "message": "Unauthorized"}), 401
+    
+    try:
+        data = request.get_json()
+        if not data or "csv_data" not in data:
+            return jsonify({"status": "error", "message": "Missing 'csv_data' field"}), 400
+        
+        csv_content = data["csv_data"]
+        # Parse CSV
+        df = pd.read_csv(StringIO(csv_content))
+        
+        # Handle different column name formats
+        # Google Sheets export might have: "Logged Time", "Raw Start", "Raw Task"
+        # Or: "colA", "colB", "loggedTime"
+        col_a = None
+        col_b = None
+        logged_time_col = None
+        
+        for col in df.columns:
+            col_lower = col.lower().strip()
+            if "start" in col_lower or col_lower == "cola":
+                col_a = col
+            elif "task" in col_lower or col_lower == "colb" or "raw" in col_lower:
+                col_b = col
+            elif "logged" in col_lower or "time" in col_lower:
+                logged_time_col = col
+        
+        if col_b is None:
+            # Try to find any column that looks like task data
+            for col in df.columns:
+                if col.lower() not in ["logged time", "raw start"]:
+                    col_b = col
+                    break
+        
+        if col_b is None:
+            return jsonify({"status": "error", "message": "Could not identify task column in CSV"}), 400
+        
+        # Process rows
+        parser = TimeLogParser()
+        parsed_rows: List[Dict[str, Any]] = []
+        previous_end: Optional[datetime] = None
+        
+        for _, row in df.iterrows():
+            col_a_val = str(row.get(col_a, "") or "") if col_a else ""
+            col_b_val = str(row.get(col_b, "") or "")
+            client_now = str(row.get(logged_time_col, "")) if logged_time_col else None
+            
+            if not col_b_val or col_b_val.strip() == "":
+                continue
+            
+            try:
+                parsed = parser.parse_row(col_a_val, col_b_val, client_now, previous_end)
+                parsed_rows.append(parsed)
+                previous_end = parsed["end_dt"]
+            except Exception as e:
+                logger.warning("Failed to parse row: %s - %s", row, e)
+                continue
+        
+        # Trim overlaps
+        for i in range(1, len(parsed_rows)):
+            current = parsed_rows[i]
+            prev = parsed_rows[i - 1]
+            if current["start_dt"] < prev["end_dt"]:
+                parsed_rows[i - 1]["end_dt"] = current["start_dt"]
+        
+        # Split midnight crossovers
+        final_rows: List[Dict[str, Any]] = []
+        for p in parsed_rows:
+            if p["start_dt"].date() < p["end_dt"].date():
+                midnight = datetime.combine(p["end_dt"].date(), datetime.min.time())
+                part1 = p.copy()
+                part1["end_dt"] = midnight
+                part2 = p.copy()
+                part2["start_dt"] = midnight
+                final_rows.append(part1)
+                final_rows.append(part2)
+            else:
+                final_rows.append(p)
+        
+        # Save to database
+        conn = get_db_connection()
+        conn.execute("DROP TABLE IF EXISTS logs")
+        conn.execute(
+            """
+            CREATE TABLE logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                start_date TEXT,
+                start_time TEXT,
+                end_date TEXT,
+                end_time TEXT,
+                task TEXT,
+                duration INTEGER,
+                tags TEXT,
+                urg INTEGER,
+                imp INTEGER
+            )
+            """
+        )
+        
+        inserted_count = 0
+        for p in final_rows:
+            duration = int((p["end_dt"] - p["start_dt"]).total_seconds() / 60)
+            if duration <= 0:
+                continue
+            
+            conn.execute(
+                """
+                INSERT INTO logs (
+                    start_date, start_time, end_date, end_time,
+                    task, duration, tags, urg, imp
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    p["start_dt"].strftime("%Y-%m-%d"),
+                    p["start_dt"].strftime("%H:%M:%S"),
+                    p["end_dt"].strftime("%Y-%m-%d"),
+                    p["end_dt"].strftime("%H:%M:%S"),
+                    p["task"],
+                    duration,
+                    p["tag"],
+                    1 if p["urg"] else 0,
+                    1 if p["imp"] else 0,
+                ),
+            )
+            inserted_count += 1
+        
+        conn.commit()
+        conn.close()
+        
+        logger.info("CSV import complete: %s rows imported", inserted_count)
+        return jsonify({
+            "status": "success",
+            "message": f"Successfully imported {inserted_count} tasks from CSV",
+            "count": inserted_count
+        })
+        
+    except Exception as exc:
+        logger.exception("CSV import error: %s", exc)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 
