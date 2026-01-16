@@ -10,7 +10,7 @@ from flask import send_file
 import pandas as pd
 import requests
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, make_response
 
 load_dotenv()
 
@@ -431,6 +431,8 @@ def require_api_auth(headers: Dict[str, str]) -> bool:
     if not expected:
         return True
     provided = headers.get("X-API-Token") or request.args.get("token")
+    if not provided:
+        provided = request.cookies.get("tt_token")
     if provided != expected:
         logger.warning("Unauthorized API access attempt")
         return False
@@ -504,7 +506,7 @@ def dashboard():
     else:
         period_label = selected_date.strftime("%B %Y")
 
-    return render_template(
+    resp = make_response(render_template(
         "dashboard.html",
         matrix=matrix,
         tags={"labels": tag_labels, "data": tag_data},
@@ -515,7 +517,14 @@ def dashboard():
         period=period,
         start_date=start_date,
         end_date=end_date,
-    )
+    ))
+    expected = os.getenv(API_AUTH_TOKEN_ENV)
+    if expected:
+        try:
+            resp.set_cookie("tt_token", expected, httponly=True, samesite="Lax")
+        except Exception:
+            pass
+    return resp
 
 
 @app.route("/api/tasks")
@@ -674,6 +683,23 @@ def download_db():
         return send_file(DB_NAME, as_attachment=True)
     except Exception as e:
         return f"Error downloading DB: {e}"
+
+@app.route("/sync-status")
+def sync_status():
+    try:
+        status = {
+            "sheety_configured": bool(os.getenv(SHEETY_ENDPOINT_ENV)),
+            "disable_cloud_sync": bool(os.getenv("DISABLE_CLOUD_SYNC")),
+            "last_sync": _LAST_SYNC_TS.isoformat() if _LAST_SYNC_TS else None,
+            "last_sync_fail": _LAST_SYNC_FAIL_TS.isoformat() if _LAST_SYNC_FAIL_TS else None,
+            "sync_interval_seconds": SYNC_INTERVAL_SECONDS,
+            "fail_cooldown_seconds": SYNC_FAIL_COOLDOWN_SECONDS,
+            "db_exists": os.path.exists(DB_NAME),
+        }
+        return jsonify(status)
+    except Exception as exc:
+        logger.exception("Sync status error: %s", exc)
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.route("/hard-reset")
