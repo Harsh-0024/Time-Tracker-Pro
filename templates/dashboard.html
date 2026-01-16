@@ -360,63 +360,127 @@
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-            <!-- Priority Matrix - Eisenhower Matrix -->
+            <!-- Priority Matrix - Extended Eisenhower Matrix -->
             <div class="lg:col-span-2" id="matrix">
                 <div class="mb-6">
                     <h3 class="text-2xl font-light text-gray-900 mb-1">Priority Breakdown</h3>
-                    <p class="text-sm text-gray-500">Eisenhower Matrix analysis</p>
+                    <p class="text-sm text-gray-500">Extended Eisenhower Matrix analysis</p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Growth: Important, Not Urgent -->
-                    <div class="matrix-card luxury-card rounded-2xl p-8 h-full bg-gradient-to-br from-emerald-50/50 to-white border-emerald-100" onclick="viewMatrixQuadrant('q2', 'Growth')">
-                        <div class="flex justify-between items-start mb-6">
-                            <div>
-                                <h4 class="text-emerald-900 font-semibold text-xl mb-1">Growth</h4>
-                                <p class="text-xs text-emerald-700 font-medium uppercase tracking-wider">Important, Not Urgent</p>
-                            </div>
-                            <div class="text-3xl text-emerald-300">★</div>
-                        </div>
-                        <div class="text-5xl font-light text-gray-900 mb-2"><span class="js-hover-hours" data-hours="{{ matrix.q2.hours }}">{{ matrix.q2.hours }}h</span></div>
-                        <div class="text-sm font-medium text-emerald-700">{{ matrix.q2.pct }}% of total</div>
-                    </div>
-
+                <div class="grid grid-cols-3 gap-4">
+                    <!-- Row 1: Important & Urgent | Important & !Urgent | Important -->
+                    
                     <!-- Critical: Urgent & Important -->
-                    <div class="matrix-card luxury-card rounded-2xl p-8 h-full bg-gradient-to-br from-amber-50/50 to-white border-amber-100" onclick="viewMatrixQuadrant('q1', 'Critical')">
-                        <div class="flex justify-between items-start mb-6">
+                    <div class="matrix-card luxury-card rounded-2xl p-5 bg-gradient-to-br from-amber-50/60 to-white border-amber-100/80 hover:shadow-lg transition-all duration-300" onclick="viewMatrixQuadrant('q1', 'Critical')">
+                        <div class="flex justify-between items-start mb-4">
                             <div>
-                                <h4 class="text-amber-900 font-semibold text-xl mb-1">Critical</h4>
-                                <p class="text-xs text-amber-700 font-medium uppercase tracking-wider">Urgent & Important</p>
+                                <h4 class="text-amber-900 font-semibold text-base mb-0.5">Critical</h4>
+                                <p class="text-[10px] text-amber-700/80 font-medium uppercase tracking-wider">Important & Urgent</p>
                             </div>
-                            <div class="text-3xl text-amber-300">!</div>
+                            <div class="text-xl text-amber-300/70">◆</div>
                         </div>
-                        <div class="text-5xl font-light text-gray-900 mb-2"><span class="js-hover-hours" data-hours="{{ matrix.q1.hours }}">{{ matrix.q1.hours }}h</span></div>
-                        <div class="text-sm font-medium text-amber-700">{{ matrix.q1.pct }}% of total</div>
+                        <div class="text-3xl font-light text-gray-900 mb-1"><span class="js-hover-hours" data-hours="{{ matrix.q1.hours }}">{{ matrix.q1.hours }}h</span></div>
+                        <div class="text-xs font-medium text-amber-700/70">{{ matrix.q1.pct }}%</div>
                     </div>
 
-                    <!-- Drudgery: Urgent, Not Important -->
-                    <div class="matrix-card luxury-card rounded-2xl p-8 h-full bg-gradient-to-br from-stone-50/50 to-white border-stone-200" onclick="viewMatrixQuadrant('q3', 'Drudgery')">
-                        <div class="flex justify-between items-start mb-6">
+                    <!-- Growth: Important, Not Urgent -->
+                    <div class="matrix-card luxury-card rounded-2xl p-5 bg-gradient-to-br from-emerald-50/60 to-white border-emerald-100/80 hover:shadow-lg transition-all duration-300" onclick="viewMatrixQuadrant('q2', 'Growth')">
+                        <div class="flex justify-between items-start mb-4">
                             <div>
-                                <h4 class="text-stone-800 font-semibold text-xl mb-1">Drudgery</h4>
-                                <p class="text-xs text-stone-600 font-medium uppercase tracking-wider">Urgent, Not Important</p>
+                                <h4 class="text-emerald-900 font-semibold text-base mb-0.5">Growth</h4>
+                                <p class="text-[10px] text-emerald-700/80 font-medium uppercase tracking-wider">Important & !Urgent</p>
                             </div>
-                            <div class="text-3xl text-stone-300">#</div>
+                            <div class="text-xl text-emerald-300/70">★</div>
                         </div>
-                        <div class="text-5xl font-light text-gray-800 mb-2"><span class="js-hover-hours" data-hours="{{ matrix.q3.hours }}">{{ matrix.q3.hours }}h</span></div>
-                        <div class="text-sm font-medium text-stone-600">{{ matrix.q3.pct }}% of total</div>
+                        <div class="text-3xl font-light text-gray-900 mb-1"><span class="js-hover-hours" data-hours="{{ matrix.q2.hours }}">{{ matrix.q2.hours }}h</span></div>
+                        <div class="text-xs font-medium text-emerald-700/70">{{ matrix.q2.pct }}%</div>
+                    </div>
+
+                    <!-- Important (All) -->
+                    <div class="matrix-card luxury-card rounded-2xl p-5 bg-gradient-to-br from-indigo-50/60 to-white border-indigo-100/80 hover:shadow-lg transition-all duration-300" onclick="viewMatrixQuadrant('important', 'Important')">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="text-indigo-900 font-semibold text-base mb-0.5">Important</h4>
+                                <p class="text-[10px] text-indigo-700/80 font-medium uppercase tracking-wider">All Important</p>
+                            </div>
+                            <div class="text-xl text-indigo-300/70">●</div>
+                        </div>
+                        <div class="text-3xl font-light text-gray-900 mb-1"><span class="js-hover-hours" data-hours="{{ matrix.important.hours }}">{{ matrix.important.hours }}h</span></div>
+                        <div class="text-xs font-medium text-indigo-700/70">{{ matrix.important.pct }}%</div>
+                    </div>
+
+                    <!-- Row 2: Urgent & !Important | !Important & !Urgent | !Important -->
+                    
+                    <!-- Drudgery: Urgent, Not Important -->
+                    <div class="matrix-card luxury-card rounded-2xl p-5 bg-gradient-to-br from-stone-50/60 to-white border-stone-200/80 hover:shadow-lg transition-all duration-300" onclick="viewMatrixQuadrant('q3', 'Drudgery')">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="text-stone-800 font-semibold text-base mb-0.5">Drudgery</h4>
+                                <p class="text-[10px] text-stone-600/80 font-medium uppercase tracking-wider">Urgent & !Important</p>
+                            </div>
+                            <div class="text-xl text-stone-300/70">#</div>
+                        </div>
+                        <div class="text-3xl font-light text-gray-800 mb-1"><span class="js-hover-hours" data-hours="{{ matrix.q3.hours }}">{{ matrix.q3.hours }}h</span></div>
+                        <div class="text-xs font-medium text-stone-600/70">{{ matrix.q3.pct }}%</div>
                     </div>
 
                     <!-- Waste: Neither -->
-                    <div class="matrix-card luxury-card rounded-2xl p-8 h-full bg-gradient-to-br from-rose-50/50 to-white border-rose-100" onclick="viewMatrixQuadrant('q4', 'Waste')">
-                        <div class="flex justify-between items-start mb-6">
+                    <div class="matrix-card luxury-card rounded-2xl p-5 bg-gradient-to-br from-rose-50/60 to-white border-rose-100/80 hover:shadow-lg transition-all duration-300" onclick="viewMatrixQuadrant('q4', 'Waste')">
+                        <div class="flex justify-between items-start mb-4">
                             <div>
-                                <h4 class="text-rose-900 font-semibold text-xl mb-1">Waste</h4>
-                                <p class="text-xs text-rose-700 font-medium uppercase tracking-wider">Neither Urgent nor Important</p>
+                                <h4 class="text-rose-900 font-semibold text-base mb-0.5">Waste</h4>
+                                <p class="text-[10px] text-rose-700/80 font-medium uppercase tracking-wider">!Important & !Urgent</p>
                             </div>
-                            <div class="text-3xl text-rose-300">×</div>
+                            <div class="text-xl text-rose-300/70">×</div>
                         </div>
-                        <div class="text-5xl font-light text-gray-900 mb-2"><span class="js-hover-hours" data-hours="{{ matrix.q4.hours }}">{{ matrix.q4.hours }}h</span></div>
-                        <div class="text-sm font-medium text-rose-700">{{ matrix.q4.pct }}% of total</div>
+                        <div class="text-3xl font-light text-gray-900 mb-1"><span class="js-hover-hours" data-hours="{{ matrix.q4.hours }}">{{ matrix.q4.hours }}h</span></div>
+                        <div class="text-xs font-medium text-rose-700/70">{{ matrix.q4.pct }}%</div>
+                    </div>
+
+                    <!-- Not Important (All) -->
+                    <div class="matrix-card luxury-card rounded-2xl p-5 bg-gradient-to-br from-slate-50/60 to-white border-slate-200/80 hover:shadow-lg transition-all duration-300" onclick="viewMatrixQuadrant('not_important', 'Not Important')">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="text-slate-800 font-semibold text-base mb-0.5">!Important</h4>
+                                <p class="text-[10px] text-slate-600/80 font-medium uppercase tracking-wider">All Not Important</p>
+                            </div>
+                            <div class="text-xl text-slate-300/70">○</div>
+                        </div>
+                        <div class="text-3xl font-light text-gray-900 mb-1"><span class="js-hover-hours" data-hours="{{ matrix.not_important.hours }}">{{ matrix.not_important.hours }}h</span></div>
+                        <div class="text-xs font-medium text-slate-600/70">{{ matrix.not_important.pct }}%</div>
+                    </div>
+
+                    <!-- Row 3: Urgent | !Urgent | (empty) -->
+                    
+                    <!-- Urgent (All) -->
+                    <div class="matrix-card luxury-card rounded-2xl p-5 bg-gradient-to-br from-orange-50/60 to-white border-orange-100/80 hover:shadow-lg transition-all duration-300" onclick="viewMatrixQuadrant('urgent', 'Urgent')">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="text-orange-900 font-semibold text-base mb-0.5">Urgent</h4>
+                                <p class="text-[10px] text-orange-700/80 font-medium uppercase tracking-wider">All Urgent</p>
+                            </div>
+                            <div class="text-xl text-orange-300/70">⚡</div>
+                        </div>
+                        <div class="text-3xl font-light text-gray-900 mb-1"><span class="js-hover-hours" data-hours="{{ matrix.urgent.hours }}">{{ matrix.urgent.hours }}h</span></div>
+                        <div class="text-xs font-medium text-orange-700/70">{{ matrix.urgent.pct }}%</div>
+                    </div>
+
+                    <!-- Not Urgent (All) -->
+                    <div class="matrix-card luxury-card rounded-2xl p-5 bg-gradient-to-br from-cyan-50/60 to-white border-cyan-100/80 hover:shadow-lg transition-all duration-300" onclick="viewMatrixQuadrant('not_urgent', 'Not Urgent')">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h4 class="text-cyan-900 font-semibold text-base mb-0.5">!Urgent</h4>
+                                <p class="text-[10px] text-cyan-700/80 font-medium uppercase tracking-wider">All Not Urgent</p>
+                            </div>
+                            <div class="text-xl text-cyan-300/70">◇</div>
+                        </div>
+                        <div class="text-3xl font-light text-gray-900 mb-1"><span class="js-hover-hours" data-hours="{{ matrix.not_urgent.hours }}">{{ matrix.not_urgent.hours }}h</span></div>
+                        <div class="text-xs font-medium text-cyan-700/70">{{ matrix.not_urgent.pct }}%</div>
+                    </div>
+
+                    <!-- Empty corner cell - Total summary -->
+                    <div class="luxury-card rounded-2xl p-5 bg-gradient-to-br from-gray-50/40 to-white border-gray-100/60 flex flex-col justify-center items-center">
+                        <div class="text-[10px] text-gray-400 font-medium uppercase tracking-wider mb-2">Total</div>
+                        <div class="text-2xl font-light text-gray-600"><span class="js-hover-hours" data-hours="{{ matrix.total_hours }}">{{ matrix.total_hours }}h</span></div>
                     </div>
                 </div>
             </div>
