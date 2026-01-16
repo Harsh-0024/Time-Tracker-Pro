@@ -206,7 +206,8 @@ def _should_sync(now: Optional[datetime] = None) -> bool:
 def sync_cloud_data(force: bool = False) -> None:
     global _LAST_SYNC_TS, _LAST_SYNC_FAIL_TS
 
-    if os.getenv("DISABLE_CLOUD_SYNC"):
+    if os.getenv("DISABLE_CLOUD_SYNC") and not force:
+        logger.info("Cloud sync disabled by env; skipping (force=%s)", force)
         return
     url = os.getenv(SHEETY_ENDPOINT_ENV)
     if not url:
