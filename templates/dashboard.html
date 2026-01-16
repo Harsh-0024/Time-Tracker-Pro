@@ -702,16 +702,16 @@
 
         const TAG_COLOR_MAP = {
             'Work': '#16A34A',
-            'Important': '#22C55E',
             'Necessity': '#A16207',
-            'Urgent': '#DC2626',
+            'Soul': '#7C3AED',
+            'Rest': '#0EA5A4',
             'Waste': '#9F1239'
         };
 
         function normalizeTagName(tag) {
-            if (!tag) return 'Unlabeled';
+            if (!tag) return '';
             const trimmed = String(tag).trim();
-            if (!trimmed) return 'Unlabeled';
+            if (!trimmed) return '';
             return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
         }
 
@@ -846,14 +846,18 @@
                 const badges = [];
                 if (task.important) badges.push('<span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-full">Important</span>');
                 if (task.urgent) badges.push('<span class="px-2 py-1 bg-red-50 text-red-700 text-xs rounded-full">Urgent</span>');
-                let displayTag = task.tag;
-                let tagClass = 'px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-700';
-                if (!task.important && !task.urgent && task.tag === 'Waste') {
-                    tagClass = 'px-2 py-0.5 bg-slate-100 rounded-full text-xs text-slate-700';
-                } else if (task.tag === 'Necessity') {
-                    tagClass = 'px-2 py-0.5 bg-amber-50 rounded-full text-xs text-amber-800';
-                } else if (task.tag === 'Work') {
-                    tagClass = 'px-2 py-0.5 bg-emerald-50 rounded-full text-xs text-emerald-700';
+                let displayTag = normalizeTagName(task.tag);
+                let tagBadge = '';
+                if (displayTag) {
+                    let tagClass = 'px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-700';
+                    if (!task.important && !task.urgent && displayTag === 'Waste') {
+                        tagClass = 'px-2 py-0.5 bg-slate-100 rounded-full text-xs text-slate-700';
+                    } else if (displayTag === 'Necessity') {
+                        tagClass = 'px-2 py-0.5 bg-amber-50 rounded-full text-xs text-amber-800';
+                    } else if (displayTag === 'Work') {
+                        tagClass = 'px-2 py-0.5 bg-emerald-50 rounded-full text-xs text-emerald-700';
+                    }
+                    tagBadge = `<span class="${tagClass}">${displayTag}</span>`;
                 }
                 html += `
                     <div class="luxury-card rounded-2xl p-4 md:p-5 mb-3 shadow-lg">
@@ -863,7 +867,7 @@
                                 <div class="flex flex-wrap items-center gap-2 text-[13px] text-gray-600">
                                     <span class="text-gray-500">${task.date}</span>
                                     <span class="text-gray-500">${task.start_time} - ${task.end_time}</span>
-                                    <span class="${tagClass}">${displayTag}</span>
+                                    ${tagBadge}
                                     ${badges.join('')}
                                 </div>
                             </div>
@@ -887,41 +891,120 @@
             document.getElementById('modalTitle').textContent = title;
 
             const totalMinutes = ensureFinite(data.total_minutes || 0);
-            let growthMinutes = 0;
-            let drudgeryMinutes = 0;
-            let wasteMinutes = 0;
+            const periodMinutes = ensureFinite(data.period_minutes || totalMinutes || 0);
+            const taskCount = ensureFinite(data.count || (data.tasks ? data.tasks.length : 0));
+            const totalHours = totalMinutes / 60;
+            const sharePct = periodMinutes ? Math.round((totalMinutes / periodMinutes) * 100) : 0;
+            const avgMinutes = taskCount ? Math.round(totalMinutes / taskCount) : 0;
+            let importantMinutes = 0;
+            let urgentMinutes = 0;
+            const quadrantMinutes = { Critical: 0, Growth: 0, Drudgery: 0, Waste: 0 };
+            const tagTotals = {};
+
             data.tasks.forEach(task => {
                 const dMin = minutesFromHours(task.duration || 0);
-                if (task.important && !task.urgent) {
-                    growthMinutes += dMin;
+                if (task.important) importantMinutes += dMin;
+                if (task.urgent) urgentMinutes += dMin;
+                if (task.urgent && task.important) {
+                    quadrantMinutes.Critical += dMin;
+                } else if (task.important && !task.urgent) {
+                    quadrantMinutes.Growth += dMin;
                 } else if (task.urgent && !task.important) {
-                    drudgeryMinutes += dMin;
-                } else if (!task.urgent && !task.important) {
-                    wasteMinutes += dMin;
+                    quadrantMinutes.Drudgery += dMin;
+                } else {
+                    quadrantMinutes.Waste += dMin;
+                }
+                const tagName = normalizeTagName(task.tag);
+                if (tagName) {
+                    tagTotals[tagName] = (tagTotals[tagName] || 0) + dMin;
                 }
             });
-            const baseMinutes = totalMinutes || (growthMinutes + drudgeryMinutes + wasteMinutes) || 1;
-            const growthPct = Math.round((growthMinutes / baseMinutes) * 100);
-            const drudgeryPct = Math.round((drudgeryMinutes / baseMinutes) * 100);
-            const wastePct = Math.round((wasteMinutes / baseMinutes) * 100);
-            const growthHours = growthMinutes / 60;
-            const drudgeryHours = drudgeryMinutes / 60;
-            const wasteHours = wasteMinutes / 60;
 
-            const statsHtml = `
-                <div class="text-center">
-                    <div class="text-2xl font-light text-gray-900"><span class="js-hover-hours hover-swap" data-hours="${(growthHours || 0)}">${formatHours(growthHours || 0, 1)}h</span></div>
-                    <div class="text-xs text-gray-500 mt-1">${growthPct}% discipline (imp, not urgent)</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-2xl font-light text-gray-900"><span class="js-hover-hours hover-swap" data-hours="${(drudgeryHours || 0)}">${formatHours(drudgeryHours || 0, 1)}h</span></div>
-                    <div class="text-xs text-gray-500 mt-1">${drudgeryPct}% reactive (urg, not important)</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-2xl font-light text-gray-900"><span class="js-hover-hours hover-swap" data-hours="${(wasteHours || 0)}">${formatHours(wasteHours || 0, 1)}h</span></div>
-                    <div class="text-xs text-gray-500 mt-1">${wastePct}% waste (neither)</div>
+            const pct = (num, den) => (den ? Math.round((num / den) * 100) : 0);
+            const topTagEntry = Object.entries(tagTotals).sort((a, b) => b[1] - a[1])[0];
+            const topTagName = topTagEntry ? topTagEntry[0] : '';
+            const topTagPct = topTagEntry ? pct(topTagEntry[1], totalMinutes) : 0;
+            const topQuadrantEntry = Object.entries(quadrantMinutes).sort((a, b) => b[1] - a[1])[0];
+            const topQuadrantName = topQuadrantEntry && topQuadrantEntry[1] ? topQuadrantEntry[0] : '';
+            const topQuadrantPct = topQuadrantName ? pct(topQuadrantEntry[1], totalMinutes) : 0;
+
+            const maxSessionMin = (data.tasks || []).reduce((m, t) => {
+                const d = minutesFromHours(t.duration || 0);
+                return d > m ? d : m;
+            }, 0);
+
+            const periodMatrix = data.period_matrix_minutes || {};
+            const parentShareForQuadrant = (qType) => {
+                if (!qType) return { label: '', pct: 0 };
+                if (qType === 'q2') {
+                    return { label: 'Of Important time', pct: pct(totalMinutes, periodMatrix.important || 0) };
+                }
+                if (qType === 'q4') {
+                    return { label: 'Of Not Urgent time', pct: pct(totalMinutes, periodMatrix.not_urgent || 0) };
+                }
+                if (qType === 'q1' || qType === 'q3') {
+                    return { label: 'Of Urgent time', pct: pct(totalMinutes, periodMatrix.urgent || 0) };
+                }
+                return { label: '', pct: 0 };
+            };
+
+            const statItem = (value, label) => `
+                <div class="rounded-xl border border-slate-100 bg-white/80 px-3 py-3 text-center">
+                    <div class="text-xl md:text-2xl font-light text-gray-900">${value}</div>
+                    <div class="text-[10px] md:text-xs text-gray-500 mt-1 uppercase tracking-wider">${label}</div>
                 </div>
             `;
+
+            const totalValue = `<span class="js-hover-hours hover-swap" data-hours="${totalHours}">${formatHours(totalHours || 0, 1)}h</span>`;
+            const stats = [];
+            const isQuadrant = ['q1', 'q2', 'q3', 'q4'].includes(filterType);
+            const isTag = filterType === 'tag';
+
+            if (filterType === 'all') {
+                const base = totalMinutes || 1;
+                const gMin = quadrantMinutes.Growth || 0;
+                const dMin = quadrantMinutes.Drudgery || 0;
+                const wMin = quadrantMinutes.Waste || 0;
+                const gVal = `<span class="js-hover-hours hover-swap" data-hours="${gMin / 60}">${formatHours(gMin / 60, 1)}h</span>`;
+                const dVal = `<span class="js-hover-hours hover-swap" data-hours="${dMin / 60}">${formatHours(dMin / 60, 1)}h</span>`;
+                const wVal = `<span class="js-hover-hours hover-swap" data-hours="${wMin / 60}">${formatHours(wMin / 60, 1)}h</span>`;
+                stats.push(statItem(gVal, `${pct(gMin, base)}% discipline (imp, not urgent)`));
+                stats.push(statItem(dVal, `${pct(dMin, base)}% reactive (urg, not important)`));
+                stats.push(statItem(wVal, `${pct(wMin, base)}% waste (neither)`));
+            } else if (isTag) {
+                stats.push(statItem(totalValue, `Time in view · ${sharePct}% of period`));
+                stats.push(statItem(`${pct(importantMinutes, totalMinutes)}%`, 'Important share'));
+                stats.push(statItem(`${pct(urgentMinutes, totalMinutes)}%`, 'Urgent share'));
+            } else if (isQuadrant) {
+                stats.push(statItem(totalValue, `Time in view · ${sharePct}% of period`));
+                const parent = parentShareForQuadrant(filterType);
+                stats.push(statItem(`${parent.pct}%`, parent.label || 'Share of parent'));
+                const longestVal = maxSessionMin ? hoursToHuman(maxSessionMin / 60) : '0 min';
+                stats.push(statItem(longestVal, 'Longest session'));
+            } else if (filterType === 'important') {
+                stats.push(statItem(totalValue, `Important · ${sharePct}% of period`));
+                stats.push(statItem(`${pct(quadrantMinutes.Growth, totalMinutes)}%`, 'Growth (not urgent)'));
+                stats.push(statItem(`${pct(quadrantMinutes.Critical, totalMinutes)}%`, 'Critical (urgent)'));
+            } else if (filterType === 'not_important') {
+                stats.push(statItem(totalValue, `Not Important · ${sharePct}% of period`));
+                stats.push(statItem(`${pct(quadrantMinutes.Drudgery, totalMinutes)}%`, 'Drudgery (urgent)'));
+                stats.push(statItem(`${pct(quadrantMinutes.Waste, totalMinutes)}%`, 'Waste (not urgent)'));
+            } else if (filterType === 'urgent') {
+                stats.push(statItem(totalValue, `Urgent · ${sharePct}% of period`));
+                stats.push(statItem(`${pct(quadrantMinutes.Critical, totalMinutes)}%`, 'Critical (important)'));
+                stats.push(statItem(`${pct(quadrantMinutes.Drudgery, totalMinutes)}%`, 'Drudgery (not important)'));
+            } else if (filterType === 'not_urgent') {
+                stats.push(statItem(totalValue, `Not Urgent · ${sharePct}% of period`));
+                stats.push(statItem(`${pct(quadrantMinutes.Growth, totalMinutes)}%`, 'Growth (important)'));
+                stats.push(statItem(`${pct(quadrantMinutes.Waste, totalMinutes)}%`, 'Waste (not important)'));
+            } else {
+                stats.push(statItem(totalValue, `Time in view · ${sharePct}% of period`));
+                const longestVal = maxSessionMin ? hoursToHuman(maxSessionMin / 60) : '0 min';
+                stats.push(statItem(longestVal, 'Longest session'));
+                stats.push(statItem(`${topQuadrantPct}%`, topQuadrantName ? `Dominant · ${topQuadrantName}` : 'Dominant quadrant'));
+            }
+
+            const statsHtml = stats.join('');
             document.getElementById('modalStats').innerHTML = statsHtml;
             window.attachHoverSwap();
             const chartContainer = document.getElementById('modalChart');
@@ -972,45 +1055,31 @@
                 let colors = [];
 
                 if (window.modalFilterType === 'tag') {
-                    const quadrantGroups = {
-                        Growth: 0,
-                        Critical: 0,
-                        Drudgery: 0,
-                        Waste: 0
-                    };
+                    const taskGroups = {};
                     data.tasks.forEach(task => {
-                        const d = task.duration || 0;
-                        if (task.urgent && task.important) {
-                            quadrantGroups.Critical += d;
-                        } else if (task.important && !task.urgent) {
-                            quadrantGroups.Growth += d;
-                        } else if (task.urgent && !task.important) {
-                            quadrantGroups.Drudgery += d;
-                        } else {
-                            quadrantGroups.Waste += d;
-                        }
+                        const key = String(task.task || 'Unspecified').trim() || 'Unspecified';
+                        taskGroups[key] = (taskGroups[key] || 0) + (task.duration || 0);
                     });
-                    labels = ['Growth', 'Critical', 'Drudgery', 'Waste'];
-                    values = labels.map(label => quadrantGroups[label]);
-                    const quadrantColors = {
-                        Growth: '#16A34A',
-                        Critical: '#F97316',
-                        Drudgery: '#6B7280',
-                        Waste: '#9F1239'
-                    };
-                    colors = labels.map(label => quadrantColors[label]);
+                    const entries = Object.entries(taskGroups).sort((a, b) => b[1] - a[1]);
+                    const top = entries.slice(0, 6);
+                    const rest = entries.slice(6);
+                    labels = top.map(e => e[0]);
+                    values = top.map(e => e[1]);
+                    if (rest.length) {
+                        labels.push('Other');
+                        values.push(rest.reduce((s, e) => s + e[1], 0));
+                    }
+                    const palette = ['#111827', '#16A34A', '#A16207', '#7C3AED', '#0EA5A4', '#9F1239', '#9CA3AF', '#F59E0B'];
+                    colors = labels.map((label, idx) => palette[idx % palette.length]);
                 } else {
                     const tagGroups = {};
                     data.tasks.forEach(task => {
-                        const key = normalizeTagName(task.tag);
-                        if (!tagGroups[key]) {
-                            tagGroups[key] = 0;
-                        }
-                        tagGroups[key] += task.duration;
+                        const key = normalizeTagName(task.tag) || 'Waste';
+                        tagGroups[key] = (tagGroups[key] || 0) + (task.duration || 0);
                     });
                     labels = Object.keys(tagGroups);
                     values = Object.values(tagGroups);
-                    const palette = ['#111827', '#16A34A', '#F59E0B', '#E11D48', '#64748B', '#0369A1', '#7C3AED', '#F97316'];
+                    const palette = ['#111827', '#16A34A', '#A16207', '#7C3AED', '#0EA5A4', '#9F1239', '#9CA3AF', '#F59E0B'];
                     colors = labels.map((label, idx) => TAG_COLOR_MAP[label] || palette[idx % palette.length]);
                 }
                 const chart = new Chart(ctx, {

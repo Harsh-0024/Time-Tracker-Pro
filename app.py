@@ -49,7 +49,7 @@ app.jinja_env.filters["human_hours"] = human_hours
 def normalize_tag(raw: Optional[str]) -> str:
     s = str(raw or "").strip()
     if not s:
-        return "General"
+        return ""
     s = re.sub(r"[^A-Za-z\s]+$", "", s)
     s = re.sub(r"\s+", " ", s)
     return s.title()
@@ -142,7 +142,7 @@ class TimeLogParser:
         explicit_time_b, remaining_text = self.parse_time_string(col_b, client_now)
 
         raw_text = remaining_text if remaining_text else (col_b if col_b else "Unspecified")
-        task_name, tag = raw_text.strip(), "General"
+        task_name, tag = raw_text.strip(), ""
         is_urg, is_imp = False, False
 
         if "." in raw_text:
@@ -361,7 +361,7 @@ def fetch_local_data() -> pd.DataFrame:
             start = pd.to_datetime(f"{row['start_date']} {row['start_time']}")
             end = pd.to_datetime(f"{row['end_date']} {row['end_time']}")
             tag_value = normalize_tag(row["tags"])
-            if tag_value == "General" and not row["urg"] and not row["imp"]:
+            if not tag_value:
                 tag_value = "Waste"
             final_rows.append(
                 {
@@ -517,8 +517,11 @@ def dashboard():
     tag_labels: List[str] = []
     tag_data: List[float] = []
     if not period_df.empty:
+        tag_df = period_df.copy()
+        empty_tag = tag_df["tag"].astype(str).str.len() == 0
+        tag_df.loc[empty_tag, "tag"] = "Waste"
         tag_counts = (
-            period_df.groupby("tag")["duration"]
+            tag_df.groupby("tag")["duration"]
             .sum()
             .sort_values(ascending=False)
         )
@@ -583,6 +586,18 @@ def get_tasks():
                 "tasks": [],
                 "total_hours": 0.0,
                 "total_minutes": 0,
+                "period_minutes": 0,
+                "period_matrix_minutes": {
+                    "q1": 0,
+                    "q2": 0,
+                    "q3": 0,
+                    "q4": 0,
+                    "important": 0,
+                    "not_important": 0,
+                    "urgent": 0,
+                    "not_urgent": 0,
+                    "total": 0,
+                },
                 "count": 0,
             }
         )
@@ -652,12 +667,48 @@ def get_tasks():
     else:
         total_hours = 0.0
         total_minutes = 0
+    period_minutes = int(period_df["duration"].sum()) if not period_df.empty else 0
+
+    if not period_df.empty:
+        q2_min = int(period_df[(~period_df["urgent"]) & (period_df["important"])]["duration"].sum())
+        q1_min = int(period_df[(period_df["urgent"]) & (period_df["important"])]["duration"].sum())
+        q3_min = int(period_df[(period_df["urgent"]) & (~period_df["important"])]["duration"].sum())
+        q4_min = int(period_df[(~period_df["urgent"]) & (~period_df["important"])]["duration"].sum())
+        imp_min = int(period_df[period_df["important"]]["duration"].sum())
+        not_imp_min = int(period_df[~period_df["important"]]["duration"].sum())
+        urg_min = int(period_df[period_df["urgent"]]["duration"].sum())
+        not_urg_min = int(period_df[~period_df["urgent"]]["duration"].sum())
+        period_matrix_minutes = {
+            "q1": q1_min,
+            "q2": q2_min,
+            "q3": q3_min,
+            "q4": q4_min,
+            "important": imp_min,
+            "not_important": not_imp_min,
+            "urgent": urg_min,
+            "not_urgent": not_urg_min,
+            "total": int(period_df["duration"].sum()),
+        }
+    else:
+        period_matrix_minutes = {
+            "q1": 0,
+            "q2": 0,
+            "q3": 0,
+            "q4": 0,
+            "important": 0,
+            "not_important": 0,
+            "urgent": 0,
+            "not_urgent": 0,
+            "total": 0,
+        }
 
     return jsonify(
         {
             "tasks": tasks,
             "total_hours": total_hours,
             "total_minutes": total_minutes,
+            "period_minutes": period_minutes,
+            "period_matrix_minutes": period_matrix_minutes,
             "count": len(tasks),
         }
     )
@@ -693,8 +744,14 @@ def get_tags():
     if period_df.empty:
         return jsonify({"tags": []})
 
+    tag_df = period_df.copy()
+    empty_tag = tag_df["tag"].astype(str).str.len() == 0
+    tag_df.loc[empty_tag, "tag"] = "Waste"
+
     tag_stats: List[Dict[str, Any]] = []
-    for tag, group in period_df.groupby("tag"):
+    for tag, group in tag_df.groupby("tag"):
+        if not tag:
+            continue
         total_minutes = int(group["duration"].sum())
         tag_stats.append(
             {
