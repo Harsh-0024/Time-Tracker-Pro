@@ -910,6 +910,10 @@
                 .then(data => {
                     console.log('Data received:', data);
                     setGlobalLoading(false);
+                    if (filterType === 'all') {
+                        window.modalSort = 'time_asc';
+                        window.modalSortLabel = 'Time ↑';
+                    }
                     window.showModal(title, data, filterType);
                 })
                 .catch(error => {
@@ -944,10 +948,9 @@
             };
             const getKey = (task) => {
                 if (filterType === 'tag') {
-                    if (task.urgent && task.important) return 'Critical';
-                    if (task.important && !task.urgent) return 'Growth';
-                    if (task.urgent && !task.important) return 'Drudgery';
-                    return 'Waste';
+                    let key = String(task.task || '').trim();
+                    if (!key || /^(undefined|null|none|nan)$/i.test(key)) key = 'Unspecified';
+                    return key;
                 }
                 return normalizeTagName(task.tag);
             };

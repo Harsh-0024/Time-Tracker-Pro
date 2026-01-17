@@ -45,7 +45,7 @@
             background: rgba(255, 255, 255, 0.7);
             border: 1px solid rgba(148, 126, 86, 0.28);
         }
-        .range-pill.active {
+        .range-pill.active, .ma-pill.active {
             background: linear-gradient(135deg, #F8D574, #F5B826);
             color: #111827;
             box-shadow: 0 12px 26px rgba(185, 132, 40, 0.35);
@@ -75,69 +75,84 @@
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-6 md:px-8 py-10 md:py-12">
-        <div class="mb-8">
-            <h2 class="text-3xl md:text-4xl font-light text-gray-900 mb-2">Time Trends</h2>
-            <p class="text-gray-600">Pick a focus and see how it moves across days.</p>
+    <main class="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-12 pb-20 md:pb-12">
+        <div class="mb-6 md:mb-8">
+            <h2 class="text-2xl md:text-4xl font-light text-gray-900 mb-1 md:mb-2">Time Trends</h2>
+            <p class="text-sm md:text-base text-gray-600">Pick a focus and see how it moves across days.</p>
         </div>
 
-        <div class="luxury-card rounded-3xl p-6 md:p-8 mb-8">
-            <div class="grid gap-6 md:grid-cols-[1.2fr_1fr]">
+        <div class="luxury-card rounded-2xl md:rounded-3xl p-4 md:p-8 mb-6 md:mb-8">
+            <div class="space-y-5 md:space-y-0 md:grid md:gap-6 md:grid-cols-[1.2fr_1fr]">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">What do you want to track?</label>
-                    <select id="metricSelect" class="w-full px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-base">
-                        <option value="important" selected>Important</option>
-                        <option value="total">Total time</option>
-                        <option value="urgent">Urgent</option>
-                        <option value="q1">Important &amp; Urgent (Critical)</option>
-                        <option value="q2">Important &amp; Not Urgent (Growth)</option>
-                        <option value="q3">Urgent &amp; Not Important (Drudgery)</option>
-                        <option value="q4">Not Urgent &amp; Not Important (Waste)</option>
-                        <option value="work">Work</option>
-                        <option value="necessity">Necessity</option>
-                        <option value="soul">Soul</option>
-                        <option value="rest">Rest</option>
-                        <option value="waste">Waste</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Time range</label>
-                    <div class="flex flex-wrap gap-3">
-                        <button class="range-pill soft-pill px-4 py-2 rounded-full text-sm font-medium text-gray-700" data-range="7">7 days</button>
-                        <button class="range-pill soft-pill px-4 py-2 rounded-full text-sm font-medium text-gray-700 active" data-range="30">30 days</button>
-                        <button class="range-pill soft-pill px-4 py-2 rounded-full text-sm font-medium text-gray-700" data-range="90">90 days</button>
-                        <button class="range-pill soft-pill px-4 py-2 rounded-full text-sm font-medium text-gray-700" data-range="180">180 days</button>
+                    <label class="block text-xs md:text-sm font-medium text-gray-700 mb-3">What do you want to track?</label>
+                    <div class="relative">
+                        <button id="metricSelectBtn" class="w-full px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] text-left text-sm md:text-base text-gray-900 font-medium flex items-center justify-between hover:bg-[#F7F1E6] transition-all">
+                            <span id="metricSelectLabel">Important</span>
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="metricSelectMenu" class="hidden absolute z-50 w-full mt-2 bg-white rounded-2xl shadow-2xl border border-[rgba(148,126,86,0.35)] max-h-80 overflow-y-auto">
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors" data-value="important">Important</div>
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors" data-value="total">Total time</div>
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors" data-value="urgent">Urgent</div>
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors border-t border-gray-100" data-value="q1">Important & Urgent (Critical)</div>
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors" data-value="q2">Important & Not Urgent (Growth)</div>
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors" data-value="q3">Urgent & Not Important (Drudgery)</div>
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors" data-value="q4">Not Urgent & Not Important (Waste)</div>
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors border-t border-gray-100" data-value="work">Work</div>
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors" data-value="necessity">Necessity</div>
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors" data-value="soul">Soul</div>
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors" data-value="rest">Rest</div>
+                            <div class="metric-option px-4 py-3 hover:bg-[#F7F1E6] cursor-pointer text-sm transition-colors" data-value="waste">Waste</div>
+                        </div>
                     </div>
-                    <p class="text-xs text-gray-500 mt-3">Shows daily totals ending today.</p>
+                </div>
+                <div>
+                    <label class="block text-xs md:text-sm font-medium text-gray-700 mb-3">Time range</label>
+                    <div class="flex flex-wrap gap-2 md:gap-3">
+                        <button class="range-pill soft-pill px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium text-gray-700" data-range="7">7 days</button>
+                        <button class="range-pill soft-pill px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium text-gray-700 active" data-range="30">30 days</button>
+                        <button class="range-pill soft-pill px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium text-gray-700" data-range="90">90 days</button>
+                        <button class="range-pill soft-pill px-3 md:px-4 py-2 rounded-full text-xs md:text-sm font-medium text-gray-700" data-range="180">180 days</button>
+                    </div>
+                    <div class="mt-3">
+                        <label class="block text-xs text-gray-500 mb-2">Moving average window</label>
+                        <div class="flex gap-2">
+                            <button class="ma-pill soft-pill px-3 py-1.5 rounded-full text-xs font-medium text-gray-700" data-ma="7">7d</button>
+                            <button class="ma-pill soft-pill px-3 py-1.5 rounded-full text-xs font-medium text-gray-700 active" data-ma="14">14d</button>
+                            <button class="ma-pill soft-pill px-3 py-1.5 rounded-full text-xs font-medium text-gray-700" data-ma="30">30d</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="luxury-card rounded-3xl p-6 md:p-8 mb-8">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div class="luxury-card rounded-2xl md:rounded-3xl p-4 md:p-8 mb-6 md:mb-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4 mb-5 md:mb-6">
                 <div>
-                    <h3 class="text-xl font-semibold text-gray-900" id="chartTitle">Important</h3>
-                    <p class="text-sm text-gray-500" id="chartSubtitle">Last 30 days</p>
+                    <h3 class="text-lg md:text-xl font-semibold text-gray-900" id="chartTitle">Important</h3>
+                    <p class="text-xs md:text-sm text-gray-500" id="chartSubtitle">Last 30 days</p>
                 </div>
-                <button id="refreshGraph" class="primary-cta">Refresh</button>
+                <button id="refreshGraph" class="primary-cta text-sm md:text-base px-4 md:px-6 py-2 md:py-3">Refresh</button>
             </div>
-            <div class="relative" style="height: 360px;">
+            <div class="relative" style="height: 280px;">
                 <canvas id="graphCanvas"></canvas>
             </div>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-3">
-            <div class="luxury-card rounded-2xl p-5 text-center">
-                <p class="text-xs uppercase tracking-wider text-gray-500">Total Hours</p>
-                <div class="text-2xl font-light text-gray-900 mt-2" id="totalHours">0h</div>
+        <div class="grid gap-3 md:gap-4 grid-cols-3">
+            <div class="luxury-card rounded-xl md:rounded-2xl p-3 md:p-5 text-center">
+                <p class="text-[10px] md:text-xs uppercase tracking-wider text-gray-500">Total Hours</p>
+                <div class="text-xl md:text-2xl font-light text-gray-900 mt-1 md:mt-2" id="totalHours">0h</div>
             </div>
-            <div class="luxury-card rounded-2xl p-5 text-center">
-                <p class="text-xs uppercase tracking-wider text-gray-500">Average Per Day</p>
-                <div class="text-2xl font-light text-gray-900 mt-2" id="avgHours">0h</div>
+            <div class="luxury-card rounded-xl md:rounded-2xl p-3 md:p-5 text-center">
+                <p class="text-[10px] md:text-xs uppercase tracking-wider text-gray-500">Avg/Day</p>
+                <div class="text-xl md:text-2xl font-light text-gray-900 mt-1 md:mt-2" id="avgHours">0h</div>
             </div>
-            <div class="luxury-card rounded-2xl p-5 text-center">
-                <p class="text-xs uppercase tracking-wider text-gray-500">Best Day</p>
-                <div class="text-2xl font-light text-gray-900 mt-2" id="maxHours">0h</div>
+            <div class="luxury-card rounded-xl md:rounded-2xl p-3 md:p-5 text-center">
+                <p class="text-[10px] md:text-xs uppercase tracking-wider text-gray-500">Best Day</p>
+                <div class="text-xl md:text-2xl font-light text-gray-900 mt-1 md:mt-2" id="maxHours">0h</div>
             </div>
         </div>
     </main>
@@ -175,8 +190,12 @@
 
         let currentDays = 30;
         let chartInstance = null;
+        let currentMetric = 'important';
+        let maWindow = 14;
 
-        const metricSelect = document.getElementById('metricSelect');
+        const metricSelectBtn = document.getElementById('metricSelectBtn');
+        const metricSelectLabel = document.getElementById('metricSelectLabel');
+        const metricSelectMenu = document.getElementById('metricSelectMenu');
         const chartTitle = document.getElementById('chartTitle');
         const chartSubtitle = document.getElementById('chartSubtitle');
         const totalHoursEl = document.getElementById('totalHours');
@@ -196,7 +215,7 @@
             return `${yyyy}-${mm}-${dd}`;
         }
 
-        function movingAverage(values, windowSize = 7) {
+        function movingAverage(values, windowSize = 14) {
             const result = [];
             for (let i = 0; i < values.length; i++) {
                 const start = Math.max(0, i - windowSize + 1);
@@ -214,7 +233,7 @@
             const gradient = ctx.createLinearGradient(0, 0, 0, 320);
             gradient.addColorStop(0, `${color}55`);
             gradient.addColorStop(1, `${color}05`);
-            const avgValues = movingAverage(values, 7);
+            const avgValues = movingAverage(values, maWindow);
             const avgColor = color.startsWith('#') && color.length === 7 ? `${color}99` : 'rgba(17,24,39,0.55)';
 
             const shortLabels = labels.map(label => {
@@ -223,7 +242,7 @@
             });
 
             const avgDataset = {
-                label: 'Moving avg (7d)',
+                label: `Moving avg (${maWindow}d)`,
                 data: avgValues,
                 borderColor: avgColor,
                 borderWidth: 2,
@@ -307,7 +326,7 @@
         }
 
         async function fetchGraphData() {
-            const metricKey = metricSelect.value;
+            const metricKey = currentMetric;
             const end = getEndDate();
             const url = `/api/graph-data?metric=${encodeURIComponent(metricKey)}&days=${currentDays}&end=${end}`;
             try {
@@ -325,7 +344,24 @@
             }
         }
 
-        metricSelect.addEventListener('change', fetchGraphData);
+        metricSelectBtn.addEventListener('click', () => {
+            metricSelectMenu.classList.toggle('hidden');
+        });
+
+        document.querySelectorAll('.metric-option').forEach(option => {
+            option.addEventListener('click', () => {
+                currentMetric = option.dataset.value;
+                metricSelectLabel.textContent = option.textContent;
+                metricSelectMenu.classList.add('hidden');
+                fetchGraphData();
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#metricSelectBtn') && !e.target.closest('#metricSelectMenu')) {
+                metricSelectMenu.classList.add('hidden');
+            }
+        });
         document.querySelectorAll('.range-pill').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.range-pill').forEach(b => b.classList.remove('active'));
@@ -335,9 +371,18 @@
             });
         });
 
+        document.querySelectorAll('.ma-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.ma-pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                maWindow = Number(btn.dataset.ma || 14);
+                fetchGraphData();
+            });
+        });
+
         document.getElementById('refreshGraph').addEventListener('click', fetchGraphData);
 
-        metricSelect.value = 'important';
+        currentMetric = 'important';
         fetchGraphData();
     </script>
 </body>
