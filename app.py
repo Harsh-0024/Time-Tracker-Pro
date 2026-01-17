@@ -28,6 +28,7 @@ SHEETY_ENDPOINT_ENV = "SHEETY_ENDPOINT"
 API_AUTH_TOKEN_ENV = "TIME_TRACKER_API_TOKEN"
 SYNC_INTERVAL_SECONDS = int(os.getenv("SYNC_INTERVAL_SECONDS", "300"))
 SYNC_FAIL_COOLDOWN_SECONDS = int(os.getenv("SYNC_FAIL_COOLDOWN_SECONDS", "1800"))
+SPECIAL_TAGS = {"Work", "Necessity", "Soul", "Rest", "Waste"}
 
 _LAST_SYNC_TS: Optional[datetime] = None
 _LAST_SYNC_FAIL_TS: Optional[datetime] = None
@@ -50,9 +51,32 @@ def normalize_tag(raw: Optional[str]) -> str:
     s = str(raw or "").strip()
     if not s:
         return ""
-    s = re.sub(r"[^A-Za-z\s]+$", "", s)
-    s = re.sub(r"\s+", " ", s)
-    return s.title()
+    parts = re.split(r"[,.]", s)
+    cleaned_parts: List[str] = []
+    for part in parts:
+        cleaned = re.sub(r"[^A-Za-z\s]+$", "", part)
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        if not cleaned:
+            continue
+        if cleaned.lower() in {"undefined", "null", "none", "nan", "urg", "urgent", "imp", "important"}:
+            continue
+        cleaned = cleaned.title()
+        if cleaned and cleaned not in cleaned_parts:
+            cleaned_parts.append(cleaned)
+    return ", ".join(cleaned_parts)
+
+
+def filter_special_tags(raw: Optional[str]) -> List[str]:
+    normalized = normalize_tag(raw)
+    if not normalized:
+        return []
+    parts = [p.strip() for p in normalized.split(",") if p.strip()]
+    return [p for p in parts if p in SPECIAL_TAGS]
+
+
+def primary_special_tag(raw: Optional[str]) -> str:
+    tags = filter_special_tags(raw)
+    return tags[0] if tags else "Waste"
 
 def get_db_connection() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_NAME)
@@ -145,24 +169,38 @@ class TimeLogParser:
         task_name, tag = raw_text.strip(), ""
         is_urg, is_imp = False, False
 
+        tags: List[str] = []
+
+        def apply_token(raw_token: str) -> None:
+            nonlocal is_urg, is_imp
+            token = re.sub(r"[^A-Za-z]+", "", raw_token).lower()
+            if not token:
+                return
+            if token in {"urg", "urgent"}:
+                is_urg = True
+                return
+            if token in {"imp", "important"}:
+                is_imp = True
+                return
+            if token in {"work", "necessity", "soul", "rest", "waste"}:
+                canonical = token.title()
+                if canonical not in tags:
+                    tags.append(canonical)
+                return
+            return
+
         if "." in raw_text:
-            parts = raw_text.split(".", 1)
-            task_name = parts[0].strip()
-            meta_part = parts[1].strip()
+            before, after = raw_text.split(".", 1)
+            task_name = before.strip() or task_name
+            meta = after.strip()
+            if meta:
+                for tok in re.split(r"[\s,]+", meta):
+                    apply_token(tok)
+        else:
+            for tok in re.split(r"\s+", raw_text.strip()):
+                apply_token(tok)
 
-            # 1. Check Flags
-            is_urg = "urg" in meta_part.lower()
-            is_imp = "imp" in meta_part.lower()
-
-            # 2. Extract Tag (The Fix: Explicitly IGNORE urg/imp)
-            if meta_part:
-                words = meta_part.split()
-                # Filter out reserved keywords (case insensitive)
-                valid_words = [w for w in words if w.lower() not in ["urg", "imp"]]
-
-                if valid_words:
-                    # Take the first valid word as the tag
-                    tag = normalize_tag(valid_words[0])
+        tag = ", ".join(tags) if tags else "Waste"
 
         end_dt = explicit_time_b if explicit_time_b else client_now
 
@@ -360,9 +398,9 @@ def fetch_local_data() -> pd.DataFrame:
         for _, row in df.iterrows():
             start = pd.to_datetime(f"{row['start_date']} {row['start_time']}")
             end = pd.to_datetime(f"{row['end_date']} {row['end_time']}")
-            tag_value = normalize_tag(row["tags"])
-            if not tag_value:
-                tag_value = "Waste"
+            special_tags = filter_special_tags(row["tags"])
+            tag_value = ", ".join(special_tags) if special_tags else "Waste"
+            primary_tag = special_tags[0] if special_tags else "Waste"
             final_rows.append(
                 {
                     "id": row["id"],
@@ -374,6 +412,8 @@ def fetch_local_data() -> pd.DataFrame:
                     "task": row["task"],
                     "duration": row["duration"],
                     "tag": tag_value,
+                    "primary_tag": primary_tag,
+                    "special_tags": special_tags,
                     "urgent": bool(row["urg"]),
                     "important": bool(row["imp"]),
                 }
@@ -518,10 +558,10 @@ def dashboard():
     tag_data: List[float] = []
     if not period_df.empty:
         tag_df = period_df.copy()
-        empty_tag = tag_df["tag"].astype(str).str.len() == 0
-        tag_df.loc[empty_tag, "tag"] = "Waste"
+        if "primary_tag" not in tag_df.columns:
+            tag_df["primary_tag"] = tag_df["tag"].apply(primary_special_tag)
         tag_counts = (
-            tag_df.groupby("tag")["duration"]
+            tag_df.groupby("primary_tag")["duration"]
             .sum()
             .sort_values(ascending=False)
         )
@@ -641,7 +681,11 @@ def get_tasks():
     elif filter_type == "not_urgent":
         filtered = period_df[~period_df["urgent"]]
     elif filter_type == "tag" and tag_name:
-        filtered = period_df[period_df["tag"] == tag_name]
+        tag_key = primary_special_tag(tag_name)
+        if "special_tags" in period_df.columns:
+            filtered = period_df[period_df["special_tags"].apply(lambda tags: tag_key in (tags or []))]
+        else:
+            filtered = period_df[period_df["tag"].apply(lambda t: tag_key in filter_special_tags(t))]
     else:
         filtered = period_df
 
@@ -745,11 +789,11 @@ def get_tags():
         return jsonify({"tags": []})
 
     tag_df = period_df.copy()
-    empty_tag = tag_df["tag"].astype(str).str.len() == 0
-    tag_df.loc[empty_tag, "tag"] = "Waste"
+    if "primary_tag" not in tag_df.columns:
+        tag_df["primary_tag"] = tag_df["tag"].apply(primary_special_tag)
 
     tag_stats: List[Dict[str, Any]] = []
-    for tag, group in tag_df.groupby("tag"):
+    for tag, group in tag_df.groupby("primary_tag"):
         if not tag:
             continue
         total_minutes = int(group["duration"].sum())

@@ -708,11 +708,30 @@
             'Waste': '#9F1239'
         };
 
+        const SPECIAL_TAGS = Object.keys(TAG_COLOR_MAP);
+
+        function extractSpecialTags(tag) {
+            if (!tag) return [];
+            return String(tag)
+                .split(',')
+                .map(part => {
+                    let clean = String(part || '').trim();
+                    clean = clean.replace(/[^A-Za-z\s]+$/g, '').replace(/\s+/g, ' ').trim();
+                    if (!clean || /^(undefined|null|none|nan|urg|urgent|imp|important)$/i.test(clean)) return '';
+                    return clean.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+                })
+                .filter(Boolean)
+                .filter(tagName => SPECIAL_TAGS.includes(tagName));
+        }
+
         function normalizeTagName(tag) {
-            if (!tag) return '';
-            const trimmed = String(tag).trim();
-            if (!trimmed) return '';
-            return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+            const tags = extractSpecialTags(tag);
+            return tags[0] || 'Waste';
+        }
+
+        function formatTagNames(tag) {
+            const tags = extractSpecialTags(tag);
+            return tags.length ? tags.join(', ') : 'Waste';
         }
 
         function hoursToHuman(h) {
@@ -846,15 +865,16 @@
                 const badges = [];
                 if (task.important) badges.push('<span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-full">Important</span>');
                 if (task.urgent) badges.push('<span class="px-2 py-1 bg-red-50 text-red-700 text-xs rounded-full">Urgent</span>');
-                let displayTag = normalizeTagName(task.tag);
+                const displayTag = formatTagNames(task.tag);
+                const primaryTag = normalizeTagName(task.tag);
                 let tagBadge = '';
                 if (displayTag) {
                     let tagClass = 'px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-700';
-                    if (!task.important && !task.urgent && displayTag === 'Waste') {
+                    if (!task.important && !task.urgent && primaryTag === 'Waste') {
                         tagClass = 'px-2 py-0.5 bg-slate-100 rounded-full text-xs text-slate-700';
-                    } else if (displayTag === 'Necessity') {
+                    } else if (primaryTag === 'Necessity') {
                         tagClass = 'px-2 py-0.5 bg-amber-50 rounded-full text-xs text-amber-800';
-                    } else if (displayTag === 'Work') {
+                    } else if (primaryTag === 'Work') {
                         tagClass = 'px-2 py-0.5 bg-emerald-50 rounded-full text-xs text-emerald-700';
                     }
                     tagBadge = `<span class="${tagClass}">${displayTag}</span>`;
@@ -1282,80 +1302,82 @@
             window.dateCursor = new Date(window.currentDate);
             window.renderDateGrid();
 
-            {% if tags.labels %}
             const tagCanvas = document.getElementById('tagChart');
             const tagCtx = tagCanvas ? tagCanvas.getContext('2d') : null;
             const isMobile = window.matchMedia('(max-width: 767px)').matches;
             const tagPalette = ['#111827', '#16A34A', '#F59E0B', '#E11D48', '#64748B', '#0369A1', '#7C3AED', '#F97316'];
-            const tagLabels = {{ tags.labels | safe }};
-            const tagColors = tagLabels.map((label, idx) => TAG_COLOR_MAP[label] || tagPalette[idx % tagPalette.length]);
-            try {
-                const tagChart = new Chart(tagCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: tagLabels,
-                        datasets: [{
-                            data: {{ tags.data | safe }},
-                            backgroundColor: tagColors,
-                            borderWidth: 0,
-                            hoverOffset: 8
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: isMobile ? '80%' : '75%',
-                        plugins: {
-                            legend: {
-                                display: !isMobile,
-                                position: 'bottom',
-                                maxWidth: 280,
-                                labels: {
-                                    usePointStyle: true,
-                                    font: { family: 'Inter', size: 10, weight: '400' },
-                                    padding: 10,
-                                    color: '#6B7280',
-                                    boxWidth: 8
+            const tagLabels = JSON.parse('{{ (tags.labels or []) | tojson }}');
+            const tagData = JSON.parse('{{ (tags.data or []) | tojson }}');
+            if (tagCtx && tagLabels.length) {
+                const tagColors = tagLabels.map((label, idx) => TAG_COLOR_MAP[label] || tagPalette[idx % tagPalette.length]);
+                try {
+                    const tagChart = new Chart(tagCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: tagLabels,
+                            datasets: [{
+                                data: tagData,
+                                backgroundColor: tagColors,
+                                borderWidth: 0,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: isMobile ? '80%' : '75%',
+                            plugins: {
+                                legend: {
+                                    display: !isMobile,
+                                    position: 'bottom',
+                                    maxWidth: 280,
+                                    labels: {
+                                        usePointStyle: true,
+                                        font: { family: 'Inter', size: 10, weight: '400' },
+                                        padding: 10,
+                                        color: '#6B7280',
+                                        boxWidth: 8
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(31, 41, 55, 0.95)',
+                                    padding: 12,
+                                    titleFont: { family: 'Inter', size: 12, weight: '500' },
+                                    bodyFont: { family: 'Inter', size: 11 },
+                                    cornerRadius: 8
                                 }
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(31, 41, 55, 0.95)',
-                                padding: 12,
-                                titleFont: { family: 'Inter', size: 12, weight: '500' },
-                                bodyFont: { family: 'Inter', size: 11 },
-                                cornerRadius: 8
                             }
                         }
-                    }
-                });
-                tagChart.options.onClick = function(evt, elements) {
-                    if (!elements || !elements.length) return;
-                    const index = elements[0].index;
-                    const label = tagChart.data.labels[index];
-                    window.applyFilter('tag', label, label);
-                };
-                tagChart.update();
-                const mobileLegend = document.getElementById('mobileTagLegend');
-                if (isMobile && mobileLegend) {
-                    tagChart.options.plugins.legend.display = false;
+                    });
+                    tagChart.options.onClick = function(evt, elements) {
+                        if (!elements || !elements.length) return;
+                        const index = elements[0].index;
+                        const label = tagChart.data.labels[index];
+                        window.applyFilter('tag', label, label);
+                    };
                     tagChart.update();
-                    mobileLegend.innerHTML = tagLabels.map((label, idx) => (
-                        `<span class="inline-flex items-center gap-1">
-                            <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${tagColors[idx]}"></span>
-                            ${label}
-                        </span>`
-                    )).join('');
-                }
-            } catch (e) {
-                const wrap = document.getElementById('tags');
-                if (wrap) {
-                    const holder = wrap.querySelector('[aria-label=\"Time spent by tag category\"]');
-                    if (holder) {
-                        holder.innerHTML = '<div class=\"text-center text-xs text-gray-400\">Unable to render chart</div>';
+                    const mobileLegend = document.getElementById('mobileTagLegend');
+                    if (isMobile && mobileLegend) {
+                        tagChart.options.plugins.legend.display = false;
+                        tagChart.update();
+                        mobileLegend.innerHTML = tagLabels.map((label, idx) => (
+                            `<span class="inline-flex items-center gap-1">
+                                <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${tagColors[idx]}"></span>
+                                ${label}
+                            </span>`
+                        )).join('');
+                    }
+                } catch (e) {
+                    const wrap = document.getElementById('tags');
+                    if (wrap) {
+                        const holder = wrap.querySelector('[aria-label="Time spent by tag category"]');
+                        if (holder) {
+                            holder.innerHTML = '<div class="text-center text-xs text-gray-400">Unable to render chart</div>';
+                        }
                     }
                 }
             }
-            {% endif %}
+
             // Decimal handling helpers: sum in minutes to avoid float drift, format using fixed decimals
             function ensureFinite(n) {
                 const v = Number(n);
