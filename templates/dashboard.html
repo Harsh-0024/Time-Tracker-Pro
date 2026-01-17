@@ -325,7 +325,6 @@
                 <button id="viewFullBtnMobile" onclick="viewFullDay()" class="px-5 py-3 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-lg active:scale-[0.98] transition-transform">
                     View Full Day
                 </button>
-                <a href="{{ url_for('graphs') }}" class="px-4 py-3 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-sm font-semibold text-gray-700 shadow-sm">Graphs</a>
             </div>
 
             <!-- Week Selector (only show for day/week views) -->
@@ -606,6 +605,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 7h9.5a2.5 2.5 0 012.5 2.5V19L13 15H5a2 2 0 01-2-2V9a2 2 0 012-2z" />
                     </svg>
                     <span class="text-[10px] font-medium">Tags</span>
+                </button>
+                <button id="navGraphs" class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 18V6m0 12h16M8 14l3-3 3 2 4-5" />
+                    </svg>
+                    <span class="text-[10px] font-medium">Graphs</span>
                 </button>
             </div>
         </div>
@@ -1334,7 +1339,7 @@
         // Initialize on DOM load
         document.addEventListener('DOMContentLoaded', function() {
             function setActiveNav(id) {
-                ['navHome','navMatrix','navTags','navFilter'].forEach(k => {
+                ['navHome','navMatrix','navTags','navGraphs','navFilter'].forEach(k => {
                     const el = document.getElementById(k);
                     if (!el) return;
                     if (k === id) {
@@ -1354,10 +1359,15 @@
             const homeBtn = document.getElementById('navHome');
             const matrixBtn = document.getElementById('navMatrix');
             const tagsBtn = document.getElementById('navTags');
+            const graphsBtn = document.getElementById('navGraphs');
             const filterBtn = document.getElementById('navFilter');
             if (homeBtn) homeBtn.onclick = () => { smoothScrollTo('top'); setActiveNav('navHome'); };
             if (matrixBtn) matrixBtn.onclick = () => { smoothScrollTo('matrix'); setActiveNav('navMatrix'); };
             if (tagsBtn) tagsBtn.onclick = () => { smoothScrollTo('tags'); setActiveNav('navTags'); };
+            if (graphsBtn) graphsBtn.onclick = () => {
+                setActiveNav('navGraphs');
+                window.location.href = "{{ url_for('graphs') }}";
+            };
             if (filterBtn) {
                 filterBtn.onclick = () => {
                     openMobileFilter();
