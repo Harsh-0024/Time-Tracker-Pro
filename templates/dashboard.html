@@ -279,6 +279,7 @@
                             <div class="px-3 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs font-semibold text-gray-800">
                                 {{ current_user.username }}
                             </div>
+                            <a href="{{ url_for('graphs') }}" class="px-3 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs font-semibold text-gray-700 hover:bg-[#F7F1E6] transition-all">Graphs</a>
                             <a href="{{ url_for('settings') }}" class="px-3 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs font-semibold text-gray-700 hover:bg-[#F7F1E6] transition-all">Settings</a>
                             <a href="{{ url_for('logout') }}" class="px-3 py-2 rounded-full bg-gray-900 text-amber-300 text-xs font-semibold shadow-lg">Logout</a>
                         </div>
@@ -324,6 +325,7 @@
                 <button id="viewFullBtnMobile" onclick="viewFullDay()" class="px-5 py-3 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-lg active:scale-[0.98] transition-transform">
                     View Full Day
                 </button>
+                <a href="{{ url_for('graphs') }}" class="px-4 py-3 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-sm font-semibold text-gray-700 shadow-sm">Graphs</a>
             </div>
 
             <!-- Week Selector (only show for day/week views) -->
