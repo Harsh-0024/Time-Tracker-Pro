@@ -183,7 +183,10 @@ def _token_is_valid(headers: Dict[str, str]) -> bool:
     expected = os.getenv(API_AUTH_TOKEN_ENV)
     if not expected:
         return False
-    provided = headers.get("X-API-Token") or request.args.get("token") or request.cookies.get("tt_token")
+    allow_cookie_token = _get_user_count() <= 1
+    provided = headers.get("X-API-Token") or request.args.get("token")
+    if allow_cookie_token and not provided:
+        provided = request.cookies.get("tt_token")
     return bool(provided and provided == expected)
 
 
@@ -429,9 +432,15 @@ def sync_cloud_data(user_id: int, force: bool = False) -> None:
         logger.info("Cloud sync disabled by env; skipping (force=%s)", force)
         return
     settings = get_user_settings(int(user_id))
-    url = (settings.get("sheety_endpoint") or "").strip() or os.getenv(SHEETY_ENDPOINT_ENV)
+    user_url = (settings.get("sheety_endpoint") or "").strip()
+    env_url = (os.getenv(SHEETY_ENDPOINT_ENV) or "").strip()
+    allow_env_fallback = _get_user_count() <= 1
+    url = user_url or (env_url if allow_env_fallback else "")
     if not url:
-        logger.info("SHEETY_ENDPOINT not configured; skipping cloud sync")
+        if allow_env_fallback:
+            logger.info("SHEETY_ENDPOINT not configured; skipping cloud sync")
+        else:
+            logger.info("Sheety endpoint not set for user_id=%s; multi-user mode requires per-user settings", int(user_id))
         return
 
     headers: Dict[str, str] = {}
@@ -461,14 +470,50 @@ def sync_cloud_data(user_id: int, force: bool = False) -> None:
         if "id" in cloud_df.columns:
             cloud_df = cloud_df.sort_values("id")
 
+        def _row_text(row: pd.Series, keys: Iterable[str]) -> str:
+            for key in keys:
+                value = row.get(key)
+                if value is None or (isinstance(value, float) and pd.isna(value)):
+                    continue
+                text = str(value).strip()
+                if text and text.lower() != "nan":
+                    return text
+            return ""
+
         parser = TimeLogParser()
         parsed_rows: List[Dict[str, Any]] = []
         previous_end: Optional[datetime] = None
 
         for _, row in cloud_df.iterrows():
-            col_a = str(row.get("colA", "") or "")
-            col_b = str(row.get("colB", "") or str(row.get("rawTask", "")))
-            client_now = row.get("loggedTime")
+            col_a = _row_text(
+                row,
+                (
+                    "colA",
+                    "startTime",
+                    "rawStart",
+                    "start_time",
+                    "start time",
+                ),
+            )
+            col_b = _row_text(
+                row,
+                (
+                    "colB",
+                    "taskDetails",
+                    "rawTask",
+                    "task",
+                    "task_details",
+                    "task details",
+                ),
+            )
+            client_now = _row_text(
+                row,
+                (
+                    "loggedTime",
+                    "logged_time",
+                    "logged time",
+                ),
+            )
 
             parsed = parser.parse_row(col_a, col_b, client_now, previous_end)
             parsed_rows.append(parsed)
@@ -709,8 +754,13 @@ def login():
                 session.permanent = remember
 
                 settings = get_user_settings(int(user["id"]))
-                if not (settings.get("sheety_endpoint") or os.getenv(SHEETY_ENDPOINT_ENV)):
-                    return redirect(url_for("settings"))
+                multi_user = _get_user_count() > 1
+                if multi_user:
+                    if not settings.get("sheety_endpoint"):
+                        return redirect(url_for("settings"))
+                else:
+                    if not (settings.get("sheety_endpoint") or os.getenv(SHEETY_ENDPOINT_ENV)):
+                        return redirect(url_for("settings"))
 
                 return redirect(next_url or url_for("dashboard"))
 
@@ -762,7 +812,12 @@ def register():
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("login"))
+    resp = redirect(url_for("login"))
+    try:
+        resp.set_cookie("tt_token", "", expires=0)
+    except Exception:
+        pass
+    return resp
 
 
 @app.route("/settings", methods=["GET", "POST"])
@@ -779,11 +834,13 @@ def settings():
 
     user_row = _get_user_by_id(user_id)
     current_user = {"id": user_id, "username": (user_row["username"] if user_row else "")}
+    allow_env_fallback = _get_user_count() <= 1
+    env_sheety = (os.getenv(SHEETY_ENDPOINT_ENV) or "").strip() if allow_env_fallback else ""
     return render_template(
         "settings.html",
         settings=current,
         current_user=current_user,
-        env_sheety=os.getenv(SHEETY_ENDPOINT_ENV, ""),
+        env_sheety=env_sheety,
     )
 
 
@@ -876,7 +933,7 @@ def dashboard():
         current_user=current_user,
     ))
     expected = os.getenv(API_AUTH_TOKEN_ENV)
-    if expected:
+    if expected and _get_user_count() <= 1:
         try:
             resp.set_cookie("tt_token", expected, httponly=True, samesite="Lax")
         except Exception:
@@ -1204,6 +1261,8 @@ def download_db():
     """
     try:
         headers = dict(request.headers)
+        if _get_user_count() > 1:
+            return "Disabled in multi-user mode", 403
         if not _token_is_valid(headers):
             return "Unauthorized", 401
         resolved_user_id = resolve_request_user_id(headers)
@@ -1225,8 +1284,9 @@ def sync_status():
             user_id = resolve_request_user_id(headers)
         if user_id is not None:
             settings = get_user_settings(int(user_id))
+            allow_env_fallback = _get_user_count() <= 1
             status = {
-                "sheety_configured": bool(settings.get("sheety_endpoint") or os.getenv(SHEETY_ENDPOINT_ENV)),
+                "sheety_configured": bool((settings.get("sheety_endpoint") or "").strip() or ((os.getenv(SHEETY_ENDPOINT_ENV) or "").strip() if allow_env_fallback else "")),
                 "disable_cloud_sync": bool(os.getenv("DISABLE_CLOUD_SYNC")),
                 "last_sync": _LAST_SYNC_TS_BY_USER.get(int(user_id)).isoformat() if _LAST_SYNC_TS_BY_USER.get(int(user_id)) else None,
                 "last_sync_fail": _LAST_SYNC_FAIL_TS_BY_USER.get(int(user_id)).isoformat() if _LAST_SYNC_FAIL_TS_BY_USER.get(int(user_id)) else None,
