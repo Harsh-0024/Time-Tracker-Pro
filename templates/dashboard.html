@@ -481,9 +481,19 @@
                     </div>
 
                     <!-- Total - Neutral Grey/Beige (pure fact, no emotion) -->
-                    <div class="luxury-card rounded-xl md:rounded-2xl p-3 md:p-5 bg-gradient-to-br from-stone-100/50 to-neutral-50/30 border-stone-200/40 flex flex-col justify-center items-center col-span-2 md:col-span-1">
-                        <div class="text-[8px] md:text-[10px] text-stone-500 font-medium uppercase tracking-wider mb-1 md:mb-2">Total</div>
-                        <div class="text-xl md:text-2xl font-light text-stone-700"><span class="js-hover-hours" data-hours="{{ matrix.total_hours }}">{{ matrix.total_hours }}h</span></div>
+                    <div class="matrix-card luxury-card rounded-xl md:rounded-2xl p-3 md:p-5 bg-gradient-to-br from-stone-100/50 to-neutral-50/30 border-stone-200/40 hover:shadow-lg transition-all duration-300 relative overflow-hidden col-span-2 md:col-span-1">
+                        <div class="absolute bottom-0 left-0 h-1.5 bg-stone-300/40 transition-all duration-500" style="width: 100%"></div>
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-start mb-2 md:mb-4">
+                                <div>
+                                    <h4 class="text-stone-600 font-semibold text-sm md:text-base mb-0.5">Total</h4>
+                                    <p class="text-[8px] md:text-[10px] text-stone-500/80 font-medium uppercase tracking-wider">All Time Logged</p>
+                                </div>
+                                <div class="text-lg md:text-xl text-stone-400/70">∑</div>
+                            </div>
+                            <div class="text-2xl md:text-3xl font-light text-stone-700 mb-1"><span class="js-hover-hours" data-hours="{{ matrix.total_hours }}">{{ matrix.total_hours }}h</span></div>
+                            <div class="text-[10px] md:text-xs font-medium text-stone-500/70">100%</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -664,11 +674,11 @@
         };
 
         const TAG_COLOR_MAP = {
-            'Work': '#3B82F6',
-            'Necessity': '#F97316',
-            'Soul': '#A855F7',
-            'Rest': '#06B6D4',
-            'Waste': '#6B7280'
+            'Work': '#10B981',
+            'Necessity': '#F59E0B',
+            'Soul': '#6366F1',
+            'Rest': '#C4B5FD',
+            'Waste': '#DC2626'
         };
 
         const SPECIAL_TAGS = Object.keys(TAG_COLOR_MAP);
@@ -1079,16 +1089,28 @@
                         labels: labels,
                         datasets: [{
                             data: values,
-                            backgroundColor: colors
+                            backgroundColor: colors,
+                            borderWidth: 2,
+                            borderColor: '#FFFFFF',
+                            hoverOffset: 10,
+                            hoverBorderWidth: 3
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        spacing: 3,
                         plugins: {
                             legend: {
                                 position: 'bottom',
                                 labels: {
+                                    font: { family: 'Inter', size: 11, weight: '500' },
+                                    padding: 14,
+                                    color: '#374151',
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    boxWidth: 10,
+                                    boxHeight: 10,
                                     generateLabels: function(chart) {
                                         const labels = chart.data.labels || [];
                                         const data = chart.data.datasets[0]?.data || [];
@@ -1130,11 +1152,15 @@
                                 }
                             },
                             tooltip: {
-                                backgroundColor: 'rgba(31, 41, 55, 0.95)',
-                                padding: 12,
-                                titleFont: { family: 'Inter', size: 12, weight: '500' },
-                                bodyFont: { family: 'Inter', size: 11 },
-                                cornerRadius: 8,
+                                backgroundColor: 'rgba(17, 24, 39, 0.96)',
+                                padding: 14,
+                                titleFont: { family: 'Inter', size: 13, weight: '600' },
+                                bodyFont: { family: 'Inter', size: 12, weight: '400' },
+                                cornerRadius: 10,
+                                displayColors: true,
+                                boxWidth: 10,
+                                boxHeight: 10,
+                                boxPadding: 6,
                                 callbacks: {
                                     label: function(context) {
                                         const raw = context.label;
@@ -1306,14 +1332,17 @@
                             datasets: [{
                                 data: tagData,
                                 backgroundColor: tagColors,
-                                borderWidth: 0,
-                                hoverOffset: 8
+                                borderWidth: 2,
+                                borderColor: '#FFFFFF',
+                                hoverOffset: 12,
+                                hoverBorderWidth: 3
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            cutout: isMobile ? '80%' : '75%',
+                            cutout: isMobile ? '70%' : '68%',
+                            spacing: 3,
                             plugins: {
                                 legend: {
                                     display: !isMobile,
@@ -1321,18 +1350,24 @@
                                     maxWidth: 280,
                                     labels: {
                                         usePointStyle: true,
-                                        font: { family: 'Inter', size: 10, weight: '400' },
-                                        padding: 10,
-                                        color: '#6B7280',
-                                        boxWidth: 8
+                                        pointStyle: 'circle',
+                                        font: { family: 'Inter', size: 11, weight: '500' },
+                                        padding: 14,
+                                        color: '#374151',
+                                        boxWidth: 10,
+                                        boxHeight: 10
                                     }
                                 },
                                 tooltip: {
-                                    backgroundColor: 'rgba(31, 41, 55, 0.95)',
-                                    padding: 12,
-                                    titleFont: { family: 'Inter', size: 12, weight: '500' },
-                                    bodyFont: { family: 'Inter', size: 11 },
-                                    cornerRadius: 8,
+                                    backgroundColor: 'rgba(17, 24, 39, 0.96)',
+                                    padding: 14,
+                                    titleFont: { family: 'Inter', size: 13, weight: '600' },
+                                    bodyFont: { family: 'Inter', size: 12, weight: '400' },
+                                    cornerRadius: 10,
+                                    displayColors: true,
+                                    boxWidth: 10,
+                                    boxHeight: 10,
+                                    boxPadding: 6,
                                     callbacks: {
                                         label: function(context) {
                                             const label = context.label || '';
