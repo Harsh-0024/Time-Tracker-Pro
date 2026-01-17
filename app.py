@@ -925,6 +925,12 @@ def graph_data():
     if "primary_tag" not in df.columns:
         df["primary_tag"] = df["tag"].apply(primary_special_tag)
 
+    min_complete_minutes = 10 * 60
+    latest_total = df.loc[df["date"] == end_date, "duration"].sum()
+    if latest_total < min_complete_minutes:
+        end_date = end_date - timedelta(days=1)
+        start_date = end_date - timedelta(days=days - 1)
+
     df = df[(df["date"] >= start_date) & (df["date"] <= end_date)]
     if df.empty:
         labels = [

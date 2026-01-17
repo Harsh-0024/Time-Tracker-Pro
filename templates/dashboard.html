@@ -1025,6 +1025,10 @@
             const totalHours = totalMinutes / 60;
             const sharePct = periodMinutes ? Math.round((totalMinutes / periodMinutes) * 100) : 0;
             const avgMinutes = taskCount ? Math.round(totalMinutes / taskCount) : 0;
+            const period = window.currentPeriod || 'day';
+            const isMultiDay = period === 'week' || period === 'month';
+            const dayCount = isMultiDay ? window.getPeriodDays() : 1;
+            window.modalStatsMode = isMultiDay ? 'avg' : 'total';
             let importantMinutes = 0;
             let urgentMinutes = 0;
             const quadrantMinutes = { Critical: 0, Growth: 0, Drudgery: 0, Waste: 0 };
@@ -1084,58 +1088,83 @@
                 </div>
             `;
 
-            const totalValue = `<span class="js-hover-hours hover-swap" data-hours="${totalHours}">${formatHours(totalHours || 0, 1)}h</span>`;
-            const stats = [];
             const isQuadrant = ['q1', 'q2', 'q3', 'q4'].includes(filterType);
             const isTag = filterType === 'tag';
+            const renderStats = () => {
+                const useAverage = isMultiDay && window.modalStatsMode === 'avg';
+                const divisor = useAverage ? Math.max(dayCount, 1) : 1;
+                const toHours = (minutes) => (ensureFinite(minutes) / 60) / divisor;
+                const modeLabel = useAverage ? 'Avg/day' : 'Total';
+                const hoursValue = (minutes) => {
+                    const hours = toHours(minutes);
+                    return `<span class="js-hover-hours hover-swap" data-hours="${hours}">${formatHours(hours, 1)}h</span>`;
+                };
 
-            if (filterType === 'all') {
-                const base = totalMinutes || 1;
-                const gMin = quadrantMinutes.Growth || 0;
-                const dMin = quadrantMinutes.Drudgery || 0;
-                const wMin = quadrantMinutes.Waste || 0;
-                const gVal = `<span class="js-hover-hours hover-swap" data-hours="${gMin / 60}">${formatHours(gMin / 60, 1)}h</span>`;
-                const dVal = `<span class="js-hover-hours hover-swap" data-hours="${dMin / 60}">${formatHours(dMin / 60, 1)}h</span>`;
-                const wVal = `<span class="js-hover-hours hover-swap" data-hours="${wMin / 60}">${formatHours(wMin / 60, 1)}h</span>`;
-                stats.push(statItem(gVal, `${pct(gMin, base)}% discipline (imp, not urgent)`));
-                stats.push(statItem(dVal, `${pct(dMin, base)}% reactive (urg, not important)`));
-                stats.push(statItem(wVal, `${pct(wMin, base)}% waste (neither)`));
-            } else if (isTag) {
-                stats.push(statItem(totalValue, `Time in view · ${sharePct}% of period`));
-                stats.push(statItem(`${pct(importantMinutes, totalMinutes)}%`, 'Important share'));
-                stats.push(statItem(`${pct(urgentMinutes, totalMinutes)}%`, 'Urgent share'));
-            } else if (isQuadrant) {
-                stats.push(statItem(totalValue, `Time in view · ${sharePct}% of period`));
-                const parent = parentShareForQuadrant(filterType);
-                stats.push(statItem(`${parent.pct}%`, parent.label || 'Share of parent'));
-                const longestVal = maxSessionMin ? hoursToHuman(maxSessionMin / 60) : '0 min';
-                stats.push(statItem(longestVal, 'Longest session'));
-            } else if (filterType === 'important') {
-                stats.push(statItem(totalValue, `Important · ${sharePct}% of period`));
-                stats.push(statItem(`${pct(quadrantMinutes.Growth, totalMinutes)}%`, 'Growth (not urgent)'));
-                stats.push(statItem(`${pct(quadrantMinutes.Critical, totalMinutes)}%`, 'Critical (urgent)'));
-            } else if (filterType === 'not_important') {
-                stats.push(statItem(totalValue, `Not Important · ${sharePct}% of period`));
-                stats.push(statItem(`${pct(quadrantMinutes.Drudgery, totalMinutes)}%`, 'Drudgery (urgent)'));
-                stats.push(statItem(`${pct(quadrantMinutes.Waste, totalMinutes)}%`, 'Waste (not urgent)'));
-            } else if (filterType === 'urgent') {
-                stats.push(statItem(totalValue, `Urgent · ${sharePct}% of period`));
-                stats.push(statItem(`${pct(quadrantMinutes.Critical, totalMinutes)}%`, 'Critical (important)'));
-                stats.push(statItem(`${pct(quadrantMinutes.Drudgery, totalMinutes)}%`, 'Drudgery (not important)'));
-            } else if (filterType === 'not_urgent') {
-                stats.push(statItem(totalValue, `Not Urgent · ${sharePct}% of period`));
-                stats.push(statItem(`${pct(quadrantMinutes.Growth, totalMinutes)}%`, 'Growth (important)'));
-                stats.push(statItem(`${pct(quadrantMinutes.Waste, totalMinutes)}%`, 'Waste (not important)'));
-            } else {
-                stats.push(statItem(totalValue, `Time in view · ${sharePct}% of period`));
-                const longestVal = maxSessionMin ? hoursToHuman(maxSessionMin / 60) : '0 min';
-                stats.push(statItem(longestVal, 'Longest session'));
-                stats.push(statItem(`${topQuadrantPct}%`, topQuadrantName ? `Dominant · ${topQuadrantName}` : 'Dominant quadrant'));
+                const stats = [];
+                const totalValue = hoursValue(totalMinutes);
+
+                if (filterType === 'all') {
+                    const base = totalMinutes || 1;
+                    const gMin = quadrantMinutes.Growth || 0;
+                    const dMin = quadrantMinutes.Drudgery || 0;
+                    const wMin = quadrantMinutes.Waste || 0;
+                    const gVal = hoursValue(gMin);
+                    const dVal = hoursValue(dMin);
+                    const wVal = hoursValue(wMin);
+                    stats.push(statItem(gVal, `${pct(gMin, base)}% discipline (imp, not urgent)`));
+                    stats.push(statItem(dVal, `${pct(dMin, base)}% reactive (urg, not important)`));
+                    stats.push(statItem(wVal, `${pct(wMin, base)}% waste (neither)`));
+                } else if (isTag) {
+                    stats.push(statItem(totalValue, `${modeLabel} in view · ${sharePct}% of period`));
+                    stats.push(statItem(`${pct(importantMinutes, totalMinutes)}%`, 'Important share'));
+                    stats.push(statItem(`${pct(urgentMinutes, totalMinutes)}%`, 'Urgent share'));
+                } else if (isQuadrant) {
+                    stats.push(statItem(totalValue, `${modeLabel} in view · ${sharePct}% of period`));
+                    const parent = parentShareForQuadrant(filterType);
+                    stats.push(statItem(`${parent.pct}%`, parent.label || 'Share of parent'));
+                    const longestVal = maxSessionMin ? hoursToHuman(maxSessionMin / 60) : '0 min';
+                    stats.push(statItem(longestVal, 'Longest session'));
+                } else if (filterType === 'important') {
+                    stats.push(statItem(totalValue, `Important · ${modeLabel} · ${sharePct}% of period`));
+                    stats.push(statItem(`${pct(quadrantMinutes.Growth, totalMinutes)}%`, 'Growth (not urgent)'));
+                    stats.push(statItem(`${pct(quadrantMinutes.Critical, totalMinutes)}%`, 'Critical (urgent)'));
+                } else if (filterType === 'not_important') {
+                    stats.push(statItem(totalValue, `Not Important · ${modeLabel} · ${sharePct}% of period`));
+                    stats.push(statItem(`${pct(quadrantMinutes.Drudgery, totalMinutes)}%`, 'Drudgery (urgent)'));
+                    stats.push(statItem(`${pct(quadrantMinutes.Waste, totalMinutes)}%`, 'Waste (not urgent)'));
+                } else if (filterType === 'urgent') {
+                    stats.push(statItem(totalValue, `Urgent · ${modeLabel} · ${sharePct}% of period`));
+                    stats.push(statItem(`${pct(quadrantMinutes.Critical, totalMinutes)}%`, 'Critical (important)'));
+                    stats.push(statItem(`${pct(quadrantMinutes.Drudgery, totalMinutes)}%`, 'Drudgery (not important)'));
+                } else if (filterType === 'not_urgent') {
+                    stats.push(statItem(totalValue, `Not Urgent · ${modeLabel} · ${sharePct}% of period`));
+                    stats.push(statItem(`${pct(quadrantMinutes.Growth, totalMinutes)}%`, 'Growth (important)'));
+                    stats.push(statItem(`${pct(quadrantMinutes.Waste, totalMinutes)}%`, 'Waste (not important)'));
+                } else {
+                    stats.push(statItem(totalValue, `${modeLabel} in view · ${sharePct}% of period`));
+                    const longestVal = maxSessionMin ? hoursToHuman(maxSessionMin / 60) : '0 min';
+                    stats.push(statItem(longestVal, 'Longest session'));
+                    stats.push(statItem(`${topQuadrantPct}%`, topQuadrantName ? `Dominant · ${topQuadrantName}` : 'Dominant quadrant'));
+                }
+
+                const statsHtml = stats.join('');
+                const statsEl = document.getElementById('modalStats');
+                if (statsEl) {
+                    statsEl.innerHTML = statsHtml;
+                }
+                window.attachHoverSwap();
+            };
+            window.renderModalStats = renderStats;
+            renderStats();
+            const statsContainer = document.getElementById('modalStats');
+            if (statsContainer && isMultiDay) {
+                statsContainer.classList.add('cursor-pointer');
+                statsContainer.title = 'Click to toggle avg/total';
+                statsContainer.onclick = () => {
+                    window.modalStatsMode = window.modalStatsMode === 'avg' ? 'total' : 'avg';
+                    renderStats();
+                };
             }
-
-            const statsHtml = stats.join('');
-            document.getElementById('modalStats').innerHTML = statsHtml;
-            window.attachHoverSwap();
             const chartContainer = document.getElementById('modalChart');
             chartContainer.innerHTML = '<canvas id="filterChart"></canvas>';
             const tools = document.getElementById('modalTools');
