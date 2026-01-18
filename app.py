@@ -410,13 +410,24 @@ def _is_admin_email(email: Optional[str]) -> bool:
 
 
 def _send_email(to_email: str, subject: str, body: str) -> bool:
-    host = os.getenv(SMTP_HOST_ENV)
-    port = int(os.getenv(SMTP_PORT_ENV, "0") or 0)
-    user = os.getenv(SMTP_USER_ENV)
-    password = os.getenv(SMTP_PASSWORD_ENV)
-    sender = os.getenv(SMTP_SENDER_ENV) or user
-    if not host or not port or not sender:
-        logger.warning("SMTP not configured; email to %s skipped", to_email)
+    host = (os.getenv(SMTP_HOST_ENV) or "").strip()
+    port = int((os.getenv(SMTP_PORT_ENV, "0") or "0").strip() or 0)
+    user = (os.getenv(SMTP_USER_ENV) or "").strip()
+    password = os.getenv(SMTP_PASSWORD_ENV) or ""
+    sender = ((os.getenv(SMTP_SENDER_ENV) or "").strip() or user)
+    missing: List[str] = []
+    if not host:
+        missing.append(SMTP_HOST_ENV)
+    if not port:
+        missing.append(SMTP_PORT_ENV)
+    if not sender:
+        missing.append(SMTP_SENDER_ENV)
+    if missing:
+        logger.warning(
+            "SMTP not configured (%s); email to %s skipped",
+            ",".join(missing),
+            to_email,
+        )
         return False
 
     message = EmailMessage()
@@ -437,7 +448,16 @@ def _send_email(to_email: str, subject: str, body: str) -> bool:
             smtp.send_message(message)
         return True
     except Exception as exc:
-        logger.exception("Failed to send email: %s", exc)
+        logger.exception(
+            "Failed to send email via SMTP host=%s port=%s tls=%s sender=%s user_configured=%s to=%s: %s",
+            host,
+            port,
+            use_tls,
+            sender,
+            bool(user),
+            to_email,
+            exc,
+        )
         return False
 
 
