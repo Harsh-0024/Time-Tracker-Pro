@@ -318,7 +318,12 @@ def admin_required(fn):
             session.clear()
             session["pending_user_id"] = int(uid)
             return redirect(url_for("verify_email"))
-        if (_row_value(user, "role") or "user") != "admin":
+        email = _row_value(user, "email")
+        role = _row_value(user, "role") or "user"
+        is_admin = role == "admin" or _is_admin_email(email)
+        if is_admin and role != "admin":
+            _ensure_admin_role(user)
+        if not is_admin:
             abort(403)
         return fn(*args, **kwargs)
 
@@ -420,12 +425,31 @@ def _is_admin_email(email: Optional[str]) -> bool:
     return email.strip().lower() in set(_get_admin_emails())
 
 
-def _send_email(to_email: str, subject: str, body: str) -> bool:
+def _ensure_admin_role(user: Optional[sqlite3.Row]) -> bool:
+    if not user:
+        return False
+    email = _row_value(user, "email")
+    if not _is_admin_email(email):
+        return False
+    role = _row_value(user, "role") or "user"
+    if role == "admin":
+        return True
+    user_id = _row_value(user, "id")
+    if not user_id:
+        return True
+    conn = get_db_connection()
+    conn.execute("UPDATE users SET role = 'admin' WHERE id = ?", (int(user_id),))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def _send_email(to_email: str, subject: str, body: str, html_body: Optional[str] = None) -> bool:
     email_mode = (os.getenv(EMAIL_MODE_ENV) or "").strip().lower()
     brevo_key = (os.getenv(BREVO_API_KEY_ENV) or "").strip()
 
     if brevo_key and (email_mode in {"", "auto", "brevo", "brevo_api"}):
-        ok = _send_email_via_brevo_api(to_email, subject, body)
+        ok = _send_email_via_brevo_api(to_email, subject, body, html_body)
         if ok:
             return True
         if email_mode in {"brevo", "brevo_api"}:
@@ -456,6 +480,8 @@ def _send_email(to_email: str, subject: str, body: str) -> bool:
     message["To"] = to_email
     message["Subject"] = subject
     message.set_content(body)
+    if html_body:
+        message.add_alternative(html_body, subtype="html")
 
     use_tls = str(os.getenv(SMTP_USE_TLS_ENV, "true")).lower() in {"1", "true", "yes"}
     try:
@@ -499,7 +525,7 @@ def _send_email(to_email: str, subject: str, body: str) -> bool:
         return False
 
 
-def _send_email_via_brevo_api(to_email: str, subject: str, body: str) -> bool:
+def _send_email_via_brevo_api(to_email: str, subject: str, body: str, html_body: Optional[str] = None) -> bool:
     api_key = (os.getenv(BREVO_API_KEY_ENV) or "").strip()
     sender_email = (os.getenv(SMTP_SENDER_ENV) or os.getenv(SMTP_USER_ENV) or "").strip()
     if not api_key or not sender_email:
@@ -511,6 +537,8 @@ def _send_email_via_brevo_api(to_email: str, subject: str, body: str) -> bool:
         "subject": subject,
         "textContent": body,
     }
+    if html_body:
+        payload["htmlContent"] = html_body
 
     try:
         resp = requests.post(
@@ -552,6 +580,26 @@ def _create_verification_code(user_id: int) -> str:
     return code
 
 
+def _has_active_verification(user_id: int) -> bool:
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT expires_at, verified_at FROM email_verifications WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+        (int(user_id),),
+    ).fetchone()
+    conn.close()
+    if not row:
+        return False
+    if row["verified_at"]:
+        return False
+    try:
+        expires_at = datetime.fromisoformat(row["expires_at"])
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+    except Exception:
+        return False
+    return datetime.now(timezone.utc) <= expires_at
+
+
 def _send_verification_email(user: sqlite3.Row) -> bool:
     if not user or not _row_value(user, "email"):
         return False
@@ -569,7 +617,52 @@ def _send_verification_email(user: sqlite3.Row) -> bool:
         "Enter this code on the verification screen to activate your account.\n\n"
         "If you did not request this, you can ignore this email."
     )
-    ok = _send_email(_row_value(user, "email") or "", subject, body)
+    html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #F5EDE1;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background: #F5EDE1; padding: 20px 10px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background: #FFFFFF; border: 1px solid #D4C5B0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); overflow: hidden;">
+                    <tr>
+                        <td style="background: #1F2937; padding: 24px 20px; text-align: center;">
+                            <h1 style="margin: 0; color: #FCD34D; font-size: 24px; font-weight: 700; letter-spacing: -0.3px;">Time Tracker Pro</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 32px 24px;">
+                            <h2 style="margin: 0 0 16px 0; color: #1F2937; font-size: 20px; font-weight: 600;">Welcome, {greeting}!</h2>
+                            <p style="margin: 0 0 24px 0; color: #374151; font-size: 15px; line-height: 1.5;">Thank you for joining Time Tracker Pro. To activate your account, please use the verification code below:</p>
+                            <div style="background: #1F2937; border-radius: 12px; padding: 24px 20px; text-align: center; margin: 24px 0;">
+                                <div style="color: #D1D5DB; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 10px; font-weight: 600;">Your Verification Code</div>
+                                <div style="color: #FCD34D; font-size: 36px; font-weight: 700; letter-spacing: 6px; font-family: 'Courier New', Courier, monospace;">{code}</div>
+                            </div>
+                            <p style="margin: 24px 0 0 0; color: #4B5563; font-size: 14px; line-height: 1.5;">Enter this code on the verification screen to complete your registration. This code will expire in 10 minutes.</p>
+                            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #E5E7EB;">
+                                <p style="margin: 0; color: #6B7280; font-size: 13px; line-height: 1.4;">If you didn't request this verification, you can safely ignore this email.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background: #F9FAFB; padding: 20px 24px; text-align: center; border-top: 1px solid #E5E7EB;">
+                            <p style="margin: 0; color: #6B7280; font-size: 12px;">&copy; 2026 Time Tracker Pro. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    """
+    ok = _send_email(_row_value(user, "email") or "", subject, body, html_body)
     if not ok and str(os.getenv(LOG_VERIFICATION_CODES_ENV, "")).lower() in {"1", "true", "yes"}:
         logger.warning(
             "Verification code (email send failed) user_id=%s email=%s code=%s",
@@ -1107,6 +1200,10 @@ def login():
                 error = "Please verify your email before logging in."
                 session["pending_user_id"] = int(_row_value(user, "id"))
                 session["pending_remember"] = remember
+                if _send_verification_email(user):
+                    session["verification_success"] = "Verification code sent."
+                else:
+                    session["verification_error"] = "Unable to send email. Check SMTP settings."
                 return redirect(url_for("verify_email", next=next_url or ""))
             else:
                 session.clear()
@@ -1205,8 +1302,8 @@ def verify_email():
         session.pop("pending_user_id", None)
         return redirect(url_for("register"))
 
-    error: Optional[str] = None
-    success: Optional[str] = None
+    error: Optional[str] = session.pop("verification_error", None)
+    success: Optional[str] = session.pop("verification_success", None)
 
     if request.method == "POST":
         if request.form.get("action") == "resend":
@@ -1216,14 +1313,22 @@ def verify_email():
                 error = "Unable to send email. Check SMTP settings."
         else:
             code = (request.form.get("code") or "").strip()
-            ok, message = _verify_email_code(int(user["id"]), code)
-            if ok:
-                session.pop("pending_user_id", None)
-                remember = bool(session.pop("pending_remember", False))
-                session["user_id"] = int(user["id"])
-                session.permanent = remember
-                return redirect(url_for("settings"))
-            error = message
+            if not code:
+                error = "Please enter the verification code."
+            else:
+                ok, message = _verify_email_code(int(user["id"]), code)
+                if ok:
+                    session.pop("pending_user_id", None)
+                    remember = bool(session.pop("pending_remember", False))
+                    session["user_id"] = int(user["id"])
+                    session.permanent = remember
+                    return redirect(url_for("settings"))
+                error = message
+    elif not _has_active_verification(int(user["id"])):
+        if _send_verification_email(user):
+            success = "Verification code sent."
+        else:
+            error = "Unable to send email. Check SMTP settings."
 
     return render_template(
         "verify_email.html",
@@ -1304,8 +1409,53 @@ def admin_delete_user():
         f"{message}\n\n"
         "If you believe this is a mistake, please reply to this email."
     )
+    html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #F5EDE1;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background: #F5EDE1; padding: 20px 10px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background: #FFFFFF; border: 1px solid #D4C5B0; border-radius: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); overflow: hidden;">
+                    <tr>
+                        <td style="background: #1F2937; padding: 24px 20px; text-align: center;">
+                            <h1 style="margin: 0; color: #FCD34D; font-size: 24px; font-weight: 700; letter-spacing: -0.3px;">Time Tracker Pro</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 32px 24px;">
+                            <h2 style="margin: 0 0 16px 0; color: #1F2937; font-size: 20px; font-weight: 600;">Account Removal Notice</h2>
+                            <p style="margin: 0 0 16px 0; color: #374151; font-size: 15px; line-height: 1.5;">Hi {greeting},</p>
+                            <p style="margin: 0 0 24px 0; color: #374151; font-size: 15px; line-height: 1.5;">Your Time Tracker Pro account has been removed by an administrator.</p>
+                            <div style="background: #FEF3C7; border-left: 4px solid #D97706; border-radius: 8px; padding: 16px; margin: 24px 0;">
+                                <div style="color: #92400E; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; font-weight: 600;">Message from Administrator</div>
+                                <p style="margin: 0; color: #1F2937; font-size: 14px; line-height: 1.5; white-space: pre-wrap;">{message}</p>
+                            </div>
+                            <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #E5E7EB;">
+                                <p style="margin: 0; color: #4B5563; font-size: 14px; line-height: 1.5;">If you believe this is a mistake, please reply to this email to contact support.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background: #F9FAFB; padding: 20px 24px; text-align: center; border-top: 1px solid #E5E7EB;">
+                            <p style="margin: 0; color: #6B7280; font-size: 12px;">&copy; 2026 Time Tracker Pro. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    """
     email_sent = (
-        _send_email(_row_value(user, "email"), subject, body)
+        _send_email(_row_value(user, "email"), subject, body, html_body)
         if _row_value(user, "email")
         else False
     )
@@ -1333,7 +1483,13 @@ def settings():
         "display_name": _display_name(user_row),
         "role": (_row_value(user_row, "role") if user_row else "user"),
     }
-    is_admin = bool(user_row and (_row_value(user_row, "role") or "user") == "admin")
+    is_admin = bool(
+        user_row
+        and (
+            (_row_value(user_row, "role") or "user") == "admin"
+            or _is_admin_email(_row_value(user_row, "email"))
+        )
+    )
     allow_env_fallback = _get_user_count() <= 1
     env_sheety = (os.getenv(SHEETY_ENDPOINT_ENV) or "").strip() if allow_env_fallback else ""
     return render_template(
@@ -1418,7 +1574,13 @@ def dashboard():
         period_label = selected_date.strftime("%B %Y")
 
     user_row = _get_user_by_id(user_id)
-    is_admin = bool(user_row and (_row_value(user_row, "role") or "user") == "admin")
+    is_admin = bool(
+        user_row
+        and (
+            (_row_value(user_row, "role") or "user") == "admin"
+            or _is_admin_email(_row_value(user_row, "email"))
+        )
+    )
     current_user = {
         "id": user_id,
         "display_name": _display_name(user_row),
@@ -1459,7 +1621,13 @@ def graphs():
         "display_name": _display_name(user_row),
         "role": (_row_value(user_row, "role") if user_row else "user"),
     }
-    is_admin = bool(user_row and (_row_value(user_row, "role") or "user") == "admin")
+    is_admin = bool(
+        user_row
+        and (
+            (_row_value(user_row, "role") or "user") == "admin"
+            or _is_admin_email(_row_value(user_row, "email"))
+        )
+    )
     return render_template("graphs.html", current_user=current_user, is_admin=is_admin)
 
 
