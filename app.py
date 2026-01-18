@@ -47,6 +47,8 @@ SMTP_USER_ENV = "SMTP_USER"
 SMTP_PASSWORD_ENV = "SMTP_PASSWORD"
 SMTP_SENDER_ENV = "SMTP_SENDER"
 SMTP_USE_TLS_ENV = "SMTP_USE_TLS"
+BREVO_API_KEY_ENV = "BREVO_API_KEY"
+EMAIL_MODE_ENV = "EMAIL_MODE"
 LOG_VERIFICATION_CODES_ENV = "LOG_VERIFICATION_CODES"
 VERIFICATION_CODE_TTL_MINUTES = int(os.getenv("VERIFICATION_CODE_TTL_MINUTES", "10"))
 VERIFICATION_MAX_ATTEMPTS = int(os.getenv("VERIFICATION_MAX_ATTEMPTS", "5"))
@@ -412,6 +414,16 @@ def _is_admin_email(email: Optional[str]) -> bool:
 
 
 def _send_email(to_email: str, subject: str, body: str) -> bool:
+    email_mode = (os.getenv(EMAIL_MODE_ENV) or "").strip().lower()
+    brevo_key = (os.getenv(BREVO_API_KEY_ENV) or "").strip()
+
+    if brevo_key and (email_mode in {"", "auto", "brevo", "brevo_api"}):
+        ok = _send_email_via_brevo_api(to_email, subject, body)
+        if ok:
+            return True
+        if email_mode in {"brevo", "brevo_api"}:
+            return False
+
     host = (os.getenv(SMTP_HOST_ENV) or "").strip()
     port = int((os.getenv(SMTP_PORT_ENV, "0") or "0").strip() or 0)
     user = (os.getenv(SMTP_USER_ENV) or "").strip()
@@ -477,6 +489,40 @@ def _send_email(to_email: str, subject: str, body: str) -> bool:
             to_email,
             exc,
         )
+        return False
+
+
+def _send_email_via_brevo_api(to_email: str, subject: str, body: str) -> bool:
+    api_key = (os.getenv(BREVO_API_KEY_ENV) or "").strip()
+    sender_email = (os.getenv(SMTP_SENDER_ENV) or os.getenv(SMTP_USER_ENV) or "").strip()
+    if not api_key or not sender_email:
+        return False
+
+    payload = {
+        "sender": {"email": sender_email, "name": "Time Tracker Pro"},
+        "to": [{"email": (to_email or "").strip()}],
+        "subject": subject,
+        "textContent": body,
+    }
+
+    try:
+        resp = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": api_key, "content-type": "application/json"},
+            json=payload,
+            timeout=15,
+        )
+        if 200 <= int(resp.status_code) < 300:
+            return True
+        logger.error(
+            "Brevo API email failed status=%s to=%s response=%s",
+            resp.status_code,
+            to_email,
+            (resp.text or "")[:500],
+        )
+        return False
+    except Exception as exc:
+        logger.exception("Brevo API email exception to=%s: %s", to_email, exc)
         return False
 
 
