@@ -47,6 +47,7 @@ SMTP_USER_ENV = "SMTP_USER"
 SMTP_PASSWORD_ENV = "SMTP_PASSWORD"
 SMTP_SENDER_ENV = "SMTP_SENDER"
 SMTP_USE_TLS_ENV = "SMTP_USE_TLS"
+LOG_VERIFICATION_CODES_ENV = "LOG_VERIFICATION_CODES"
 VERIFICATION_CODE_TTL_MINUTES = int(os.getenv("VERIFICATION_CODE_TTL_MINUTES", "10"))
 VERIFICATION_MAX_ATTEMPTS = int(os.getenv("VERIFICATION_MAX_ATTEMPTS", "5"))
 SYNC_INTERVAL_SECONDS = int(os.getenv("SYNC_INTERVAL_SECONDS", "300"))
@@ -515,7 +516,15 @@ def _send_verification_email(user: sqlite3.Row) -> bool:
         "Enter this code on the verification screen to activate your account.\n\n"
         "If you did not request this, you can ignore this email."
     )
-    return _send_email(user["email"], subject, body)
+    ok = _send_email(_row_value(user, "email") or "", subject, body)
+    if not ok and str(os.getenv(LOG_VERIFICATION_CODES_ENV, "")).lower() in {"1", "true", "yes"}:
+        logger.warning(
+            "Verification code (email send failed) user_id=%s email=%s code=%s",
+            _row_value(user, "id"),
+            _row_value(user, "email"),
+            code,
+        )
+    return ok
 
 
 def _verify_email_code(user_id: int, code: str) -> Tuple[bool, str]:
