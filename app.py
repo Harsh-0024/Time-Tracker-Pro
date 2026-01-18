@@ -5,6 +5,7 @@ import os
 import re
 import secrets
 import smtplib
+import socket
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from functools import wraps
@@ -438,14 +439,31 @@ def _send_email(to_email: str, subject: str, body: str) -> bool:
 
     use_tls = str(os.getenv(SMTP_USE_TLS_ENV, "true")).lower() in {"1", "true", "yes"}
     try:
-        with smtplib.SMTP(host, port, timeout=10) as smtp:
-            smtp.ehlo()
-            if use_tls:
-                smtp.starttls()
+        connect_host = host
+        if host and not re.match(r"^\d+\.\d+\.\d+\.\d+$", host):
+            try:
+                infos = socket.getaddrinfo(host, port, family=socket.AF_INET, type=socket.SOCK_STREAM)
+                if infos:
+                    connect_host = infos[0][4][0]
+            except Exception:
+                connect_host = host
+
+        use_ssl = int(port) == 465
+        if use_ssl:
+            with smtplib.SMTP_SSL(connect_host, port, timeout=10) as smtp:
                 smtp.ehlo()
-            if user and password:
-                smtp.login(user, password)
-            smtp.send_message(message)
+                if user and password:
+                    smtp.login(user, password)
+                smtp.send_message(message)
+        else:
+            with smtplib.SMTP(connect_host, port, timeout=10) as smtp:
+                smtp.ehlo()
+                if use_tls:
+                    smtp.starttls()
+                    smtp.ehlo()
+                if user and password:
+                    smtp.login(user, password)
+                smtp.send_message(message)
         return True
     except Exception as exc:
         logger.exception(
