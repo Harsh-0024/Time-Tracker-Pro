@@ -37,7 +37,8 @@ if os.getenv("SESSION_COOKIE_SECURE"):
     app.config["SESSION_COOKIE_SECURE"] = True
 app.permanent_session_lifetime = timedelta(days=int(os.getenv("SESSION_LIFETIME_DAYS", "30")))
 
-DB_NAME = "productivity.db"
+DB_PATH_ENV = "DB_PATH"
+DB_NAME = (os.getenv(DB_PATH_ENV) or "productivity.db").strip() or "productivity.db"
 SHEETY_ENDPOINT_ENV = "SHEETY_ENDPOINT"
 API_AUTH_TOKEN_ENV = "TIME_TRACKER_API_TOKEN"
 ADMIN_EMAILS_ENV = "ADMIN_EMAILS"
@@ -112,6 +113,12 @@ def primary_special_tag(raw: Optional[str]) -> str:
     return tags[0] if tags else "Waste"
 
 def get_db_connection() -> sqlite3.Connection:
+    try:
+        parent = os.path.dirname(DB_NAME)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+    except Exception:
+        pass
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
