@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import os
 import re
+import secrets
+import smtplib
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from functools import wraps
@@ -11,7 +13,8 @@ from flask import send_file
 import pandas as pd
 import requests
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request, make_response, redirect, session, url_for, g
+from flask import Flask, jsonify, render_template, request, make_response, redirect, session, url_for, g, abort
+from email.message import EmailMessage
 from io import StringIO
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -36,6 +39,15 @@ app.permanent_session_lifetime = timedelta(days=int(os.getenv("SESSION_LIFETIME_
 DB_NAME = "productivity.db"
 SHEETY_ENDPOINT_ENV = "SHEETY_ENDPOINT"
 API_AUTH_TOKEN_ENV = "TIME_TRACKER_API_TOKEN"
+ADMIN_EMAILS_ENV = "ADMIN_EMAILS"
+SMTP_HOST_ENV = "SMTP_HOST"
+SMTP_PORT_ENV = "SMTP_PORT"
+SMTP_USER_ENV = "SMTP_USER"
+SMTP_PASSWORD_ENV = "SMTP_PASSWORD"
+SMTP_SENDER_ENV = "SMTP_SENDER"
+SMTP_USE_TLS_ENV = "SMTP_USE_TLS"
+VERIFICATION_CODE_TTL_MINUTES = int(os.getenv("VERIFICATION_CODE_TTL_MINUTES", "10"))
+VERIFICATION_MAX_ATTEMPTS = int(os.getenv("VERIFICATION_MAX_ATTEMPTS", "5"))
 SYNC_INTERVAL_SECONDS = int(os.getenv("SYNC_INTERVAL_SECONDS", "300"))
 SYNC_FAIL_COOLDOWN_SECONDS = int(os.getenv("SYNC_FAIL_COOLDOWN_SECONDS", "1800"))
 SPECIAL_TAGS = {"Work", "Necessity", "Soul", "Rest", "Waste"}
@@ -109,7 +121,12 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
+                user_id TEXT UNIQUE,
+                name TEXT,
+                email TEXT UNIQUE,
                 password_hash TEXT NOT NULL,
+                role TEXT DEFAULT 'user',
+                is_verified INTEGER DEFAULT 0,
                 created_at TEXT
             )
             """
@@ -147,6 +164,33 @@ def init_db() -> None:
             conn.execute("UPDATE logs SET user_id = 0 WHERE user_id IS NULL")
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_logs_user_start ON logs(user_id, start_date, start_time)"
+        )
+        user_cols = [row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()]
+        if "user_id" not in user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN user_id TEXT")
+        if "name" not in user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN name TEXT")
+        if "email" not in user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
+        if "role" not in user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'")
+        if "is_verified" not in user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0")
+            conn.execute("UPDATE users SET is_verified = 1 WHERE is_verified IS NULL")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id)")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS email_verifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                code_hash TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                attempts INTEGER DEFAULT 0,
+                verified_at TEXT,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            )
+            """
         )
         conn.commit()
         conn.close()
@@ -193,6 +237,9 @@ def _token_is_valid(headers: Dict[str, str]) -> bool:
 def resolve_request_user_id(headers: Dict[str, str]) -> Optional[int]:
     session_uid = get_current_user_id()
     if session_uid is not None:
+        user = _get_user_by_id(int(session_uid))
+        if not user or not int(_row_value(user, "is_verified") or 0):
+            return None
         return int(session_uid)
 
     if not _token_is_valid(headers):
@@ -203,13 +250,16 @@ def resolve_request_user_id(headers: Dict[str, str]) -> Optional[int]:
 
     if raw_user_id:
         try:
-            return int(raw_user_id)
+            user = _get_user_by_id(int(raw_user_id))
+            if not user or not int(_row_value(user, "is_verified") or 0):
+                return None
+            return int(user["id"])
         except Exception:
             return None
 
     if raw_username:
         user = _get_user_by_username(raw_username)
-        if not user:
+        if not user or not int(_row_value(user, "is_verified") or 0):
             return None
         return int(user["id"])
 
@@ -218,7 +268,9 @@ def resolve_request_user_id(headers: Dict[str, str]) -> Optional[int]:
     count_row = conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()
     conn.close()
     if row and int(count_row["c"]) == 1:
-        return int(row["id"])
+        user = _get_user_by_id(int(row["id"]))
+        if user and int(_row_value(user, "is_verified") or 0):
+            return int(user["id"])
     return None
 
 
@@ -227,12 +279,37 @@ def login_required(fn):
     def wrapper(*args, **kwargs):
         uid = get_current_user_id()
         if uid is not None:
+            user = _get_user_by_id(int(uid))
+            if user and not int(_row_value(user, "is_verified") or 0):
+                session.clear()
+                session["pending_user_id"] = int(uid)
+                if request.path.startswith("/api/"):
+                    return jsonify({"error": "Email not verified"}), 403
+                return redirect(url_for("verify_email"))
             return fn(*args, **kwargs)
         if _get_user_count() == 0:
             return redirect(url_for("register"))
         if request.path.startswith("/api/"):
             return jsonify({"error": "Unauthorized"}), 401
         return redirect(url_for("login", next=_safe_next_url(request.full_path or request.path)))
+
+    return wrapper
+
+
+def admin_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        uid = get_current_user_id()
+        if uid is None:
+            return redirect(url_for("login"))
+        user = _get_user_by_id(int(uid))
+        if not user or not int(_row_value(user, "is_verified") or 0):
+            session.clear()
+            session["pending_user_id"] = int(uid)
+            return redirect(url_for("verify_email"))
+        if (_row_value(user, "role") or "user") != "admin":
+            abort(403)
+        return fn(*args, **kwargs)
 
     return wrapper
 
@@ -251,10 +328,18 @@ def api_or_login_required(fn):
 
 
 def _get_user_by_username(username: str) -> Optional[sqlite3.Row]:
+    value = (username or "").strip()
+    if not value:
+        return None
     conn = get_db_connection()
     row = conn.execute(
-        "SELECT * FROM users WHERE username = ?",
-        (username.strip(),),
+        """
+        SELECT * FROM users
+        WHERE lower(username) = lower(?)
+           OR lower(user_id) = lower(?)
+           OR lower(email) = lower(?)
+        """,
+        (value, value, value),
     ).fetchone()
     conn.close()
     return row
@@ -268,6 +353,175 @@ def _get_user_by_id(user_id: int) -> Optional[sqlite3.Row]:
     ).fetchone()
     conn.close()
     return row
+
+
+def _get_user_by_public_id(public_id: str) -> Optional[sqlite3.Row]:
+    value = (public_id or "").strip()
+    if not value:
+        return None
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT * FROM users WHERE lower(user_id) = lower(?)",
+        (value,),
+    ).fetchone()
+    conn.close()
+    return row
+
+
+def _get_user_by_email(email: str) -> Optional[sqlite3.Row]:
+    value = (email or "").strip()
+    if not value:
+        return None
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT * FROM users WHERE lower(email) = lower(?)",
+        (value,),
+    ).fetchone()
+    conn.close()
+    return row
+
+
+def _display_name(user: sqlite3.Row) -> str:
+    if not user:
+        return ""
+    return (
+        (user["name"] if "name" in user.keys() else None)
+        or (user["user_id"] if "user_id" in user.keys() else None)
+        or user["username"]
+        or ""
+    )
+
+
+def _row_value(row: Optional[sqlite3.Row], key: str) -> Optional[str]:
+    if not row:
+        return None
+    return row[key] if key in row.keys() else None
+
+
+def _get_admin_emails() -> List[str]:
+    raw = os.getenv(ADMIN_EMAILS_ENV, "")
+    return [email.strip().lower() for email in raw.split(",") if email.strip()]
+
+
+def _is_admin_email(email: Optional[str]) -> bool:
+    if not email:
+        return False
+    return email.strip().lower() in set(_get_admin_emails())
+
+
+def _send_email(to_email: str, subject: str, body: str) -> bool:
+    host = os.getenv(SMTP_HOST_ENV)
+    port = int(os.getenv(SMTP_PORT_ENV, "0") or 0)
+    user = os.getenv(SMTP_USER_ENV)
+    password = os.getenv(SMTP_PASSWORD_ENV)
+    sender = os.getenv(SMTP_SENDER_ENV) or user
+    if not host or not port or not sender:
+        logger.warning("SMTP not configured; email to %s skipped", to_email)
+        return False
+
+    message = EmailMessage()
+    message["From"] = sender
+    message["To"] = to_email
+    message["Subject"] = subject
+    message.set_content(body)
+
+    use_tls = str(os.getenv(SMTP_USE_TLS_ENV, "true")).lower() in {"1", "true", "yes"}
+    try:
+        with smtplib.SMTP(host, port, timeout=10) as smtp:
+            smtp.ehlo()
+            if use_tls:
+                smtp.starttls()
+                smtp.ehlo()
+            if user and password:
+                smtp.login(user, password)
+            smtp.send_message(message)
+        return True
+    except Exception as exc:
+        logger.exception("Failed to send email: %s", exc)
+        return False
+
+
+def _create_verification_code(user_id: int) -> str:
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    code_hash = generate_password_hash(code)
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_CODE_TTL_MINUTES)).isoformat()
+
+    conn = get_db_connection()
+    conn.execute("DELETE FROM email_verifications WHERE user_id = ?", (int(user_id),))
+    conn.execute(
+        """
+        INSERT INTO email_verifications (user_id, code_hash, expires_at, attempts)
+        VALUES (?, ?, ?, 0)
+        """,
+        (int(user_id), code_hash, expires_at),
+    )
+    conn.commit()
+    conn.close()
+    return code
+
+
+def _send_verification_email(user: sqlite3.Row) -> bool:
+    if not user or not _row_value(user, "email"):
+        return False
+    code = _create_verification_code(int(user["id"]))
+    greeting = (
+        _row_value(user, "name")
+        or _row_value(user, "user_id")
+        or _row_value(user, "username")
+        or "there"
+    )
+    subject = "Verify your Time Tracker Pro account"
+    body = (
+        f"Hi {greeting},\n\n"
+        f"Your verification code is: {code}\n\n"
+        "Enter this code on the verification screen to activate your account.\n\n"
+        "If you did not request this, you can ignore this email."
+    )
+    return _send_email(user["email"], subject, body)
+
+
+def _verify_email_code(user_id: int, code: str) -> Tuple[bool, str]:
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT * FROM email_verifications WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+        (int(user_id),),
+    ).fetchone()
+    if not row:
+        conn.close()
+        return False, "No verification request found. Please resend the code."
+
+    attempts = int(row["attempts"] or 0)
+    if attempts >= VERIFICATION_MAX_ATTEMPTS:
+        conn.close()
+        return False, "Too many attempts. Please resend a new code."
+
+    try:
+        expires_at = datetime.fromisoformat(row["expires_at"])
+    except Exception:
+        expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+
+    if datetime.now(timezone.utc) > expires_at:
+        conn.close()
+        return False, "Verification code expired. Please resend."
+
+    if not check_password_hash(row["code_hash"], (code or "").strip()):
+        conn.execute(
+            "UPDATE email_verifications SET attempts = ? WHERE id = ?",
+            (attempts + 1, int(row["id"])),
+        )
+        conn.commit()
+        conn.close()
+        return False, "Invalid verification code."
+
+    verified_at = datetime.now(timezone.utc).isoformat()
+    conn.execute("UPDATE users SET is_verified = 1 WHERE id = ?", (int(user_id),))
+    conn.execute(
+        "UPDATE email_verifications SET verified_at = ? WHERE id = ?",
+        (verified_at, int(row["id"])),
+    )
+    conn.commit()
+    conn.close()
+    return True, "Your account is now verified."
 
 
 def get_user_settings(user_id: int) -> Dict[str, Optional[str]]:
@@ -735,25 +989,31 @@ def login():
 
     next_url = _safe_next_url(request.args.get("next"))
     error: Optional[str] = None
+    show_verify = False
 
     if request.method == "POST":
-        username = (request.form.get("username") or "").strip()
+        identifier = (request.form.get("identifier") or request.form.get("username") or "").strip()
         password = request.form.get("password") or ""
         remember = bool(request.form.get("remember"))
         next_url = _safe_next_url(request.form.get("next")) or next_url
 
-        if not username or not password:
-            error = "Username and password are required."
+        if not identifier or not password:
+            error = "Username, email, or user ID and password are required."
         else:
-            user = _get_user_by_username(username)
-            if not user or not check_password_hash(user["password_hash"], password):
-                error = "Invalid username or password."
+            user = _get_user_by_username(identifier)
+            if not user or not check_password_hash(_row_value(user, "password_hash"), password):
+                error = "Invalid credentials."
+            elif not int(_row_value(user, "is_verified") or 0):
+                error = "Please verify your email before logging in."
+                session["pending_user_id"] = int(_row_value(user, "id"))
+                session["pending_remember"] = remember
+                return redirect(url_for("verify_email", next=next_url or ""))
             else:
                 session.clear()
-                session["user_id"] = int(user["id"])
+                session["user_id"] = int(_row_value(user, "id"))
                 session.permanent = remember
 
-                settings = get_user_settings(int(user["id"]))
+                settings = get_user_settings(int(_row_value(user, "id")))
                 multi_user = _get_user_count() > 1
                 if multi_user:
                     if not settings.get("sheety_endpoint"):
@@ -764,7 +1024,10 @@ def login():
 
                 return redirect(next_url or url_for("dashboard"))
 
-    return render_template("login.html", error=error, next=next_url or "")
+    if request.args.get("verify"):
+        show_verify = True
+
+    return render_template("login.html", error=error, next=next_url or "", show_verify=show_verify)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -775,22 +1038,32 @@ def register():
     error: Optional[str] = None
 
     if request.method == "POST":
-        username = (request.form.get("username") or "").strip()
+        name = (request.form.get("name") or "").strip()
+        email = (request.form.get("email") or "").strip().lower()
+        public_user_id = (request.form.get("user_id") or "").strip()
         password = request.form.get("password") or ""
         remember = bool(request.form.get("remember"))
 
-        if not username or not password:
-            error = "Username and password are required."
-        elif _get_user_by_username(username):
-            error = "Username already exists."
+        if not name or not email or not public_user_id or not password:
+            error = "Name, email, user ID, and password are required."
+        elif "@" not in email or "." not in email:
+            error = "Please provide a valid email address."
+        elif _get_user_by_public_id(public_user_id) or _get_user_by_username(public_user_id):
+            error = "That user ID is already taken."
+        elif _get_user_by_email(email):
+            error = "An account with that email already exists."
         else:
             created_at = datetime.now(timezone.utc).isoformat()
             password_hash = generate_password_hash(password)
+            role = "admin" if _is_admin_email(email) else "user"
             conn = get_db_connection()
             existing_users = conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
             cur = conn.execute(
-                "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
-                (username, password_hash, created_at),
+                """
+                INSERT INTO users (username, user_id, name, email, password_hash, role, is_verified, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+                """,
+                (public_user_id, public_user_id, name, email, password_hash, role, created_at),
             )
             new_user_id = int(cur.lastrowid)
 
@@ -800,11 +1073,13 @@ def register():
             conn.commit()
             conn.close()
 
+            user = _get_user_by_id(new_user_id)
+            _send_verification_email(user)
             session.clear()
-            session["user_id"] = new_user_id
-            session.permanent = remember
+            session["pending_user_id"] = new_user_id
+            session["pending_remember"] = remember
 
-            return redirect(url_for("settings"))
+            return redirect(url_for("verify_email"))
 
     return render_template("register.html", error=error)
 
@@ -820,6 +1095,126 @@ def logout():
     return resp
 
 
+@app.route("/verify-email", methods=["GET", "POST"])
+def verify_email():
+    pending_id = session.get("pending_user_id")
+    if not pending_id:
+        return redirect(url_for("login"))
+    user = _get_user_by_id(int(pending_id))
+    if not user:
+        session.pop("pending_user_id", None)
+        return redirect(url_for("register"))
+
+    error: Optional[str] = None
+    success: Optional[str] = None
+
+    if request.method == "POST":
+        if request.form.get("action") == "resend":
+            if _send_verification_email(user):
+                success = "Verification code resent."
+            else:
+                error = "Unable to send email. Check SMTP settings."
+        else:
+            code = (request.form.get("code") or "").strip()
+            ok, message = _verify_email_code(int(user["id"]), code)
+            if ok:
+                session.pop("pending_user_id", None)
+                remember = bool(session.pop("pending_remember", False))
+                session["user_id"] = int(user["id"])
+                session.permanent = remember
+                return redirect(url_for("settings"))
+            error = message
+
+    return render_template(
+        "verify_email.html",
+        error=error,
+        success=success,
+        email=_row_value(user, "email"),
+        name=_display_name(user),
+    )
+
+
+@app.route("/admin/users")
+@admin_required
+def admin_users():
+    admin_row = _get_user_by_id(int(get_current_user_id() or 0))
+    current_user = {
+        "id": int(admin_row["id"]) if admin_row else 0,
+        "display_name": _display_name(admin_row),
+        "role": (_row_value(admin_row, "role") if admin_row else "admin"),
+    }
+    conn = get_db_connection()
+    users = conn.execute(
+        """
+        SELECT id, name, user_id, email, role, is_verified, created_at
+        FROM users
+        ORDER BY created_at DESC
+        """
+    ).fetchall()
+    conn.close()
+    return render_template(
+        "admin_users.html",
+        users=users,
+        current_user=current_user,
+        error=request.args.get("error"),
+        success=request.args.get("success"),
+    )
+
+
+@app.route("/admin/delete-user", methods=["POST"])
+@admin_required
+def admin_delete_user():
+    target_id = (request.form.get("user_id") or "").strip()
+    message = (request.form.get("message") or "").strip()
+    admin_id = int(get_current_user_id() or 0)
+
+    if not target_id:
+        return redirect(url_for("admin_users", error="Missing user selection."))
+    try:
+        target_id_int = int(target_id)
+    except Exception:
+        return redirect(url_for("admin_users", error="Invalid user id."))
+
+    if target_id_int == admin_id:
+        return redirect(url_for("admin_users", error="You cannot delete your own account."))
+
+    if not message:
+        return redirect(url_for("admin_users", error="Please include a message to the user."))
+
+    user = _get_user_by_id(target_id_int)
+    if not user:
+        return redirect(url_for("admin_users", error="User not found."))
+    if (_row_value(user, "role") or "user") == "admin":
+        return redirect(url_for("admin_users", error="You cannot delete another admin."))
+
+    conn = get_db_connection()
+    conn.execute("DELETE FROM logs WHERE user_id = ?", (target_id_int,))
+    conn.execute("DELETE FROM user_settings WHERE user_id = ?", (target_id_int,))
+    conn.execute("DELETE FROM email_verifications WHERE user_id = ?", (target_id_int,))
+    conn.execute("DELETE FROM users WHERE id = ?", (target_id_int,))
+    conn.commit()
+    conn.close()
+
+    greeting = _display_name(user) or "there"
+    subject = "Your Time Tracker Pro account was removed"
+    body = (
+        f"Hi {greeting},\n\n"
+        "Your Time Tracker Pro account has been removed by an administrator.\n\n"
+        "Message from admin:\n"
+        f"{message}\n\n"
+        "If you believe this is a mistake, please reply to this email."
+    )
+    email_sent = (
+        _send_email(_row_value(user, "email"), subject, body)
+        if _row_value(user, "email")
+        else False
+    )
+    if not email_sent:
+        return redirect(url_for("admin_users", success="User deleted. Email failed to send."))
+
+    return redirect(url_for("admin_users", success="User deleted and notified."))
+
+
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings():
@@ -833,7 +1228,12 @@ def settings():
         return redirect(url_for("dashboard"))
 
     user_row = _get_user_by_id(user_id)
-    current_user = {"id": user_id, "username": (user_row["username"] if user_row else "")}
+    current_user = {
+        "id": user_id,
+        "display_name": _display_name(user_row),
+        "role": (_row_value(user_row, "role") if user_row else "user"),
+    }
+    is_admin = bool(user_row and (_row_value(user_row, "role") or "user") == "admin")
     allow_env_fallback = _get_user_count() <= 1
     env_sheety = (os.getenv(SHEETY_ENDPOINT_ENV) or "").strip() if allow_env_fallback else ""
     return render_template(
@@ -841,6 +1241,7 @@ def settings():
         settings=current,
         current_user=current_user,
         env_sheety=env_sheety,
+        is_admin=is_admin,
     )
 
 
@@ -917,7 +1318,13 @@ def dashboard():
         period_label = selected_date.strftime("%B %Y")
 
     user_row = _get_user_by_id(user_id)
-    current_user = {"id": user_id, "username": (user_row["username"] if user_row else "")}
+    is_admin = bool(user_row and (_row_value(user_row, "role") or "user") == "admin")
+    current_user = {
+        "id": user_id,
+        "display_name": _display_name(user_row),
+        "role": (_row_value(user_row, "role") if user_row else "user"),
+        "is_admin": is_admin,
+    }
 
     resp = make_response(render_template(
         "dashboard.html",
@@ -931,6 +1338,7 @@ def dashboard():
         start_date=start_date,
         end_date=end_date,
         current_user=current_user,
+        is_admin=is_admin,
     ))
     expected = os.getenv(API_AUTH_TOKEN_ENV)
     if expected and _get_user_count() <= 1:
@@ -946,8 +1354,13 @@ def dashboard():
 def graphs():
     user_id = int(get_current_user_id() or 0)
     user_row = _get_user_by_id(user_id)
-    current_user = {"id": user_id, "username": (user_row["username"] if user_row else "")}
-    return render_template("graphs.html", current_user=current_user)
+    current_user = {
+        "id": user_id,
+        "display_name": _display_name(user_row),
+        "role": (_row_value(user_row, "role") if user_row else "user"),
+    }
+    is_admin = bool(user_row and (_row_value(user_row, "role") or "user") == "admin")
+    return render_template("graphs.html", current_user=current_user, is_admin=is_admin)
 
 
 @app.route("/api/graph-data")

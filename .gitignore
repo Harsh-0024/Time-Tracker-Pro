@@ -1,6 +1,8 @@
 # 1. Security (Crucial)
 .env
 productivity.db
+merge_files.py
+merged_code.txt
 
 # 2. Python System Files (Junk)
 __pycache__/
