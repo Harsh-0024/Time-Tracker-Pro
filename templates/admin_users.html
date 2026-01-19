@@ -33,8 +33,8 @@
                     <div class="px-3 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs font-semibold text-gray-800">
                         {{ current_user.display_name }}
                     </div>
-                    <a href="{{ url_for('dashboard') }}" class="px-4 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-sm text-gray-700 hover:bg-[#F7F1E6] transition-all">Dashboard</a>
-                    <a href="{{ url_for('logout') }}" class="px-4 py-2 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-lg">Logout</a>
+                    <a href="{{ url_for('main.dashboard') }}" class="px-4 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-sm text-gray-700 hover:bg-[#F7F1E6] transition-all">Dashboard</a>
+                    <a href="{{ url_for('auth.logout') }}" class="px-4 py-2 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-lg">Logout</a>
                 </div>
             </div>
         </div>
@@ -96,7 +96,7 @@
             <h2 class="text-xl font-semibold text-gray-900">Remove a User</h2>
             <p class="text-sm text-gray-600 mt-1">Send a custom message explaining the removal.</p>
 
-            <form method="POST" action="{{ url_for('admin_delete_user') }}" class="mt-6 space-y-5">
+            <form method="POST" action="{{ url_for('admin.admin_delete_user') }}" class="mt-6 space-y-5">
                 {% set ns = namespace(has_removable=false) %}
                 <div>
                     <label class="block text-sm font-semibold text-gray-800 mb-2">Select user</label>
