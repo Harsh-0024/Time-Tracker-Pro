@@ -48,37 +48,45 @@ def fetch_local_data(db_name: str, user_id: int) -> pd.DataFrame:
 
 
 def replace_logs_for_user(db_name: str, user_id: int, final_rows: List[Dict[str, Any]]) -> int:
+    if not final_rows:
+        return 0
+
     conn = get_db_connection(db_name)
-    conn.execute("DELETE FROM logs WHERE user_id = ?", (int(user_id),))
-
     inserted_count = 0
-    for p in final_rows:
-        duration = int((p["end_dt"] - p["start_dt"]).total_seconds() / 60)
-        if duration <= 0:
-            continue
-        conn.execute(
-            """
-            INSERT INTO logs (
-                start_date, start_time, end_date, end_time,
-                task, duration, tags, urg, imp, user_id
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                p["start_dt"].strftime("%Y-%m-%d"),
-                p["start_dt"].strftime("%H:%M:%S"),
-                p["end_dt"].strftime("%Y-%m-%d"),
-                p["end_dt"].strftime("%H:%M:%S"),
-                p["task"],
-                duration,
-                p["tag"],
-                1 if p.get("urg") else 0,
-                1 if p.get("imp") else 0,
-                int(user_id),
-            ),
-        )
-        inserted_count += 1
+    try:
+        conn.execute("DELETE FROM logs WHERE user_id = ?", (int(user_id),))
 
-    conn.commit()
-    conn.close()
+        for p in final_rows:
+            duration = int((p["end_dt"] - p["start_dt"]).total_seconds() / 60)
+            if duration <= 0:
+                continue
+            conn.execute(
+                """
+                INSERT INTO logs (
+                    start_date, start_time, end_date, end_time,
+                    task, duration, tags, urg, imp, user_id
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    p["start_dt"].strftime("%Y-%m-%d"),
+                    p["start_dt"].strftime("%H:%M:%S"),
+                    p["end_dt"].strftime("%Y-%m-%d"),
+                    p["end_dt"].strftime("%H:%M:%S"),
+                    p["task"],
+                    duration,
+                    p["tag"],
+                    1 if p.get("urg") else 0,
+                    1 if p.get("imp") else 0,
+                    int(user_id),
+                ),
+            )
+            inserted_count += 1
+
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
     return inserted_count

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+_LEGACY_APP_PY = r'''
+
 import logging
 import os
 import re
@@ -2209,6 +2211,7 @@ def import_csv():
         logger.exception("CSV import error: %s", exc)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
+'''
 
 from time_tracker_pro import create_app as _create_app
 

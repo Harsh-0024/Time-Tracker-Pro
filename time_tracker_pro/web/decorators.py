@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hmac
 import os
 from functools import wraps
 from typing import Any, Callable, Dict, Optional
@@ -16,15 +17,15 @@ API_AUTH_TOKEN_ENV = "TIME_TRACKER_API_TOKEN"
 
 
 def token_is_valid(headers: Dict[str, str]) -> bool:
-    expected = os.getenv(API_AUTH_TOKEN_ENV)
+    expected = os.getenv(API_AUTH_TOKEN_ENV) or ""
     if not expected:
         return False
     db_name = current_app.config["DB_NAME"]
     allow_cookie_token = get_user_count(db_name) <= 1
-    provided = headers.get("X-API-Token") or request.args.get("token")
+    provided = headers.get("X-API-Token") or request.args.get("token") or ""
     if allow_cookie_token and not provided:
-        provided = request.cookies.get("tt_token")
-    return bool(provided and provided == expected)
+        provided = request.cookies.get("tt_token") or ""
+    return bool(provided and hmac.compare_digest(provided, expected))
 
 
 def resolve_request_user_id(headers: Dict[str, str]) -> Optional[int]:
