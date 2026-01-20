@@ -1415,7 +1415,11 @@
                 let values = [];
                 let colors = [];
 
-                if (window.modalFilterType === 'tag') {
+                const taskBreakdownFilters = ['all', 'q1', 'q2', 'q3', 'q4'];
+                const showTaskBreakdown = window.modalFilterType === 'tag'
+                    || taskBreakdownFilters.includes(window.modalFilterType);
+
+                if (showTaskBreakdown) {
                     const taskGroups = {};
                     data.tasks.forEach(task => {
                         let key = String(task.task || '').trim();
