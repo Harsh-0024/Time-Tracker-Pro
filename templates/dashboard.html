@@ -364,53 +364,82 @@
             {% endif %}
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        {% set top_tag_label = tags.labels[0] if tags.labels else 'No tags' %}
+        {% set top_tag_hours = tags.data[0] if tags.data else 0 %}
+        {% set total_tag_hours = (tags.data | sum) if tags.data else 0 %}
+        {% set top_tag_pct = ((top_tag_hours / total_tag_hours) * 100) | round(1) if total_tag_hours else 0 %}
+        {% set top_quad_label = 'Critical' %}
+        {% set top_quad_sub = 'Important & Urgent' %}
+        {% set top_quad_pct = matrix.q1.pct %}
+        {% set top_quad_hours = matrix.q1.hours %}
+        {% if matrix.q2.pct > top_quad_pct %}
+            {% set top_quad_label = 'Growth' %}
+            {% set top_quad_sub = 'Important & Not Urgent' %}
+            {% set top_quad_pct = matrix.q2.pct %}
+            {% set top_quad_hours = matrix.q2.hours %}
+        {% endif %}
+        {% if matrix.q3.pct > top_quad_pct %}
+            {% set top_quad_label = 'Drudgery' %}
+            {% set top_quad_sub = 'Urgent & Not Important' %}
+            {% set top_quad_pct = matrix.q3.pct %}
+            {% set top_quad_hours = matrix.q3.hours %}
+        {% endif %}
+        {% if matrix.q4.pct > top_quad_pct %}
+            {% set top_quad_label = 'Waste' %}
+            {% set top_quad_sub = 'Not Urgent & Not Important' %}
+            {% set top_quad_pct = matrix.q4.pct %}
+            {% set top_quad_hours = matrix.q4.hours %}
+        {% endif %}
+        <div class="hidden md:grid grid-cols-3 gap-6 mb-12">
             <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <div class="text-xs font-semibold tracking-[0.16em] text-gray-400 uppercase">Focus Time</div>
-                        <div class="mt-2 text-3xl font-light text-gray-900"><span class="js-hover-hours" data-hours="{{ matrix.q2.hours }}">{{ matrix.q2.hours }}h</span></div>
+                        <div class="text-xs font-semibold tracking-[0.16em] text-gray-400 uppercase">Period total</div>
+                        <div class="mt-2 text-3xl font-light text-gray-900"><span class="js-hover-hours" data-hours="{{ matrix.total_hours }}">{{ matrix.total_hours }}h</span></div>
                     </div>
                     <span class="inline-flex h-9 px-3 items-center rounded-full bg-[#111827] text-[11px] font-medium tracking-wide text-[#F8D574] border border-[rgba(248,213,116,0.35)]">
-                        Deep work
+                        All logged
                     </span>
                 </div>
                 <div class="w-full h-2 rounded-full bg-[#E7D8C2] overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-[#111827] via-[#111827] to-[#F5B826]" style="width: {{ matrix.q2.pct }}%"></div>
+                    <div class="h-full rounded-full bg-gradient-to-r from-[#111827] via-[#111827] to-[#F5B826]" style="width: 100%"></div>
                 </div>
-                <div class="mt-3 text-xs text-gray-500">You spent {{ matrix.q2.pct }}% of your time on important, non‑urgent work.</div>
+                <div class="mt-3 text-xs text-gray-500">{{ current_month }} · {{ period | title }} view totals.</div>
             </div>
             <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <div class="text-xs font-semibold tracking-[0.16em] text-gray-400 uppercase">Critical Load</div>
-                        <div class="mt-2 text-3xl font-light text-gray-900"><span class="js-hover-hours" data-hours="{{ matrix.q1.hours }}">{{ matrix.q1.hours }}h</span></div>
+                        <div class="text-xs font-semibold tracking-[0.16em] text-gray-400 uppercase">Top category</div>
+                        <div class="mt-2 text-3xl font-light text-gray-900">{{ top_tag_hours | round(1) }}h</div>
                     </div>
                     <span class="inline-flex h-9 px-3 items-center rounded-full bg-[#FDF3DF] text-[11px] font-medium tracking-wide text-[#92400E] border border-amber-200">
-                        Urgent & important
+                        {{ top_tag_label }}
                     </span>
                 </div>
                 <div class="w-full h-2 rounded-full bg-[#E7D8C2] overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-[#F97316] via-[#F59E0B] to-[#FACC15]" style="width: {{ matrix.q1.pct }}%"></div>
+                    <div class="h-full rounded-full bg-gradient-to-r from-[#F97316] via-[#F59E0B] to-[#FACC15]" style="width: {{ top_tag_pct }}%"></div>
                 </div>
-                <div class="mt-3 text-xs text-gray-500">Represents {{ matrix.q1.pct }}% of your tracked time this period.</div>
+                <div class="mt-3 text-xs text-gray-500">{{ top_tag_pct }}% of logged time this period.</div>
             </div>
             <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <div class="text-xs font-semibold tracking-[0.16em] text-gray-400 uppercase">Aligned Time</div>
-                        <div class="mt-2 text-3xl font-light text-gray-900">{{ ((matrix.q2.pct + matrix.q1.pct) / 2) | round(1) }}<span class="text-sm text-gray-400 font-normal ml-1">%</span></div>
+                        <div class="text-xs font-semibold tracking-[0.16em] text-gray-400 uppercase">Dominant quadrant</div>
+                        <div class="mt-2 text-3xl font-light text-gray-900">{{ top_quad_hours }}h</div>
                     </div>
+                    <span class="inline-flex h-9 px-3 items-center rounded-full bg-[#ECFDF3] text-[11px] font-medium tracking-wide text-[#047857] border border-emerald-200">
+                        {{ top_quad_label }}
+                    </span>
                 </div>
                 <div class="w-full h-2 rounded-full bg-[#E7D8C2] overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-[#22C55E] via-[#A3E635] to-[#FACC15]" style="width: {{ ((matrix.q2.pct + matrix.q1.pct) / 2) | round(1) }}%"></div>
+                    <div class="h-full rounded-full bg-gradient-to-r from-[#22C55E] via-[#A3E635] to-[#FACC15]" style="width: {{ top_quad_pct }}%"></div>
                 </div>
-                <div class="mt-3 text-xs text-gray-500">Average of growth and critical work share – closer to 100% means your calendar matches your priorities.</div>
+                <div class="mt-3 text-xs text-gray-500">{{ top_quad_sub }} · {{ top_quad_pct }}% share.</div>
             </div>
         </div>
 
         <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8 md:mt-0">
 
             <!-- Priority Matrix - Extended Eisenhower Matrix -->
             <div class="lg:col-span-2" id="matrix">
@@ -644,8 +673,8 @@
             </div>
             <div id="modalTools" class="mb-4 flex items-center justify-end"></div>
             <div id="modalStats" class="mb-6 grid grid-cols-3 gap-4"></div>
-            <div id="modalChart" class="mb-6" style="height: 300px;"></div>
-            <div id="modalTasks" class="space-y-3"></div>
+            <div id="modalChart" class="mb-8 md:mb-6" style="height: 300px;"></div>
+            <div id="modalTasks" class="mt-2 md:mt-0 space-y-3"></div>
         </div>
     </div>
 
