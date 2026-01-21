@@ -1114,6 +1114,17 @@
             const queryParts = query
                 ? query.split(',').map(s => String(s || '').trim().toLowerCase()).filter(Boolean)
                 : [];
+            const parsedTerms = queryParts
+                .map(part => {
+                    const match = part.match(/^(?:if\s+not|not)\s+(.+)$/);
+                    if (match && match[1]) {
+                        return { term: match[1].trim(), negate: true };
+                    }
+                    return { term: part, negate: false };
+                })
+                .filter(item => item.term);
+            const includeTerms = parsedTerms.filter(item => !item.negate).map(item => item.term);
+            const excludeTerms = parsedTerms.filter(item => item.negate).map(item => item.term);
             const timeToMinutes = (value) => {
                 if (!value) return 0;
                 const parts = String(value).trim().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
@@ -1151,8 +1162,15 @@
                 const rawTag = String(t.tag || '').toLowerCase();
                 return taskText.includes(clean) || tagText.includes(clean) || rawTag.includes(clean);
             };
-            const searched = queryParts.length
-                ? active.filter(t => queryParts.some(part => matchesTerm(t, part)))
+            const searched = parsedTerms.length
+                ? active.filter(t => {
+                    const matchesInclude = includeTerms.length
+                        ? includeTerms.some(part => matchesTerm(t, part))
+                        : true;
+                    if (!matchesInclude) return false;
+                    if (excludeTerms.length && excludeTerms.some(part => matchesTerm(t, part))) return false;
+                    return true;
+                })
                 : active;
             const sorters = {
                 time_asc: (a, b) => timeToMinutes(a.start_time) - timeToMinutes(b.start_time),
