@@ -933,10 +933,34 @@ class TimeLogParser:
         dot_positions = []
         consumed = 0
 
-        for token in tokens:
+        def _ampm_normalized(token: str) -> Optional[str]:
+            normalized = token.strip().lower().strip(".,")
+            if normalized in {"am", "a.m", "a.m.", "a"}:
+                return "am"
+            if normalized in {"pm", "p.m", "p.m.", "p"}:
+                return "pm"
+            return None
+
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
             trailing_dot = token.endswith(".")
-            cleaned = token.rstrip(".")
+            cleaned = token.rstrip(".").rstrip(",")
+
             time_val = self._parse_time_token(cleaned, client_now)
+            consumed_extra = 0
+            if time_val is not None:
+                ampm = None
+                if i + 1 < len(tokens):
+                    ampm = _ampm_normalized(tokens[i + 1])
+                if ampm and not re.search(r"[ap]m\.?$", cleaned, re.IGNORECASE):
+                    merged = f"{cleaned}{ampm}"
+                    merged_time = self._parse_time_token(merged, client_now)
+                    if merged_time is not None:
+                        time_val = merged_time
+                        consumed_extra = 1
+                        trailing_dot = trailing_dot or tokens[i + 1].endswith(".")
+
             date_val = self._parse_date_token(cleaned, client_now)
             if time_val:
                 elements.append(("time", time_val))
@@ -946,9 +970,13 @@ class TimeLogParser:
                 dot_positions.append(trailing_dot)
             else:
                 break
-            consumed += 1
+            consumed += 1 + consumed_extra
+            i += 1 + consumed_extra
             if len(elements) >= 4:
                 break
+
+        if i == 0:
+            i = consumed
 
         remaining_tokens = tokens[consumed:]
         dot_after_first = dot_positions[0] if dot_positions else False
@@ -1010,9 +1038,13 @@ class TimeLogParser:
             t1 = elements[0][1]
             if dot_after_last:
                 start_dt = self._combine_dt(current_date, t1)
+                if start_dt > client_now:
+                    start_dt = start_dt - timedelta(days=1)
                 end_dt = client_now
             else:
                 end_dt = self._combine_dt(current_date, t1)
+                if end_dt > client_now:
+                    end_dt = end_dt - timedelta(days=1)
                 start_dt = fallback_start(end_dt)
         elif len(elements) == 2:
             times = [val for kind, val in elements if kind == "time"]

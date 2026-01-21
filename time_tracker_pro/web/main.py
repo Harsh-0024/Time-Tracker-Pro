@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import os
 import time
 from datetime import timedelta
@@ -27,6 +28,8 @@ from .utils import get_current_user_id
 
 
 bp = Blueprint("main", __name__)
+
+logger = logging.getLogger(__name__)
 
 _DEFAULT_ICON_BYTES = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIW2P8z8BQDwAF/wJ+q9QKJwAAAABJRU5ErkJggg=="
@@ -119,8 +122,12 @@ def dashboard():
         try:
             sync_cloud_data(db_name, user_id, force=True)
             df = fetch_local_data(db_name, user_id)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning(
+                "Dashboard sync fallback failed user_id=%s error=%s",
+                int(user_id),
+                exc,
+            )
 
     start_date, end_date = get_period_range(selected_date, period)
     period_df = df[(df["date"] >= start_date) & (df["date"] <= end_date)] if not df.empty else pd.DataFrame()
@@ -200,8 +207,8 @@ def dashboard():
     if expected and get_user_count(db_name) <= 1:
         try:
             resp.set_cookie("tt_token", expected, httponly=True, samesite="Lax")
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Failed to set tt_token cookie error=%s", exc)
 
     return resp
 

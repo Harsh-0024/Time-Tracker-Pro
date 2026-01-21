@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime
+from itertools import product
 
 from time_tracker_pro.services.parser import TimeLogParser
 
@@ -65,6 +66,16 @@ class LogEntryParserRulesTests(unittest.TestCase):
         self.assertEqual(parsed["start_dt"], datetime(2026, 1, 21, 9, 0))
         self.assertEqual(parsed["end_dt"], datetime(2026, 1, 21, 11, 0))
 
+    def test_one_time_midnight_crossing_uses_previous_day(self) -> None:
+        previous_end = datetime(2026, 1, 13, 21, 51)
+        parsed = self.parse_with_now(
+            "11:30 pm friends time",
+            "2026-01-14 01:02",
+            previous_end=previous_end,
+        )
+        self.assertEqual(parsed["start_dt"], previous_end)
+        self.assertEqual(parsed["end_dt"], datetime(2026, 1, 13, 23, 30))
+
     def test_three_elements_date_times_with_dot_after_date(self) -> None:
         parsed = self.parse("20/01. 9 11 Task")
         self.assertEqual(parsed["start_dt"], datetime(2026, 1, 20, 9, 0))
@@ -96,6 +107,83 @@ class LogEntryParserRulesTests(unittest.TestCase):
         )
         self.assertEqual(second["start_dt"], datetime(2026, 1, 20, 19, 50))
         self.assertEqual(second["end_dt"], datetime(2026, 1, 20, 20, 27))
+
+    def test_generated_permutations_do_not_crash(self) -> None:
+        time_seqs = [
+            ("9",),
+            ("09",),
+            ("9:00",),
+            ("11:15",),
+            ("9am",),
+            ("9", "am"),
+            ("7:50", "pm"),
+            ("12", "am"),
+            ("12", "pm"),
+            ("23",),
+        ]
+        date_tokens = [
+            "20/01",
+            "20-01",
+            "20.01",
+            "20/01/26",
+            "2026-01-20",
+            "Jan",
+        ]
+
+        def as_text(tokens: tuple[str, ...]) -> str:
+            return " ".join(tokens)
+
+        def with_trailing_dot(tokens: tuple[str, ...]) -> tuple[str, ...]:
+            if not tokens:
+                return tokens
+            return (*tokens[:-1], f"{tokens[-1]}.")
+
+        def with_trailing_comma(tokens: tuple[str, ...]) -> tuple[str, ...]:
+            if not tokens:
+                return tokens
+            return (*tokens[:-1], f"{tokens[-1]},")
+
+        base_text = ("Task", ".", "Work", "Urgent", "Important")
+
+        cases: list[str] = []
+
+        cases.append(as_text(base_text))
+
+        for t in time_seqs:
+            cases.append(as_text((*t, *base_text)))
+            cases.append(as_text((*with_trailing_dot(t), *base_text)))
+            cases.append(as_text((*t, ".", *base_text)))
+            cases.append(as_text((*with_trailing_comma(t), *base_text)))
+
+        for t, d in product(time_seqs, date_tokens):
+            td = (*t, d)
+            cases.append(as_text((*td, *base_text)))
+            cases.append(as_text((*with_trailing_dot(td), *base_text)))
+            cases.append(as_text((*td, ".", *base_text)))
+
+        for t1, t2 in product(time_seqs, time_seqs):
+            cases.append(as_text((*t1, *t2, *base_text)))
+
+        for d, t1, t2 in product(date_tokens, time_seqs, time_seqs):
+            cases.append(as_text((d + ".", *t1, *t2, *base_text)))
+            cases.append(as_text((d, ".", *t1, *t2, *base_text)))
+            cases.append(as_text((d, *t1, *t2, *base_text)))
+
+        for d1, t1, d2, t2 in product(date_tokens, time_seqs, date_tokens, time_seqs):
+            cases.append(as_text((d1, *t1, d2, *t2, *base_text)))
+
+        max_cases = 5000
+        tested = 0
+        for entry in cases:
+            if tested >= max_cases:
+                break
+            with self.subTest(entry=entry):
+                parsed = self.parse(entry)
+                self.assertIn("start_dt", parsed)
+                self.assertIn("end_dt", parsed)
+                self.assertIsInstance(parsed["start_dt"], datetime)
+                self.assertIsInstance(parsed["end_dt"], datetime)
+            tested += 1
 
 
 if __name__ == "__main__":

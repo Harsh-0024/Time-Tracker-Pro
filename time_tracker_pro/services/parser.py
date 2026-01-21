@@ -225,9 +225,13 @@ class TimeLogParser:
             t1 = elements[0][1]
             if dot_after_last:
                 start_dt = self._combine_dt(current_date, t1)
+                if start_dt > client_now:
+                    start_dt = start_dt - timedelta(days=1)
                 end_dt = client_now
             else:
                 end_dt = self._combine_dt(current_date, t1)
+                if end_dt > client_now:
+                    end_dt = end_dt - timedelta(days=1)
                 start_dt = fallback_start(end_dt)
         elif len(elements) == 2:
             times = [val for kind, val in elements if kind == "time"]

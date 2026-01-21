@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Optional
@@ -26,6 +27,8 @@ from .utils import safe_next_url
 
 bp = Blueprint("auth", __name__)
 
+logger = logging.getLogger(__name__)
+
 
 @bp.route("/login", methods=["GET", "POST"], endpoint="login")
 def login():
@@ -47,35 +50,42 @@ def login():
             error = "Username, email, or user ID and password are required."
         else:
             user = get_user_by_username_or_id_or_email(db_name, identifier)
-            pw_hash = row_value(user, "password_hash") or ""
-            if not user or not check_password_hash(pw_hash, password):
+            if not user:
                 error = "Invalid credentials."
-            elif not int(row_value(user, "is_verified") or 0):
-                session.clear()
-                session["pending_user_id"] = int(row_value(user, "id"))
-                session["pending_remember"] = remember
-
-                if send_verification_email(db_name, user):
-                    session["verification_success"] = "Verification code sent."
-                else:
-                    session["verification_error"] = "Unable to send email. Check SMTP settings."
-
-                return redirect(url_for("auth.verify_email", next=next_url or ""))
             else:
-                session.clear()
-                session["user_id"] = int(row_value(user, "id"))
-                session.permanent = remember
+                pw_hash = row_value(user, "password_hash") or ""
+                if not check_password_hash(pw_hash, password):
+                    error = "Invalid credentials."
+                elif not int(row_value(user, "is_verified") or 0):
+                    session.clear()
+                    session["pending_user_id"] = int(row_value(user, "id"))
+                    session["pending_remember"] = remember
 
-                settings = get_user_settings(db_name, int(row_value(user, "id")))
-                multi_user = get_user_count(db_name) > 1
-                if multi_user:
-                    if not settings.get("sheety_endpoint"):
-                        return redirect(url_for("main.settings"))
+                    if send_verification_email(db_name, user):
+                        session["verification_success"] = "Verification code sent."
+                    else:
+                        session["verification_error"] = "Unable to send email. Check SMTP settings."
+
+                    return redirect(url_for("auth.verify_email", next=next_url or ""))
                 else:
-                    if not (settings.get("sheety_endpoint") or (current_app.config.get("SHEETY_ENDPOINT") or "") or os.getenv("SHEETY_ENDPOINT")):
-                        return redirect(url_for("main.settings"))
+                    session.clear()
+                    session["user_id"] = int(row_value(user, "id"))
+                    session.permanent = remember
 
-                return redirect(next_url or url_for("main.dashboard"))
+                    settings = get_user_settings(db_name, int(row_value(user, "id")))
+                    multi_user = get_user_count(db_name) > 1
+                    if multi_user:
+                        if not settings.get("sheety_endpoint"):
+                            return redirect(url_for("main.settings"))
+                    else:
+                        if not (
+                            settings.get("sheety_endpoint")
+                            or (current_app.config.get("SHEETY_ENDPOINT") or "")
+                            or os.getenv("SHEETY_ENDPOINT")
+                        ):
+                            return redirect(url_for("main.settings"))
+
+                    return redirect(next_url or url_for("main.dashboard"))
 
     if request.args.get("verify"):
         show_verify = True
@@ -145,8 +155,8 @@ def logout():
     resp = redirect(url_for("auth.login"))
     try:
         resp.set_cookie("tt_token", "", expires=0)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Failed to clear tt_token cookie error=%s", exc)
     return resp
 
 

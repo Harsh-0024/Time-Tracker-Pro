@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import logging
 import os
 import sqlite3
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_db_connection(db_name: str) -> sqlite3.Connection:
@@ -9,8 +13,8 @@ def get_db_connection(db_name: str) -> sqlite3.Connection:
         parent = os.path.dirname(db_name)
         if parent:
             os.makedirs(parent, exist_ok=True)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Failed to ensure DB parent directory exists db_name=%s error=%s", db_name, exc)
     conn = sqlite3.connect(db_name)
     conn.row_factory = sqlite3.Row
     return conn
