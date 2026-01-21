@@ -202,10 +202,22 @@ def init_db() -> None:
                 expires_at TEXT NOT NULL,
                 attempts INTEGER DEFAULT 0,
                 verified_at TEXT,
+                purpose TEXT DEFAULT 'verify_email',
                 FOREIGN KEY(user_id) REFERENCES users(id)
             )
             """
         )
+        verification_cols = [
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(email_verifications)").fetchall()
+        ]
+        if "purpose" not in verification_cols:
+            conn.execute(
+                "ALTER TABLE email_verifications ADD COLUMN purpose TEXT DEFAULT 'verify_email'"
+            )
+            conn.execute(
+                "UPDATE email_verifications SET purpose = 'verify_email' WHERE purpose IS NULL OR purpose = ''"
+            )
         conn.commit()
         conn.close()
     except Exception as exc:
@@ -1420,8 +1432,29 @@ def login():
         password = request.form.get("password") or ""
         remember = bool(request.form.get("remember"))
         next_url = _safe_next_url(request.form.get("next")) or next_url
+        action = (request.form.get("action") or "").strip().lower()
 
-        if not identifier or not password:
+        if action == "login_otp":
+            if not identifier:
+                error = "Please enter your username, email, or user ID."
+            else:
+                user = _get_user_by_username(identifier)
+                if not user:
+                    error = "No account found with that identifier."
+                else:
+                    session.clear()
+                    session["pending_user_id"] = int(_row_value(user, "id"))
+                    session["pending_remember"] = remember
+                    session["pending_otp_login"] = True
+                    if _send_verification_email(user):
+                        target_email = _row_value(user, "email") or ""
+                        session["verification_success"] = (
+                            f"Verification code sent to {target_email}." if target_email else "Verification code sent."
+                        )
+                    else:
+                        session["verification_error"] = "Unable to send email. Check SMTP settings."
+                    return redirect(url_for("verify_email", next=next_url or ""))
+        elif not identifier or not password:
             error = "Username, email, or user ID and password are required."
         else:
             user = _get_user_by_username(identifier)
@@ -1535,6 +1568,12 @@ def verify_email():
 
     error: Optional[str] = session.pop("verification_error", None)
     success: Optional[str] = session.pop("verification_success", None)
+    next_url = _safe_next_url(request.args.get("next"))
+    title = "Verify your email"
+    subtitle = "We sent a 6-digit code to"
+    if session.get("pending_otp_login"):
+        title = "Log in with OTP"
+        subtitle = "We sent a 6-digit code to"
 
     if request.method == "POST":
         if request.form.get("action") == "resend":
@@ -1549,8 +1588,13 @@ def verify_email():
             else:
                 ok, message = _verify_email_code(int(user["id"]), code)
                 if ok:
-                    _send_welcome_email(user)
                     session.pop("pending_user_id", None)
+                    if session.pop("pending_otp_login", False):
+                        remember = bool(session.pop("pending_remember", False))
+                        session["user_id"] = int(user["id"])
+                        session.permanent = remember
+                        return redirect(next_url or url_for("dashboard"))
+                    _send_welcome_email(user)
                     remember = bool(session.pop("pending_remember", False))
                     session["user_id"] = int(user["id"])
                     session.permanent = remember
@@ -1568,6 +1612,8 @@ def verify_email():
         success=success,
         email=_row_value(user, "email"),
         name=_display_name(user),
+        title=title,
+        subtitle=subtitle,
     )
 
 

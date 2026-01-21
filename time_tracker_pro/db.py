@@ -105,10 +105,20 @@ def init_db(db_name: str) -> None:
             expires_at TEXT NOT NULL,
             attempts INTEGER DEFAULT 0,
             verified_at TEXT,
+            purpose TEXT DEFAULT 'verify_email',
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
         """
     )
+
+    verification_cols = [
+        row["name"] for row in conn.execute("PRAGMA table_info(email_verifications)").fetchall()
+    ]
+    if "purpose" not in verification_cols:
+        conn.execute("ALTER TABLE email_verifications ADD COLUMN purpose TEXT DEFAULT 'verify_email'")
+        conn.execute(
+            "UPDATE email_verifications SET purpose = 'verify_email' WHERE purpose IS NULL OR purpose = ''"
+        )
 
     conn.commit()
     conn.close()

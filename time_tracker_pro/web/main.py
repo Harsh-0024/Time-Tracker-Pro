@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
-from flask import Blueprint, current_app, make_response, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, current_app, make_response, redirect, render_template, request, send_file, session, url_for
 
 from ..core.admins import is_admin_email
 from ..core.dates import get_period_range, parse_date_param, parse_period_param
@@ -72,15 +72,25 @@ def settings():
         "display_name": display_name(user_row),
         "role": (row_value(user_row, "role") if user_row else "user"),
     }
+    profile_info = {
+        "username": row_value(user_row, "username") if user_row else "",
+        "email": row_value(user_row, "email") if user_row else "",
+        "user_id": row_value(user_row, "user_id") if user_row else "",
+        "name": row_value(user_row, "name") if user_row else "",
+    }
 
     return render_template(
         "settings.html",
         settings=current,
         current_user=current_user,
+        profile_info=profile_info,
         env_sheety=env_sheety,
         is_admin=is_admin,
         icon_error=request.args.get("icon_error"),
         icon_success=request.args.get("icon_success"),
+        profile_error=session.pop("profile_error", None),
+        profile_success=session.pop("profile_success", None),
+        pending_email=session.get("pending_email_new"),
     )
 
 

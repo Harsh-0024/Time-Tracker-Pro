@@ -2,6 +2,28 @@
 
   Note: _This is purely the output of the chat conversation and does not contain any raw data, codebase snippets, etc. used to generate the output._
 
+"""
+Act as a Senior Software Architect. I want to upgrade my workout app from a simple tool to a secure, multi-user platform with administration capabilities.
+
+Design and implement the following three systems:
+
+1. The "Persistent" User Experience (Authentication)
+   - Users need to register with Name, Email, UserID, and Password.
+   - Crucial: The login must be "sticky" (Remember Me). I don't want users logging in every time they open the app.
+   - Security: Passwords must never be stored as plain text.
+
+2. The Trust System (Verification)
+   - I want to verify that emails are real.
+   - Flow: When a user registers, send them a verification code via email. They must enter this code to activate their account or use another method if you have a better one.
+
+3. The "God Mode" (Administration)
+   - I need an Admin role. (I was thinking of a username like "Harsh_The_Administrator", but if you have a cleaner, more professional industry-standard way to handle admin privileges, please implement that instead).
+   - Admin capabilities:
+     * View a list of all users (Name, ID, Email).
+     * Privacy Constraint: The Admin MUST NOT be able to see a user's private data (workouts, plans, logs) or their password.
+     * Ban Hammer: The Admin can delete a user. When doing so, I must be able to write a custom message explaining why, which is emailed to the user before deletion.
+"""
+
 ### User Input
 
 Act as a Senior Software Architect. I want to upgrade my workout app from a simple tool to a secure, multi-user platform with administration capabilities.
