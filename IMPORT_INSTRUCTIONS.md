@@ -63,7 +63,7 @@ Your API token should be set in Railway's environment variables as `TIME_TRACKER
 ## Troubleshooting
 
 - **401 Unauthorized**: Make sure your `TIME_TRACKER_API_TOKEN` is set correctly in both Railway and your local environment
-- **No data imported**: Check that your CSV has the correct columns (Logged Time, Raw Start, Raw Task)
+- **No data imported**: Check that your CSV has the correct columns (Logged Time, Log Entry)
 - **Import fails**: Check the error message - it will tell you what went wrong
 
 ## After Import
