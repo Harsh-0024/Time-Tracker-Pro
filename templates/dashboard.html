@@ -295,9 +295,9 @@
                     </div>
                     {% if current_user and current_user.display_name %}
                         <div class="hidden md:flex items-center gap-2 pl-2">
-                            <div class="px-3 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs font-semibold text-gray-800">
+                            <a href="{{ url_for('main.settings') }}" class="px-3 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs font-semibold text-gray-800 hover:bg-[#F7F1E6] transition-all">
                                 {{ current_user.display_name }}
-                            </div>
+                            </a>
                             <a href="{{ url_for('main.graphs') }}" class="px-3 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs font-semibold text-gray-700 hover:bg-[#F7F1E6] transition-all">Graphs</a>
                             {% if is_admin %}
                                 <a href="{{ url_for('admin.admin_users') }}" class="px-3 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs font-semibold text-gray-700 hover:bg-[#F7F1E6] transition-all">Admin</a>
