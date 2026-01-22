@@ -78,6 +78,28 @@
             color: #111827;
             box-shadow: 0 12px 26px rgba(185, 132, 40, 0.35);
         }
+        .graph-focus-option {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            font-weight: 500;
+            color: #1F2937;
+            padding-right: 2.25rem;
+        }
+        .graph-focus-option[data-active="true"] {
+            background: #111827;
+            color: #F8D574;
+        }
+        .graph-focus-option[data-active="true"]::after {
+            content: '✓';
+            position: absolute;
+            right: 1rem;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: #F8D574;
+        }
         .modal-backdrop {
             background: rgba(15, 23, 42, 0.55);
             backdrop-filter: blur(6px);
@@ -125,28 +147,43 @@
                     <label class="block text-xs md:text-sm font-medium text-gray-700 mb-3">Graph focus</label>
                     <div class="space-y-3">
                         <div class="flex flex-col lg:flex-row gap-3">
+                            <div class="relative w-full lg:max-w-[240px]">
+                                <button id="graphFocusBtn" class="w-full px-4 py-3 rounded-2xl bg-white/85 border border-[rgba(148,126,86,0.35)] text-left text-sm md:text-base text-gray-900 font-semibold flex items-center justify-between hover:bg-[#F7F1E6] transition-all">
+                                    <span id="graphFocusLabel">Work</span>
+                                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                <div id="graphFocusMenu" class="hidden absolute z-50 w-full mt-2 bg-[#FFFDF8] rounded-2xl shadow-2xl border border-[rgba(148,126,86,0.35)] max-h-80 overflow-y-auto">
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="search_only">Search only</button>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="work">Work</button>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="necessity">Necessity</button>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="soul">Soul</button>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="rest">Rest</button>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="waste">Waste</button>
+                                    <div class="px-4 py-1 text-[11px] uppercase tracking-[0.2em] text-gray-400">Priority</div>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="important">Important</button>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="urgent">Urgent</button>
+                                    <div class="px-4 py-1 text-[11px] uppercase tracking-[0.2em] text-gray-400">Quadrants</div>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="q1">Important & Urgent (Critical)</button>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="q2">Important & Not Urgent (Growth)</button>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="q3">Urgent & Not Important (Drudgery)</button>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="q4">Not Urgent & Not Important (Waste)</button>
+                                    <div class="px-4 py-1 text-[11px] uppercase tracking-[0.2em] text-gray-400">All logs</div>
+                                    <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="total">Total time</button>
+                                </div>
+                            </div>
                             <input id="graphSearchInput" type="text" class="flex-1 px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] text-sm md:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="sleep, rest · work · important and not work · workout or yoga">
-                            <select id="graphFocusSelect" class="px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] text-sm md:text-base text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-amber-300">
-                                <option value="work" selected>Work</option>
-                                <option value="necessity">Necessity</option>
-                                <option value="soul">Soul</option>
-                                <option value="rest">Rest</option>
-                                <option value="waste">Waste</option>
-                                <option value="important">Important</option>
-                                <option value="urgent">Urgent</option>
-                                <option value="q1">Important & Urgent (Critical)</option>
-                                <option value="q2">Important & Not Urgent (Growth)</option>
-                                <option value="q3">Urgent & Not Important (Drudgery)</option>
-                                <option value="q4">Not Urgent & Not Important (Waste)</option>
-                                <option value="total">Total time</option>
-                                <option value="custom">Custom search</option>
-                            </select>
                         </div>
-                        <div class="flex flex-wrap gap-2">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <label class="inline-flex items-center gap-2 text-xs md:text-sm font-medium text-gray-600">
+                                <input id="graphComboToggle" type="checkbox" class="h-4 w-4 text-amber-500 border-gray-300 focus:ring-amber-300">
+                                Allow search with focus
+                            </label>
                             <button id="graphSearchApply" class="primary-cta text-sm md:text-base">Apply</button>
                             <button id="graphSearchClear" class="secondary-cta text-sm md:text-base">Clear</button>
                         </div>
-                        <p class="text-xs text-gray-500">Pick a preset focus or switch to Custom search to type your own. Use commas or "or" for alternatives, "and" for strict matches, and "not" to exclude.</p>
+                        <p class="text-xs text-gray-500">Default is mutually exclusive. Toggle “Allow search with focus” to combine. Use commas or “or” for alternatives, “and” for strict matches, and “not” to exclude.</p>
                     </div>
                 </div>
                 <div>
@@ -247,23 +284,36 @@
             waste: 'Waste'
         };
 
+        const TAG_COLOR_MAP = {
+            Work: '#10B981',
+            Necessity: '#F59E0B',
+            Soul: '#6366F1',
+            Rest: '#C4B5FD',
+            Waste: '#DC2626'
+        };
+
         let currentDays = 30;
         let chartInstance = null;
         let currentMetric = 'work';
+        let graphFocusValue = 'work';
         let maWindow = 7;
         let graphSearchQuery = '';
         let graphExcludedIds = new Set();
         let graphTasks = [];
+        let graphColorScheme = null;
 
         const chartTitle = document.getElementById('chartTitle');
         const chartSubtitle = document.getElementById('chartSubtitle');
         const totalHoursEl = document.getElementById('totalHours');
         const avgHoursEl = document.getElementById('avgHours');
         const maxHoursEl = document.getElementById('maxHours');
+        const graphFocusBtn = document.getElementById('graphFocusBtn');
+        const graphFocusLabel = document.getElementById('graphFocusLabel');
+        const graphFocusMenu = document.getElementById('graphFocusMenu');
+        const graphComboToggle = document.getElementById('graphComboToggle');
         const graphSearchInput = document.getElementById('graphSearchInput');
         const graphSearchApply = document.getElementById('graphSearchApply');
         const graphSearchClear = document.getElementById('graphSearchClear');
-        const graphFocusSelect = document.getElementById('graphFocusSelect');
         const reviewGraphTasks = document.getElementById('reviewGraphTasks');
         const graphTaskModal = document.getElementById('graphTaskModal');
         const graphTasksList = document.getElementById('graphTasksList');
@@ -296,12 +346,106 @@
             return result;
         }
 
+        function hexToRgba(hex, alpha) {
+            if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) {
+                return `rgba(17, 24, 39, ${alpha})`;
+            }
+            const clean = hex.replace('#', '');
+            const bigint = parseInt(clean, 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function deriveSearchColors(tasks) {
+            if (!Array.isArray(tasks) || !tasks.length) return null;
+            const totals = {};
+            const priorityTotals = { q1: 0, q2: 0, q3: 0, q4: 0 };
+            tasks.forEach(task => {
+                const duration = Number(task.duration_minutes || 0);
+                const tags = String(task.tag || task.raw_tag || '')
+                    .split(',')
+                    .map(t => t.trim())
+                    .filter(Boolean);
+                const usableTags = tags.length ? tags : ['Waste'];
+                usableTags.forEach(tag => {
+                    if (TAG_COLOR_MAP[tag]) {
+                        totals[tag] = (totals[tag] || 0) + duration;
+                    }
+                });
+                if (task.urgent && task.important) {
+                    priorityTotals.q1 += duration;
+                } else if (task.important) {
+                    priorityTotals.q2 += duration;
+                } else if (task.urgent) {
+                    priorityTotals.q3 += duration;
+                } else {
+                    priorityTotals.q4 += duration;
+                }
+            });
+            const sortedTags = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+            if (sortedTags.length) {
+                const primary = TAG_COLOR_MAP[sortedTags[0][0]];
+                const secondary = sortedTags[1] ? TAG_COLOR_MAP[sortedTags[1][0]] : null;
+                return { primary, secondary };
+            }
+            const priorityPick = Object.entries(priorityTotals).sort((a, b) => b[1] - a[1])[0];
+            if (priorityPick && priorityPick[1] > 0) {
+                return { primary: metricColors[priorityPick[0]] || '#111827', secondary: null };
+            }
+            return null;
+        }
+
+        function getFocusLabel(value) {
+            if (value === 'search_only') return 'Search only';
+            return metricLabels[value] || value;
+        }
+
+        function updateSearchInputState() {
+            const isSearchOnly = graphFocusValue === 'search_only';
+            const comboEnabled = graphComboToggle.checked;
+            if (isSearchOnly || comboEnabled) {
+                graphSearchInput.removeAttribute('disabled');
+                graphSearchInput.classList.remove('opacity-60', 'cursor-not-allowed');
+            } else {
+                graphSearchInput.value = '';
+                graphSearchInput.setAttribute('disabled', 'disabled');
+                graphSearchInput.classList.add('opacity-60', 'cursor-not-allowed');
+            }
+        }
+
+        function updateFocusMenuActive() {
+            document.querySelectorAll('.graph-focus-option').forEach(option => {
+                if ((option.dataset.value || '') === graphFocusValue) {
+                    option.dataset.active = 'true';
+                } else {
+                    option.dataset.active = 'false';
+                }
+            });
+        }
+
+        function setFocus(value, { fetch = true } = {}) {
+            graphFocusValue = value;
+            currentMetric = value === 'search_only' ? 'total' : value;
+            graphFocusLabel.textContent = getFocusLabel(value);
+            if (!graphComboToggle.checked && value !== 'search_only') {
+                graphSearchQuery = '';
+            }
+            updateSearchInputState();
+            updateFocusMenuActive();
+            if (fetch) {
+                fetchGraphData({ includeTasks: graphSearchQuery.length > 0 });
+            }
+        }
+
         function updateChart({ labels, values, total_hours, avg_hours, max_hours }, metricKey) {
             const ctx = document.getElementById('graphCanvas').getContext('2d');
-            const color = metricColors[metricKey] || '#111827';
+            const colors = graphColorScheme || { primary: metricColors[metricKey] || '#111827', secondary: null };
+            const color = colors.primary;
             const gradient = ctx.createLinearGradient(0, 0, 0, 320);
-            gradient.addColorStop(0, `${color}55`);
-            gradient.addColorStop(1, `${color}05`);
+            gradient.addColorStop(0, hexToRgba(colors.primary, 0.55));
+            gradient.addColorStop(1, hexToRgba(colors.secondary || colors.primary, 0.05));
             const avgValues = movingAverage(values, maWindow);
             const avgColor = color.startsWith('#') && color.length === 7 ? `${color}99` : 'rgba(17,24,39,0.55)';
 
@@ -390,7 +534,7 @@
             maxHoursEl.textContent = formatHours(max_hours);
 
             const label = metricLabels[metricKey] || 'Total time';
-            if (graphFocusSelect.value === 'custom' && graphSearchQuery) {
+            if (graphFocusValue === 'search_only' && graphSearchQuery) {
                 chartTitle.textContent = `Search: ${graphSearchQuery}`;
             } else {
                 chartTitle.textContent = label;
@@ -496,10 +640,12 @@
                 updateChart(data, metricKey);
                 if (shouldIncludeTasks) {
                     graphTasks = Array.isArray(data.tasks) ? data.tasks : [];
+                    graphColorScheme = graphSearchQuery ? deriveSearchColors(graphTasks) : null;
                     updateReviewButton();
                     renderGraphTasks();
                 } else {
                     graphTasks = [];
+                    graphColorScheme = null;
                     updateReviewButton();
                 }
                 if (openModal && shouldIncludeTasks) {
@@ -510,32 +656,30 @@
             }
         }
 
-        function applyPresetFocus(value) {
-            currentMetric = value;
-            graphSearchQuery = '';
-            graphExcludedIds = new Set();
-            graphSearchInput.value = metricLabels[value] || value;
-            graphSearchInput.setAttribute('disabled', 'disabled');
-            graphSearchInput.classList.add('opacity-60', 'cursor-not-allowed');
-            fetchGraphData();
-        }
+        graphFocusBtn.addEventListener('click', () => {
+            graphFocusMenu.classList.toggle('hidden');
+        });
 
-        function applyCustomFocus() {
-            currentMetric = 'total';
-            graphSearchQuery = '';
-            graphExcludedIds = new Set();
-            graphSearchInput.removeAttribute('disabled');
-            graphSearchInput.classList.remove('opacity-60', 'cursor-not-allowed');
-            graphSearchInput.value = '';
-            graphSearchInput.focus();
-            fetchGraphData();
-        }
+        document.querySelectorAll('.graph-focus-option').forEach(option => {
+            option.addEventListener('click', () => {
+                graphFocusMenu.classList.add('hidden');
+                graphExcludedIds = new Set();
+                setFocus(option.dataset.value || 'work');
+            });
+        });
 
-        graphFocusSelect.addEventListener('change', () => {
-            if (graphFocusSelect.value === 'custom') {
-                applyCustomFocus();
-            } else {
-                applyPresetFocus(graphFocusSelect.value);
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('#graphFocusBtn') && !event.target.closest('#graphFocusMenu')) {
+                graphFocusMenu.classList.add('hidden');
+            }
+        });
+
+        graphComboToggle.addEventListener('change', () => {
+            updateSearchInputState();
+            if (!graphComboToggle.checked && graphFocusValue !== 'search_only') {
+                graphSearchQuery = '';
+                graphExcludedIds = new Set();
+                fetchGraphData();
             }
         });
         document.querySelectorAll('.range-pill').forEach(btn => {
@@ -559,13 +703,20 @@
         document.getElementById('refreshGraph').addEventListener('click', fetchGraphData);
 
         graphSearchApply.addEventListener('click', () => {
-            if (graphFocusSelect.value === 'custom') {
-                graphSearchQuery = (graphSearchInput.value || '').trim();
-                graphExcludedIds = new Set();
+            const query = (graphSearchInput.value || '').trim();
+            graphExcludedIds = new Set();
+            if (graphFocusValue === 'search_only') {
+                graphSearchQuery = query;
                 fetchGraphData({ includeTasks: true });
-            } else {
-                applyPresetFocus(graphFocusSelect.value);
+                return;
             }
+            if (graphComboToggle.checked) {
+                graphSearchQuery = query;
+                fetchGraphData({ includeTasks: Boolean(query) });
+                return;
+            }
+            graphSearchQuery = '';
+            fetchGraphData();
         });
 
         graphSearchInput.addEventListener('keydown', (event) => {
@@ -577,14 +728,11 @@
 
         graphSearchClear.addEventListener('click', () => {
             graphExcludedIds = new Set();
-            if (graphFocusSelect.value === 'custom') {
+            graphSearchQuery = '';
+            if (graphFocusValue === 'search_only' || graphComboToggle.checked) {
                 graphSearchInput.value = '';
-                graphSearchQuery = '';
-                fetchGraphData();
-            } else {
-                graphSearchQuery = '';
-                applyPresetFocus(graphFocusSelect.value);
             }
+            fetchGraphData();
         });
 
         reviewGraphTasks.addEventListener('click', () => {
@@ -609,11 +757,7 @@
             }
         });
 
-        if (graphFocusSelect.value === 'custom') {
-            applyCustomFocus();
-        } else {
-            applyPresetFocus(graphFocusSelect.value);
-        }
+        setFocus('work');
     </script>
 </body>
 </html>
