@@ -139,6 +139,7 @@
             background: rgba(0, 0, 0, 0.5);
             z-index: 1000;
             backdrop-filter: blur(4px);
+            padding: 20px;
         }
         .modal.active {
             display: flex;
@@ -156,10 +157,16 @@
             box-shadow: 0 30px 80px rgba(15,23,42,0.32);
         }
         @media (max-width: 767px) {
+            .modal {
+                padding: 12px;
+                align-items: flex-start;
+                padding-top: 60px;
+            }
             .modal-content {
-                max-height: 85vh;
-                width: 95%;
-                border-radius: 20px;
+                max-height: calc(100vh - 80px);
+                width: 100%;
+                border-radius: 16px;
+                margin: 0 auto;
             }
         }
         .dropdown-item {
