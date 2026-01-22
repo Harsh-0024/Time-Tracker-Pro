@@ -543,6 +543,11 @@
                 const taskName = String(task.task || '').trim().toLowerCase();
                 const query = graphTaskQuery.toLowerCase();
                 if (query && !taskName.includes(query)) return false;
+                const taskNameOriginal = String(task.task || '').trim();
+                const taskNameNormalized = taskNameOriginal.toLowerCase();
+                for (const hiddenKey in graphHiddenTags) {
+                    if (hiddenKey.toLowerCase() === taskNameNormalized) return false;
+                }
                 return true;
             });
             const totalMinutes = activeTasks.reduce((sum, task) => sum + Number(task.duration_minutes || 0), 0);
@@ -559,8 +564,8 @@
             const avgHours = avgMinutes / 60;
             const stats = [
                 statItem(uniqueTasks, 'Unique tasks'),
-                statItem(`<span class="js-hover-hours hover-swap" data-hours="${totalHours}">${formatHours(totalHours, 1)}h</span>`, 'Total hours'),
-                statItem(`<span class="js-hover-hours hover-swap" data-hours="${avgHours}">${formatHours(avgHours, 1)}h</span>`, 'Avg/task')
+                statItem(`<span class="js-hover-hours hover-swap" data-hours="${totalHours}">${formatHours(totalHours, 1)}</span>`, 'Total hours'),
+                statItem(`<span class="js-hover-hours hover-swap" data-hours="${avgHours}">${formatHours(avgHours, 1)}</span>`, 'Avg/task')
             ];
             if (graphTaskStats) {
                 graphTaskStats.innerHTML = stats.join('');
@@ -758,7 +763,11 @@
                 const taskName = String(task.task || '').trim().toLowerCase();
                 const query = graphTaskQuery.toLowerCase();
                 if (query && !taskName.includes(query)) return false;
-                if (graphHiddenTags[String(task.task || '').trim()]) return false;
+                const taskNameOriginal = String(task.task || '').trim();
+                const taskNameNormalized = taskNameOriginal.toLowerCase();
+                for (const hiddenKey in graphHiddenTags) {
+                    if (hiddenKey.toLowerCase() === taskNameNormalized) return false;
+                }
                 return true;
             });
             const sortKey = graphTaskSort || 'time_desc';
@@ -785,7 +794,7 @@
             }
             const html = filteredTasks.map(task => {
                 const dur = Number(task.duration_hours || 0);
-                const durText = formatHours(dur, 1) + 'h';
+                const durText = formatHours(dur, 1);
                 const badges = [];
                 if (task.important) badges.push('<span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-full">Important</span>');
                 if (task.urgent) badges.push('<span class="px-2 py-1 bg-red-50 text-red-700 text-xs rounded-full">Urgent</span>');
