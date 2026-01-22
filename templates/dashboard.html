@@ -709,6 +709,8 @@
         window.currentPeriod = '{{ period }}';
         window.periodStart = '{{ start_date }}';
         window.periodEnd = '{{ end_date }}';
+        window.avgStart = '{{ avg_start_date }}';
+        window.avgEnd = '{{ avg_end_date }}';
 
         // Define functions globally
         window.changePeriod = function(period) {
@@ -797,8 +799,22 @@
             try {
                 const start = new Date(window.periodStart);
                 const end = new Date(window.periodEnd);
-                if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf())) return 1;
-                const diff = Math.round((end - start) / (1000 * 60 * 60 * 24));
+                const avgStart = window.avgStart ? new Date(window.avgStart) : start;
+                const avgEnd = window.avgEnd ? new Date(window.avgEnd) : end;
+                if (
+                    Number.isNaN(start.valueOf())
+                    || Number.isNaN(end.valueOf())
+                    || Number.isNaN(avgStart.valueOf())
+                    || Number.isNaN(avgEnd.valueOf())
+                ) {
+                    return 1;
+                }
+                const effectiveStart = avgStart > start ? avgStart : start;
+                const effectiveEnd = avgEnd < end ? avgEnd : end;
+                if (effectiveEnd < effectiveStart) {
+                    return 1;
+                }
+                const diff = Math.round((effectiveEnd - effectiveStart) / (1000 * 60 * 60 * 24));
                 return Math.max(1, diff + 1);
             } catch (e) {
                 return 1;

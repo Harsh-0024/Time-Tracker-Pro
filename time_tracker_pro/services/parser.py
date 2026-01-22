@@ -119,7 +119,6 @@ class TimeLogParser:
         tokens = raw_entry.strip().split()
         elements = []
         dot_positions = []
-        time_ampm_flags = []
         consumed = 0
 
         def _ampm_normalized(token: str) -> Optional[str]:
@@ -152,9 +151,7 @@ class TimeLogParser:
 
             date_val = self._parse_date_token(cleaned, client_now)
             if time_val:
-                has_ampm = bool(re.search(r"[ap]m\.?$", cleaned, re.IGNORECASE) or ampm)
                 elements.append(("time", time_val))
-                time_ampm_flags.append(has_ampm)
                 dot_positions.append(trailing_dot)
             elif date_val:
                 elements.append(("date", date_val))
@@ -226,9 +223,7 @@ class TimeLogParser:
             end_dt = client_now
         elif len(elements) == 1 and elements[0][0] == "time":
             t1 = elements[0][1]
-            time_has_ampm = time_ampm_flags[0] if time_ampm_flags else False
-            has_meta_delimiter = "." in raw_text
-            if dot_after_last or (time_has_ampm and has_meta_delimiter and previous_end_dt is None):
+            if dot_after_last:
                 start_dt = self._combine_dt(current_date, t1)
                 if start_dt > client_now:
                     start_dt = start_dt - timedelta(days=1)
