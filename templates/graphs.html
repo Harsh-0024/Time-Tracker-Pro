@@ -640,6 +640,12 @@
                                 boxHeight: 8
                             },
                             generateLabels: legendGenerateLabels,
+                            onHover: function(e, legendItem, legend) {
+                                e.native.target.style.cursor = 'pointer';
+                            },
+                            onLeave: function(e, legendItem, legend) {
+                                e.native.target.style.cursor = 'default';
+                            },
                             onClick: function(e, legendItem, legend) {
                                 const ci = legend.chart;
                                 const index = legendItem.index;
@@ -652,6 +658,7 @@
                                 } else {
                                     delete graphHiddenTags[label];
                                 }
+                                renderGraphTaskStats();
                                 renderGraphTaskList();
                             }
                         },
@@ -694,6 +701,7 @@
                         } else {
                             delete graphHiddenTags[label];
                         }
+                        renderGraphTaskStats();
                         renderGraphTaskList();
                     }
                 }
