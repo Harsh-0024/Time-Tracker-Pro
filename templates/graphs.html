@@ -300,11 +300,12 @@
                 <div id="graphTaskChartWrap" class="rounded-2xl border border-[rgba(148,126,86,0.25)] bg-white/80 p-4 md:p-5">
                     <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                         <p class="text-[10px] uppercase tracking-[0.2em] text-gray-400">Task mix</p>
-                        <span class="text-[11px] text-gray-500">Top tasks by hours</span>
+                        <span class="text-[11px] text-gray-500">Share of total time</span>
                     </div>
-                    <div class="relative h-48 md:h-56">
+                    <div class="relative h-52 md:h-60">
                         <canvas id="graphTaskChart"></canvas>
                     </div>
+                    <div id="graphTaskMobileLegend" class="mt-4 mb-1 md:hidden flex flex-wrap gap-2 justify-center text-[11px] text-gray-700"></div>
                 </div>
             </div>
             <div id="graphTasksList" class="mt-6 space-y-3 max-h-[45vh] overflow-y-auto pr-1"></div>
@@ -388,67 +389,204 @@
         const graphTaskAvg = document.getElementById('graphTaskAvg');
         const graphTaskChartCanvas = document.getElementById('graphTaskChart');
         const graphTaskChartWrap = document.getElementById('graphTaskChartWrap');
+        const graphTaskMobileLegend = document.getElementById('graphTaskMobileLegend');
 
         function formatHours(value) {
             const num = Number(value) || 0;
             return `${num.toFixed(1)}h`;
         }
 
+        const parseColor = (value) => {
+            if (!value) return null;
+            const raw = String(value).trim();
+            const hex = raw.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+            if (hex) {
+                const hexValue = hex[1];
+                const full = hexValue.length === 3
+                    ? hexValue.split('').map(c => c + c).join('')
+                    : hexValue;
+                const intVal = parseInt(full, 16);
+                return [(intVal >> 16) & 255, (intVal >> 8) & 255, intVal & 255];
+            }
+            const rgb = raw.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+            if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+            return null;
+        };
+
+        const getContrastColor = (value, darkColor, lightColor) => {
+            const rgb = parseColor(value);
+            if (!rgb) return darkColor;
+            const [r, g, b] = rgb;
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.62 ? darkColor : lightColor;
+        };
+
+        const percentLabelPlugin = {
+            id: 'percentLabelPlugin',
+            afterDraw(chart, args, pluginOptions) {
+                if (!pluginOptions || pluginOptions.display === false) return;
+                const dataset = chart.data.datasets[0];
+                if (!dataset) return;
+                const data = dataset.data || [];
+                const total = data.reduce((sum, v, idx) => {
+                    const visible = typeof chart.getDataVisibility === 'function'
+                        ? chart.getDataVisibility(idx) !== false
+                        : true;
+                    return visible ? sum + (Number(v) || 0) : sum;
+                }, 0);
+                if (!total) return;
+                const ctx = chart.ctx;
+                const fontSize = pluginOptions.fontSize || 11;
+                const fontFamily = pluginOptions.fontFamily || 'Inter';
+                const fontWeight = pluginOptions.fontWeight || '600';
+                const minPercent = typeof pluginOptions.minPercent === 'number'
+                    ? pluginOptions.minPercent
+                    : 0;
+                const precision = Number.isFinite(pluginOptions.precision)
+                    ? pluginOptions.precision
+                    : 0;
+                ctx.save();
+                ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const meta = chart.getDatasetMeta(0);
+                const darkColor = pluginOptions.color || '#111827';
+                const lightColor = pluginOptions.lightColor || '#FFFFFF';
+                const useAutoColor = pluginOptions.autoColor === true;
+                const shadowEnabled = pluginOptions.shadow !== false;
+                meta.data.forEach((element, idx) => {
+                    if (!element) return;
+                    if (typeof chart.getDataVisibility === 'function' && !chart.getDataVisibility(idx)) return;
+                    const value = Number(data[idx] || 0);
+                    if (!value) return;
+                    const percent = (value / total) * 100;
+                    if (percent < minPercent) return;
+                    const position = element.tooltipPosition();
+                    const bgColor = Array.isArray(dataset.backgroundColor)
+                        ? dataset.backgroundColor[idx]
+                        : dataset.backgroundColor;
+                    ctx.fillStyle = useAutoColor
+                        ? getContrastColor(bgColor, darkColor, lightColor)
+                        : darkColor;
+                    if (shadowEnabled) {
+                        ctx.shadowColor = 'rgba(15, 23, 42, 0.35)';
+                        ctx.shadowBlur = 6;
+                        ctx.shadowOffsetY = 2;
+                    }
+                    ctx.fillText(`${percent.toFixed(precision)}%`, position.x, position.y);
+                    ctx.shadowColor = 'transparent';
+                });
+                ctx.restore();
+            }
+        };
+
+        function updateGraphTaskLegend(labels, colors) {
+            if (!graphTaskMobileLegend) return;
+            const isMobile = window.matchMedia('(max-width: 767px)').matches;
+            if (!isMobile) {
+                graphTaskMobileLegend.innerHTML = '';
+                return;
+            }
+            graphTaskMobileLegend.innerHTML = labels.map((label, idx) => {
+                const color = colors[idx] || '#9CA3AF';
+                return `<span class="inline-flex items-center gap-1">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
+                    ${label}
+                </span>`;
+            }).join('');
+        }
+
         function updateTaskChart(totals) {
             if (!graphTaskChartCanvas || !graphTaskChartWrap) return;
             const entries = Object.entries(totals)
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 6);
+                .filter(entry => entry[1] > 0);
             if (!entries.length) {
                 graphTaskChartWrap.classList.add('hidden');
                 if (graphTaskChartInstance) {
                     graphTaskChartInstance.destroy();
                     graphTaskChartInstance = null;
                 }
+                updateGraphTaskLegend([], []);
                 return;
             }
             graphTaskChartWrap.classList.remove('hidden');
-            const labels = entries.map(entry => entry[0]);
-            const data = entries.map(entry => Number((entry[1] / 60).toFixed(2)));
+            const top = entries.slice(0, 6);
+            const rest = entries.slice(6);
+            const labels = top.map(entry => entry[0]);
+            const data = top.map(entry => Number((entry[1] / 60).toFixed(2)));
+            if (rest.length) {
+                labels.push('Other');
+                const restMinutes = rest.reduce((sum, entry) => sum + entry[1], 0);
+                data.push(Number((restMinutes / 60).toFixed(2)));
+            }
             const baseColor = (graphColorScheme && graphColorScheme.primary) || metricColors[currentMetric] || '#111827';
-            const accentColor = (graphColorScheme && graphColorScheme.secondary) || baseColor;
-            const barColors = labels.map((_, idx) => hexToRgba(idx % 2 === 0 ? baseColor : accentColor, 0.65));
+            const accentColor = (graphColorScheme && graphColorScheme.secondary) || null;
+            const palette = [baseColor, accentColor]
+                .filter(Boolean)
+                .concat(['#16A34A', '#A16207', '#7C3AED', '#0EA5A4', '#9F1239', '#9CA3AF', '#F59E0B']);
+            const colors = labels.map((_, idx) => palette[idx % palette.length]);
+            updateGraphTaskLegend(labels, colors);
             if (graphTaskChartInstance) {
                 graphTaskChartInstance.destroy();
             }
             graphTaskChartInstance = new Chart(graphTaskChartCanvas, {
-                type: 'bar',
+                type: 'pie',
+                plugins: [percentLabelPlugin],
                 data: {
                     labels,
                     datasets: [
                         {
                             data,
-                            backgroundColor: barColors,
-                            borderRadius: 12,
-                            borderSkipped: false
+                            backgroundColor: colors,
+                            borderWidth: 2,
+                            borderColor: '#FFFFFF',
+                            hoverOffset: 8,
+                            hoverBorderWidth: 3
                         }
                     ]
                 },
                 options: {
-                    indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
+                    spacing: 3,
                     plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: context => `${Number(context.parsed.x || 0).toFixed(2)}h`
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: { color: '#6B7280', font: { size: 10 } }
+                        percentLabelPlugin: {
+                            display: true,
+                            fontSize: window.matchMedia('(max-width: 767px)').matches ? 10 : 11,
+                            fontFamily: 'Inter',
+                            fontWeight: '600',
+                            color: '#111827',
+                            lightColor: '#FFFFFF',
+                            autoColor: true,
+                            shadow: true,
+                            minPercent: 3,
+                            precision: 0
                         },
-                        y: {
-                            grid: { display: false },
-                            ticks: { color: '#6B7280', font: { size: 10 } }
+                        legend: {
+                            display: !window.matchMedia('(max-width: 767px)').matches,
+                            position: 'bottom',
+                            labels: {
+                                font: { family: 'Inter', size: 11, weight: '500' },
+                                padding: 14,
+                                color: '#374151',
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.96)',
+                            padding: 12,
+                            titleFont: { family: 'Inter', size: 12, weight: '600' },
+                            bodyFont: { family: 'Inter', size: 12, weight: '400' },
+                            cornerRadius: 10,
+                            displayColors: true,
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            boxPadding: 6,
+                            callbacks: {
+                                label: context => `${Number(context.parsed || 0).toFixed(2)}h`
+                            }
                         }
                     }
                 }
