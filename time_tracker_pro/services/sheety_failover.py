@@ -34,8 +34,8 @@ class SheetyFailoverService:
             headers['Authorization'] = api_token if api_token.startswith('Bearer ') else f'Bearer {api_token}'
         return headers
     
-    def _test_api_account(self, account) -> Tuple[bool, Optional[int]]:
-        """Test if an API account is working. Returns (success, row_count)."""
+    def _test_api_account(self, account) -> Tuple[bool, Optional[int], Optional[str]]:
+        """Test if an API account is working. Returns (success, row_count, error_message)."""
         try:
             api_base_url = account['api_base_url']
             headers = self._build_headers(account.get('api_token'))
@@ -43,18 +43,27 @@ class SheetyFailoverService:
             response = requests.get(api_base_url, headers=headers, timeout=10)
             
             if response.status_code == 200:
-                data = response.json()
+                try:
+                    data = response.json()
+                except ValueError:
+                    return False, None, "Sheety returned a non-JSON response"
                 # Sheety returns data in format: {"sheet1": [{...}, {...}]}
                 # Get the first key's value which should be the array of rows
                 sheet_data = next(iter(data.values())) if data else []
                 row_count = len(sheet_data) if isinstance(sheet_data, list) else 0
-                return True, row_count
+                return True, row_count, None
             else:
+                preview = (response.text or "").strip().replace("\n", " ")
+                if len(preview) > 200:
+                    preview = preview[:200] + "..."
                 logger.warning(f"API test failed for account {account['id']}: HTTP {response.status_code}")
-                return False, None
+                detail = f"HTTP {response.status_code}"
+                if preview:
+                    detail = f"{detail} - {preview}"
+                return False, None, detail
         except Exception as e:
             logger.error(f"API test error for account {account['id']}: {e}")
-            return False, None
+            return False, None, str(e)
     
     def _try_request(self, account, method: str, endpoint: str = '', json_data: Optional[Dict] = None) -> Tuple[bool, Optional[Any]]:
         """Try a request with a specific account. Returns (success, response_data)."""
@@ -166,10 +175,11 @@ class SheetyFailoverService:
         if not account:
             return False, None, "Account not found"
         
-        success, row_count = self._test_api_account(account)
+        success, row_count, error = self._test_api_account(account)
         update_account_test_result(self.db_name, account['id'], success, self.user_id)
         
         if success:
+            set_active_account(self.db_name, account['id'], self.user_id)
             return True, row_count, None
         else:
-            return False, None, "Connection test failed"
+            return False, None, error or "Connection test failed"

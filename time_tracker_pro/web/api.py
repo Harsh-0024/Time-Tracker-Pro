@@ -15,7 +15,8 @@ from ..core.constants import GRAPH_TAG_MAP
 from ..core.dates import get_period_range, parse_date_param, parse_period_param
 from ..core.tags import filter_special_tags, primary_special_tag
 from ..repositories.logs import fetch_local_data
-from ..repositories.users import get_user_count
+from ..repositories.users import get_user_count, get_user_by_id
+from ..core.rows import row_value
 from ..services.import_csv import import_csv_content
 from ..services.sync import sync_cloud_data, sync_status_payload
 from .decorators import api_or_login_required, resolve_request_user_id, token_is_valid
@@ -556,7 +557,7 @@ def hard_reset():
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 
-@bp.route("/sheety-accounts", methods=["POST"], endpoint="create_sheety_account")
+@bp.route("/api/sheety-accounts", methods=["POST"], endpoint="create_sheety_account")
 @api_or_login_required
 def create_sheety_account():
     """Create a new Sheety API account for the user."""
@@ -566,13 +567,17 @@ def create_sheety_account():
         db_name = current_app.config["DB_NAME"]
         user_id = int(getattr(g, "user_id", 0) or 0)
         
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         account_email = (data.get("account_email") or "").strip()
         api_base_url = (data.get("api_base_url") or "").strip()
         api_token = (data.get("api_token") or "").strip() or None
         
-        if not account_email or not api_base_url:
-            return jsonify({"error": "Account email and API base URL are required"}), 400
+        if not api_base_url:
+            return jsonify({"error": "API base URL is required"}), 400
+        
+        if not account_email:
+            user_row = get_user_by_id(db_name, user_id)
+            account_email = (row_value(user_row, "email") or "").strip() or "Unknown"
         
         account_id = create_api_account(db_name, user_id, account_email, api_base_url, api_token)
         
@@ -586,7 +591,7 @@ def create_sheety_account():
         return jsonify({"error": str(exc)}), 500
 
 
-@bp.route("/sheety-accounts/<int:account_id>", methods=["DELETE"], endpoint="delete_sheety_account")
+@bp.route("/api/sheety-accounts/<int:account_id>", methods=["DELETE"], endpoint="delete_sheety_account")
 @api_or_login_required
 def delete_sheety_account(account_id: int):
     """Delete a Sheety API account."""
@@ -607,7 +612,7 @@ def delete_sheety_account(account_id: int):
         return jsonify({"error": str(exc)}), 500
 
 
-@bp.route("/sheety-accounts/<int:account_id>/test", methods=["GET"], endpoint="test_sheety_account")
+@bp.route("/api/sheety-accounts/<int:account_id>/test", methods=["GET"], endpoint="test_sheety_account")
 @api_or_login_required
 def test_sheety_account(account_id: int):
     """Test a Sheety API account connection."""

@@ -206,9 +206,9 @@
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Add New API Account</h3>
                 <form id="newApiAccountForm" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Account Email</label>
-                        <input id="newAccountEmail" name="account_email" type="email" required placeholder="harsh24204@gmail.com" class="w-full px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-base" />
-                        <p class="text-xs text-gray-500 mt-1">The email associated with this Sheety account</p>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Account Email (optional)</label>
+                        <input id="newAccountEmail" name="account_email" type="text" value="{{ profile_info.email or '' }}" placeholder="harsh24204@gmail.com" class="w-full px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-base" />
+                        <p class="text-xs text-gray-500 mt-1">Used for identification only — leave blank to use your account email.</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Base API URL</label>
@@ -329,10 +329,18 @@
 
                     if (response.ok) {
                         window.location.reload();
-                    } else {
-                        const error = await response.json();
-                        alert(error.error || 'Failed to add API account');
+                        return;
                     }
+
+                    const contentType = response.headers.get('content-type') || '';
+                    let message = 'Failed to add API account';
+                    if (contentType.includes('application/json')) {
+                        const error = await response.json();
+                        message = error.error || message;
+                    } else {
+                        message = `Failed to add API account (HTTP ${response.status})`;
+                    }
+                    alert(message);
                 } catch (error) {
                     alert('Error: ' + error.message);
                 }
@@ -352,10 +360,18 @@
 
                     if (response.ok) {
                         window.location.reload();
-                    } else {
-                        const error = await response.json();
-                        alert(error.error || 'Failed to delete API account');
+                        return;
                     }
+
+                    const contentType = response.headers.get('content-type') || '';
+                    let message = 'Failed to delete API account';
+                    if (contentType.includes('application/json')) {
+                        const error = await response.json();
+                        message = error.error || message;
+                    } else {
+                        message = `Failed to delete API account (HTTP ${response.status})`;
+                    }
+                    alert(message);
                 } catch (error) {
                     alert('Error: ' + error.message);
                 }
@@ -370,13 +386,21 @@
 
                 try {
                     const response = await fetch(`/api/sheety-accounts/${accountId}/test`);
-                    const result = await response.json();
+                    const contentType = response.headers.get('content-type') || '';
+                    let result = null;
 
-                    if (result.success) {
-                        alert(`✓ API test successful!\n\nRows found: ${result.row_count || 0}`);
-                    } else {
-                        alert(`✗ API test failed\n\n${result.error || 'Unknown error'}`);
+                    if (contentType.includes('application/json')) {
+                        result = await response.json();
                     }
+
+                    if (response.ok && result?.success) {
+                        alert(`✓ API test successful!\n\nRows found: ${result.row_count || 0}`);
+                        window.location.reload();
+                        return;
+                    }
+
+                    const errorMessage = result?.error || `Test failed (HTTP ${response.status})`;
+                    alert(`✗ API test failed\n\n${errorMessage}`);
                 } catch (error) {
                     alert('Error: ' + error.message);
                 } finally {
