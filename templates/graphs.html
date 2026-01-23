@@ -101,22 +101,21 @@
             color: #F8D574;
         }
         .graph-help-btn {
-            width: 26px;
-            height: 26px;
-            border-radius: 9999px;
-            border: 1px solid rgba(148, 126, 86, 0.35);
-            background: rgba(255, 255, 255, 0.85);
-            color: #1F2937;
-            font-size: 0.75rem;
+            border: none;
+            background: transparent;
+            color: #9A7B3C;
+            font-size: 0.9rem;
             font-weight: 700;
+            line-height: 1;
+            padding: 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s ease, background 0.2s ease;
+            transition: transform 0.2s ease, color 0.2s ease;
         }
         .graph-help-btn:hover {
             transform: translateY(-1px);
-            background: #F7F1E6;
+            color: #7C5E24;
         }
         .graph-help-tooltip {
             width: 280px;
@@ -1676,7 +1675,7 @@
         }
 
         function updateReviewButton() {
-            const showButton = graphSearchQuery.length > 0 || graphExcludedIds.size > 0;
+            const showButton = true;
             if (showButton) {
                 reviewGraphTasks.classList.remove('hidden');
                 const countLabel = graphTasks.length ? ` (${graphTasks.length})` : '';

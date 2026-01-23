@@ -739,6 +739,7 @@
                     </div>
                     <button id="closeCreatePanel" class="text-xs font-semibold text-gray-500 hover:text-gray-700">Close</button>
                 </div>
+                <div id="createTaskOverlap" class="hidden mt-4 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3"></div>
                 <form id="taskCreateForm" class="mt-4 grid gap-4 md:grid-cols-2">
                     <div class="md:col-span-2">
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Task name</label>
@@ -753,22 +754,28 @@
                         <input id="createTaskStart" type="time" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-300" required />
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Duration (hours)</label>
-                        <input id="createTaskDuration" type="number" min="0.01" step="0.05" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-300" required />
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">End time (optional)</label>
+                        <input id="createTaskEnd" type="time" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-300" />
                     </div>
                     <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Duration (hours) or end time</label>
+                        <input id="createTaskDuration" type="number" min="0.01" step="0.05" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                    </div>
+                    <div class="md:col-span-2">
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Tags</label>
+                        <div class="flex flex-wrap gap-2 mb-2" id="createTagChips">
+                            <button type="button" class="create-tag-chip px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 bg-white/80 hover:bg-white transition" data-create-tag="Work">Work</button>
+                            <button type="button" class="create-tag-chip px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 bg-white/80 hover:bg-white transition" data-create-tag="Soul">Soul</button>
+                            <button type="button" class="create-tag-chip px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 bg-white/80 hover:bg-white transition" data-create-tag="Rest">Rest</button>
+                            <button type="button" class="create-tag-chip px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 bg-white/80 hover:bg-white transition" data-create-tag="Waste">Waste</button>
+                        </div>
                         <input id="createTaskTags" type="text" placeholder="Work, Soul" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-300" />
                     </div>
-                    <div class="flex items-center gap-4 md:col-span-2">
-                        <label class="inline-flex items-center gap-2 text-xs text-gray-600">
-                            <input id="createTaskImportant" type="checkbox" class="rounded border-slate-300 text-emerald-500 focus:ring-emerald-300" />
-                            Important
-                        </label>
-                        <label class="inline-flex items-center gap-2 text-xs text-gray-600">
-                            <input id="createTaskUrgent" type="checkbox" class="rounded border-slate-300 text-emerald-500 focus:ring-emerald-300" />
-                            Urgent
-                        </label>
+                    <div class="flex flex-wrap items-center gap-2 md:col-span-2">
+                        <button type="button" class="create-priority-chip px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 bg-white/80 hover:bg-white transition" data-create-priority="important">Important</button>
+                        <button type="button" class="create-priority-chip px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 bg-white/80 hover:bg-white transition" data-create-priority="urgent">Urgent</button>
+                        <input id="createTaskImportant" type="checkbox" class="hidden" />
+                        <input id="createTaskUrgent" type="checkbox" class="hidden" />
                     </div>
                     <div class="flex items-center justify-end gap-2 md:col-span-2">
                         <button type="button" id="cancelCreateTask" class="px-4 py-2 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 hover:bg-white">Cancel</button>
@@ -828,6 +835,7 @@
                 </div>
             </div>
             <div id="modalStats" class="mb-6 grid grid-cols-3 gap-4"></div>
+            <div id="modalMissingTime" class="mb-6 hidden"></div>
             <div id="modalChart" class="mb-12 md:mb-6"></div>
             <div id="modalTasks" class="mt-6 md:mt-0 space-y-3"></div>
         </div>
@@ -916,6 +924,120 @@
                 grid.appendChild(btn);
             }
         };
+
+        function updateCreateTagChipStyles() {
+            const tagInput = document.getElementById('createTaskTags');
+            const chips = document.querySelectorAll('.create-tag-chip');
+            if (!tagInput || !chips.length) return;
+            const tags = String(tagInput.value || '')
+                .split(',')
+                .map(t => t.trim())
+                .filter(Boolean);
+            chips.forEach(chip => {
+                const tag = chip.dataset.createTag || '';
+                const active = tags.some(t => t.toLowerCase() === tag.toLowerCase());
+                chip.classList.toggle('bg-emerald-600', active);
+                chip.classList.toggle('text-white', active);
+                chip.classList.toggle('border-emerald-600', active);
+                chip.classList.toggle('bg-white/80', !active);
+                chip.classList.toggle('text-gray-600', !active);
+                chip.classList.toggle('border-slate-200', !active);
+            });
+        }
+
+        function updateCreatePriorityChips() {
+            const importantInput = document.getElementById('createTaskImportant');
+            const urgentInput = document.getElementById('createTaskUrgent');
+            document.querySelectorAll('.create-priority-chip').forEach(chip => {
+                const key = chip.dataset.createPriority || '';
+                const active = key === 'important'
+                    ? Boolean(importantInput?.checked)
+                    : Boolean(urgentInput?.checked);
+                const activeClasses = key === 'urgent'
+                    ? ['bg-red-500', 'text-white', 'border-red-500']
+                    : ['bg-emerald-600', 'text-white', 'border-emerald-600'];
+                chip.classList.toggle(activeClasses[0], active);
+                chip.classList.toggle(activeClasses[1], active);
+                chip.classList.toggle(activeClasses[2], active);
+                chip.classList.toggle('bg-white/80', !active);
+                chip.classList.toggle('text-gray-600', !active);
+                chip.classList.toggle('border-slate-200', !active);
+            });
+        }
+
+        function syncCreateDurationFromTimes() {
+            const startInput = document.getElementById('createTaskStart');
+            const endInput = document.getElementById('createTaskEnd');
+            const durationInput = document.getElementById('createTaskDuration');
+            if (!startInput || !endInput || !durationInput) return;
+            if (syncCreateDurationFromTimes.__locked) return;
+            const startMinutes = inputTimeToMinutes(startInput.value);
+            const endMinutes = inputTimeToMinutes(endInput.value);
+            if (startMinutes == null || endMinutes == null) return;
+            const diff = endMinutes - startMinutes;
+            if (diff <= 0) return;
+            syncCreateDurationFromTimes.__locked = true;
+            durationInput.value = Number((diff / 60).toFixed(2));
+            syncCreateDurationFromTimes.__locked = false;
+        }
+
+        function syncCreateEndFromDuration() {
+            const startInput = document.getElementById('createTaskStart');
+            const endInput = document.getElementById('createTaskEnd');
+            const durationInput = document.getElementById('createTaskDuration');
+            if (!startInput || !endInput || !durationInput) return;
+            if (syncCreateEndFromDuration.__locked) return;
+            const startMinutes = inputTimeToMinutes(startInput.value);
+            const durationHours = Number(durationInput.value);
+            if (startMinutes == null || !Number.isFinite(durationHours) || durationHours <= 0) return;
+            const endMinutes = startMinutes + Math.round(durationHours * 60);
+            syncCreateEndFromDuration.__locked = true;
+            endInput.value = minutesToInputTime(endMinutes);
+            syncCreateEndFromDuration.__locked = false;
+        }
+
+        function renderCreateOverlap(overlaps) {
+            const container = document.getElementById('createTaskOverlap');
+            if (!container) return;
+            if (!Array.isArray(overlaps) || !overlaps.length) {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                return;
+            }
+            const items = overlaps.map(item => {
+                const label = `${item.task || 'Task'} · ${item.start_time} - ${item.end_time}`;
+                return `
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="text-xs text-amber-900 font-semibold">${label}</div>
+                        <button type="button" class="px-2.5 py-1 rounded-full border border-amber-300 text-[11px] font-semibold text-amber-700 hover:bg-white" data-overlap-id="${item.id}">Edit</button>
+                    </div>
+                `;
+            }).join('');
+            container.innerHTML = `
+                <div class="text-xs font-semibold text-amber-800 mb-2">Overlaps with existing logs. Edit them to make space:</div>
+                <div class="space-y-2">${items}</div>
+            `;
+            container.classList.remove('hidden');
+            if (!container.__bound) {
+                container.addEventListener('click', (event) => {
+                    const btn = event.target.closest('[data-overlap-id]');
+                    if (!btn) return;
+                    const taskId = Number(btn.dataset.overlapId || 0);
+                    if (!taskId) return;
+                    const task = window.getModalTaskById ? window.getModalTaskById(taskId) : null;
+                    if (task && window.openEditTaskPanel) {
+                        window.openEditTaskPanel(task);
+                        return;
+                    }
+                    if (window.showWarningToast) {
+                        window.showWarningToast('Could not find the overlapping task. Refresh and try again.');
+                    } else {
+                        setGlobalLoading(false, 'Could not find the overlapping task.');
+                    }
+                });
+                container.__bound = true;
+            }
+        }
 
         window.viewFullDay = function() {
             const period = window.currentPeriod || 'day';
@@ -1035,6 +1157,28 @@
         window.formatHours = function(h, decimals = 1) {
             return window.ensureFinite(h).toFixed(decimals);
         };
+
+        window.timeStringToMinutes = function(value) {
+            if (!value) return null;
+            const parts = String(value).trim().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
+            if (!parts) return null;
+            let hour = Number(parts[1] || 0);
+            const minute = Number(parts[2] || 0);
+            const meridian = (parts[3] || '').toUpperCase();
+            if (meridian === 'PM' && hour < 12) hour += 12;
+            if (meridian === 'AM' && hour === 12) hour = 0;
+            return (hour * 60) + minute;
+        };
+
+        function formatMinutesToTime(minutes) {
+            const safe = Math.max(0, Math.min(Math.round(minutes), 24 * 60));
+            let hour = Math.floor(safe / 60);
+            const minute = safe % 60;
+            const meridian = hour >= 12 ? 'PM' : 'AM';
+            hour = hour % 12;
+            if (hour === 0) hour = 12;
+            return `${hour}:${String(minute).padStart(2, '0')} ${meridian}`;
+        }
 
         const parseColor = (value) => {
             if (!value) return null;
@@ -1278,9 +1422,46 @@
             });
         };
 
+        function getLatestTaskEndMinutes(dateValue) {
+            if (!window.modalData || !Array.isArray(window.modalData.tasks)) return null;
+            const dayTasks = window.modalData.tasks.filter(task => String(task.date || '') === String(dateValue || ''));
+            let latest = null;
+            dayTasks.forEach(task => {
+                const endMinutes = window.timeStringToMinutes(task.end_time);
+                if (endMinutes == null) return;
+                if (latest == null || endMinutes > latest) {
+                    latest = endMinutes;
+                }
+            });
+            return latest;
+        }
+
+        function minutesToInputTime(totalMinutes) {
+            if (totalMinutes == null || Number.isNaN(totalMinutes)) return '';
+            const safe = Math.max(0, Math.min(Math.round(totalMinutes), 24 * 60 - 1));
+            const hours = String(Math.floor(safe / 60)).padStart(2, '0');
+            const mins = String(safe % 60).padStart(2, '0');
+            return `${hours}:${mins}`;
+        }
+
+        function inputTimeToMinutes(value) {
+            if (!value) return null;
+            const parts = String(value).split(':');
+            if (parts.length < 2) return null;
+            const hours = Number(parts[0]);
+            const mins = Number(parts[1]);
+            if (!Number.isFinite(hours) || !Number.isFinite(mins)) return null;
+            return (hours * 60) + mins;
+        }
+
         window.closeCreateTaskPanel = function() {
             const panel = document.getElementById('taskCreatePanel');
             if (panel) panel.classList.add('hidden');
+            const overlap = document.getElementById('createTaskOverlap');
+            if (overlap) {
+                overlap.classList.add('hidden');
+                overlap.innerHTML = '';
+            }
         };
 
         window.openCreateTaskPanel = function() {
@@ -1299,25 +1480,40 @@
             const nameInput = document.getElementById('createTaskName');
             const dateInput = document.getElementById('createTaskDate');
             const timeInput = document.getElementById('createTaskStart');
+            const endInput = document.getElementById('createTaskEnd');
             const durationInput = document.getElementById('createTaskDuration');
             const tagInput = document.getElementById('createTaskTags');
             const importantInput = document.getElementById('createTaskImportant');
             const urgentInput = document.getElementById('createTaskUrgent');
+            const overlap = document.getElementById('createTaskOverlap');
             const now = new Date();
             if (nameInput) nameInput.value = '';
             if (durationInput) durationInput.value = '';
             if (tagInput) tagInput.value = '';
             if (importantInput) importantInput.checked = false;
             if (urgentInput) urgentInput.checked = false;
+            if (endInput) endInput.value = '';
             if (dateInput) {
                 const selected = window.currentDate || now.toISOString().slice(0, 10);
                 dateInput.value = selected;
             }
             if (timeInput) {
-                const hours = String(now.getHours()).padStart(2, '0');
-                const minutes = String(now.getMinutes()).padStart(2, '0');
-                timeInput.value = `${hours}:${minutes}`;
+                const selectedDate = dateInput?.value || window.currentDate;
+                const lastEnd = getLatestTaskEndMinutes(selectedDate);
+                if (lastEnd != null) {
+                    timeInput.value = minutesToInputTime(lastEnd);
+                } else {
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    timeInput.value = `${hours}:${minutes}`;
+                }
             }
+            if (overlap) {
+                overlap.classList.add('hidden');
+                overlap.innerHTML = '';
+            }
+            updateCreateTagChipStyles();
+            updateCreatePriorityChips();
             panel.classList.remove('hidden');
             try {
                 const focusTarget = document.getElementById('createTaskName');
@@ -1613,6 +1809,7 @@
             const deletePanel = document.getElementById('taskDeleteConfirm');
             if (deletePanel) deletePanel.classList.add('hidden');
             window.pendingDeleteTaskId = null;
+            const missingContainer = document.getElementById('modalMissingTime');
 
             const periodMinutes = ensureFinite(data.period_minutes || data.total_minutes || 0);
             const period = window.currentPeriod || 'day';
@@ -1743,6 +1940,69 @@
             };
             window.renderModalStats = renderStats;
             renderStats();
+            const renderMissingTime = () => {
+                if (!missingContainer) return;
+                const period = window.currentPeriod || 'day';
+                if (period !== 'day' || filterType !== 'all') {
+                    missingContainer.classList.add('hidden');
+                    missingContainer.innerHTML = '';
+                    return;
+                }
+                const intervals = (data.tasks || [])
+                    .map(task => {
+                        const start = window.timeStringToMinutes(task.start_time);
+                        const end = window.timeStringToMinutes(task.end_time);
+                        return { start, end };
+                    })
+                    .filter(item => item.start != null && item.end != null && item.end > item.start)
+                    .sort((a, b) => a.start - b.start);
+
+                const merged = [];
+                intervals.forEach(item => {
+                    const last = merged[merged.length - 1];
+                    if (!last || item.start > last.end) {
+                        merged.push({ start: item.start, end: item.end });
+                    } else {
+                        last.end = Math.max(last.end, item.end);
+                    }
+                });
+
+                const gaps = [];
+                let cursor = 0;
+                merged.forEach(item => {
+                    if (item.start > cursor) {
+                        gaps.push({ start: cursor, end: item.start });
+                    }
+                    cursor = Math.max(cursor, item.end);
+                });
+                if (cursor < 24 * 60) {
+                    gaps.push({ start: cursor, end: 24 * 60 });
+                }
+
+                const missingMinutes = gaps.reduce((sum, gap) => sum + (gap.end - gap.start), 0);
+                const gapHtml = gaps.length
+                    ? gaps.map(gap => `
+                        <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-semibold border border-amber-200">${formatMinutesToTime(gap.start)} – ${formatMinutesToTime(gap.end)}</span>
+                    `).join('')
+                    : '<span class="text-xs text-gray-500">No missing gaps found.</span>';
+
+                missingContainer.innerHTML = `
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <p class="text-xs uppercase tracking-[0.22em] text-amber-700 font-semibold">Missing time</p>
+                                <p class="text-sm text-amber-900 font-semibold">${hoursToHuman(missingMinutes / 60)}</p>
+                            </div>
+                            <p class="text-[11px] text-amber-700">Gaps in today’s logs</p>
+                        </div>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            ${gapHtml}
+                        </div>
+                    </div>
+                `;
+                missingContainer.classList.remove('hidden');
+            };
+            renderMissingTime();
             const statsContainer = document.getElementById('modalStats');
             if (statsContainer && isMultiDay) {
                 statsContainer.classList.add('cursor-pointer');
@@ -2259,6 +2519,65 @@
             const cancelDelete = document.getElementById('cancelDeleteTask');
             if (closeDelete) closeDelete.onclick = window.closeDeleteTaskConfirm;
             if (cancelDelete) cancelDelete.onclick = window.closeDeleteTaskConfirm;
+            const createTagInput = document.getElementById('createTaskTags');
+            if (createTagInput && !createTagInput.__bound) {
+                createTagInput.addEventListener('input', updateCreateTagChipStyles);
+                createTagInput.__bound = true;
+            }
+            document.querySelectorAll('.create-tag-chip').forEach(chip => {
+                if (chip.__bound) return;
+                chip.addEventListener('click', () => {
+                    const tagInput = document.getElementById('createTaskTags');
+                    if (!tagInput) return;
+                    const tag = chip.dataset.createTag || '';
+                    if (!tag) return;
+                    const tags = String(tagInput.value || '')
+                        .split(',')
+                        .map(t => t.trim())
+                        .filter(Boolean);
+                    const exists = tags.find(t => t.toLowerCase() === tag.toLowerCase());
+                    const nextTags = exists
+                        ? tags.filter(t => t.toLowerCase() !== tag.toLowerCase())
+                        : [...tags, tag];
+                    tagInput.value = nextTags.join(', ');
+                    updateCreateTagChipStyles();
+                });
+                chip.__bound = true;
+            });
+            document.querySelectorAll('.create-priority-chip').forEach(chip => {
+                if (chip.__bound) return;
+                chip.addEventListener('click', () => {
+                    const key = chip.dataset.createPriority || '';
+                    const importantInput = document.getElementById('createTaskImportant');
+                    const urgentInput = document.getElementById('createTaskUrgent');
+                    if (key === 'important' && importantInput) {
+                        importantInput.checked = !importantInput.checked;
+                    }
+                    if (key === 'urgent' && urgentInput) {
+                        urgentInput.checked = !urgentInput.checked;
+                    }
+                    updateCreatePriorityChips();
+                });
+                chip.__bound = true;
+            });
+            const createStart = document.getElementById('createTaskStart');
+            const createEnd = document.getElementById('createTaskEnd');
+            const createDuration = document.getElementById('createTaskDuration');
+            if (createStart && !createStart.__bound) {
+                createStart.addEventListener('change', () => {
+                    syncCreateDurationFromTimes();
+                    syncCreateEndFromDuration();
+                });
+                createStart.__bound = true;
+            }
+            if (createEnd && !createEnd.__bound) {
+                createEnd.addEventListener('change', syncCreateDurationFromTimes);
+                createEnd.__bound = true;
+            }
+            if (createDuration && !createDuration.__bound) {
+                createDuration.addEventListener('input', syncCreateEndFromDuration);
+                createDuration.__bound = true;
+            }
             const createForm = document.getElementById('taskCreateForm');
             if (createForm && !createForm.__bound) {
                 createForm.addEventListener('submit', async (e) => {
@@ -2266,10 +2585,16 @@
                     const name = String(document.getElementById('createTaskName')?.value || '').trim();
                     const date = String(document.getElementById('createTaskDate')?.value || '').trim();
                     const startTime = String(document.getElementById('createTaskStart')?.value || '').trim();
-                    const duration = parseFloat(document.getElementById('createTaskDuration')?.value || '0');
+                    const endTime = String(document.getElementById('createTaskEnd')?.value || '').trim();
+                    let duration = parseFloat(document.getElementById('createTaskDuration')?.value || '0');
                     const tags = String(document.getElementById('createTaskTags')?.value || '').trim();
                     const important = Boolean(document.getElementById('createTaskImportant')?.checked);
                     const urgent = Boolean(document.getElementById('createTaskUrgent')?.checked);
+                    const overlap = document.getElementById('createTaskOverlap');
+                    if (overlap) {
+                        overlap.classList.add('hidden');
+                        overlap.innerHTML = '';
+                    }
                     if (!name) {
                         setGlobalLoading(false, 'Task name is required');
                         return;
@@ -2281,6 +2606,15 @@
                     if (!startTime) {
                         setGlobalLoading(false, 'Start time is required');
                         return;
+                    }
+                    if (endTime) {
+                        const startMinutes = inputTimeToMinutes(startTime);
+                        const endMinutes = inputTimeToMinutes(endTime);
+                        if (startMinutes == null || endMinutes == null || endMinutes <= startMinutes) {
+                            setGlobalLoading(false, 'End time must be after start time');
+                            return;
+                        }
+                        duration = Number(((endMinutes - startMinutes) / 60).toFixed(2));
                     }
                     if (!Number.isFinite(duration) || duration <= 0) {
                         setGlobalLoading(false, 'Duration must be greater than 0');
@@ -2310,6 +2644,11 @@
                         const contentType = response.headers.get('content-type') || '';
                         const result = contentType.includes('application/json') ? await response.json() : null;
                         if (!response.ok) {
+                            if (response.status === 409 && result?.overlaps) {
+                                renderCreateOverlap(result.overlaps);
+                                setGlobalLoading(false, 'Overlapping logs detected');
+                                return;
+                            }
                             throw new Error(result?.error || `HTTP ${response.status}`);
                         }
                         if (result?.failover && window.showApiFailoverNotification) {

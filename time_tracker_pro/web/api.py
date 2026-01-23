@@ -729,6 +729,41 @@ def create_task():
     if end_dt <= start_dt:
         return jsonify({"error": "Duration must be greater than 0"}), 400
 
+    conn = get_db_connection(db_name)
+    overlap_rows = conn.execute(
+        "SELECT id, sheety_id, task, start_date, start_time, end_date, end_time FROM logs WHERE user_id = ?",
+        (int(user_id),),
+    ).fetchall()
+    overlaps: List[Dict[str, Any]] = []
+    for row in overlap_rows:
+        other_start = parse_datetime(row["start_date"], row["start_time"])
+        other_end = parse_datetime(row["end_date"], row["end_time"])
+        if other_start is None or other_end is None:
+            continue
+        if other_end <= start_dt or other_start >= end_dt:
+            continue
+        overlaps.append(
+            {
+                "id": int(row["id"]),
+                "sheety_id": (int(row["sheety_id"]) if row["sheety_id"] is not None else None),
+                "task": row["task"],
+                "start_time": other_start.strftime("%I:%M %p"),
+                "end_time": other_end.strftime("%I:%M %p"),
+                "date": other_start.strftime("%Y-%m-%d"),
+            }
+        )
+    if overlaps:
+        conn.close()
+        return (
+            jsonify(
+                {
+                    "error": "Task overlaps existing logs.",
+                    "overlaps": overlaps,
+                }
+            ),
+            409,
+        )
+
     def format_time(dt: datetime) -> str:
         return dt.strftime("%I:%M%p").lstrip("0").lower()
 
@@ -796,13 +831,13 @@ def create_task():
     service = SheetyFailoverService(db_name, user_id)
     success, data, error = service.make_request("POST", "", {sheet_name: log_payload})
     if not success:
+        conn.close()
         return jsonify({"error": error or "Failed to create task in Sheety"}), 502
 
     sheety_id = extract_sheety_id(data, sheet_name)
     if sheety_id is None:
         return jsonify({"error": "Sheety did not return a new row id."}), 502
 
-    conn = get_db_connection(db_name)
     try:
         cursor = conn.execute(
             """
