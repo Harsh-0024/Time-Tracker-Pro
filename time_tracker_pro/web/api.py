@@ -579,10 +579,188 @@ def update_task(task_id: int):
     return jsonify(response_payload)
 
 
+@bp.route("/api/tasks", methods=["POST"], endpoint="create_task")
+@api_or_login_required
+def create_task():
+    from ..services.sheety_failover import SheetyFailoverService
+    from ..repositories.sheety_accounts import get_active_api_account
+
+    db_name = current_app.config["DB_NAME"]
+    user_id = int(getattr(g, "user_id", 0) or 0)
+
+    data = request.get_json(silent=True) or {}
+
+    task_name = (data.get("task") or "").strip()
+    if not task_name:
+        return jsonify({"error": "Task name is required"}), 400
+
+    date_value = (data.get("date") or "").strip()
+    start_time_value = (data.get("start_time") or data.get("start") or "").strip()
+    if not date_value:
+        return jsonify({"error": "Date is required"}), 400
+    if not start_time_value:
+        return jsonify({"error": "Start time is required"}), 400
+
+    duration_minutes = None
+    if data.get("duration_minutes") is not None:
+        duration_minutes = int(float(data.get("duration_minutes") or 0))
+    elif data.get("duration") is not None:
+        duration_minutes = int(round(float(data.get("duration") or 0) * 60))
+
+    if duration_minutes is None or duration_minutes <= 0:
+        return jsonify({"error": "Duration must be greater than 0"}), 400
+
+    tag_raw = (data.get("tag") or "").strip()
+    urgent = bool(data.get("urgent"))
+    important = bool(data.get("important"))
+
+    def parse_datetime(date_str: str, time_str: str) -> Optional[datetime]:
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+            try:
+                return datetime.strptime(f"{date_str} {time_str}", fmt)
+            except ValueError:
+                continue
+        return None
+
+    start_dt = parse_datetime(date_value, start_time_value)
+    if start_dt is None:
+        return jsonify({"error": "Invalid start time format"}), 400
+
+    end_dt = start_dt + timedelta(minutes=duration_minutes)
+    if end_dt <= start_dt:
+        return jsonify({"error": "Duration must be greater than 0"}), 400
+
+    def format_time(dt: datetime) -> str:
+        return dt.strftime("%I:%M%p").lstrip("0").lower()
+
+    def format_date(dt: datetime) -> str:
+        return dt.strftime("%d/%m/%Y")
+
+    def build_log_payload(
+        task_label: str,
+        tag_value_raw: str,
+        is_urgent: bool,
+        is_important: bool,
+        start_value: datetime,
+        end_value: datetime,
+    ) -> Tuple[Dict[str, str], str]:
+        tags_list = filter_special_tags(tag_value_raw)
+        meta_tokens: List[str] = []
+        if tags_list:
+            meta_tokens.extend([tag.lower() for tag in tags_list])
+        if is_urgent:
+            meta_tokens.append("urgent")
+        if is_important:
+            meta_tokens.append("important")
+
+        log_entry = f"{format_date(start_value)} {format_time(start_value)} {format_time(end_value)} {task_label}".strip()
+        if meta_tokens:
+            log_entry = f"{log_entry}. {' '.join(meta_tokens)}"
+
+        logged_time = end_value.isoformat()
+        tag_value = ", ".join(tags_list) if tags_list else "Waste"
+        return {"logEntry": log_entry, "loggedTime": logged_time}, tag_value
+
+    def extract_sheety_id(response_data: Any, sheet_key: str) -> Optional[int]:
+        if not isinstance(response_data, dict):
+            return None
+        candidate = response_data.get(sheet_key)
+        if isinstance(candidate, dict) and candidate.get("id") is not None:
+            try:
+                return int(candidate.get("id"))
+            except (TypeError, ValueError):
+                return None
+        if response_data.get("id") is not None:
+            try:
+                return int(response_data.get("id"))
+            except (TypeError, ValueError):
+                return None
+        for value in response_data.values():
+            if isinstance(value, dict) and value.get("id") is not None:
+                try:
+                    return int(value.get("id"))
+                except (TypeError, ValueError):
+                    return None
+        return None
+
+    log_payload, tag_value = build_log_payload(task_name, tag_raw, urgent, important, start_dt, end_dt)
+
+    sheet_name = "sheet1"
+    active_account = get_active_api_account(db_name, user_id)
+    if active_account:
+        base_url = row_value(active_account, "api_base_url") or ""
+        parsed = urlparse(base_url)
+        path = parsed.path.rstrip("/") if parsed.path else ""
+        if path:
+            sheet_name = path.split("/")[-1] or sheet_name
+
+    service = SheetyFailoverService(db_name, user_id)
+    success, data, error = service.make_request("POST", "", {sheet_name: log_payload})
+    if not success:
+        return jsonify({"error": error or "Failed to create task in Sheety"}), 502
+
+    sheety_id = extract_sheety_id(data, sheet_name)
+    if sheety_id is None:
+        return jsonify({"error": "Sheety did not return a new row id."}), 502
+
+    conn = get_db_connection(db_name)
+    try:
+        cursor = conn.execute(
+            """
+            INSERT INTO logs (
+                sheety_id, start_date, start_time, end_date, end_time,
+                task, duration, tags, urg, imp, user_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                int(sheety_id),
+                start_dt.strftime("%Y-%m-%d"),
+                start_dt.strftime("%H:%M:%S"),
+                end_dt.strftime("%Y-%m-%d"),
+                end_dt.strftime("%H:%M:%S"),
+                task_name,
+                duration_minutes,
+                tag_value,
+                1 if urgent else 0,
+                1 if important else 0,
+                int(user_id),
+            ),
+        )
+        row_id = int(cursor.lastrowid)
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        conn.close()
+        raise
+    conn.close()
+
+    response_payload = {
+        "success": True,
+        "task": {
+            "id": row_id,
+            "sheety_id": int(sheety_id),
+            "task": task_name,
+            "start_time": start_dt.strftime("%I:%M %p"),
+            "end_time": end_dt.strftime("%I:%M %p"),
+            "date": start_dt.strftime("%Y-%m-%d"),
+            "duration": round(duration_minutes / 60.0, 2),
+            "tag": tag_value,
+            "urgent": urgent,
+            "important": important,
+        },
+    }
+    failover = service.get_failover_notification()
+    if failover:
+        response_payload["failover"] = failover
+    return jsonify(response_payload)
+
+
 @bp.route("/api/tasks/<int:task_id>", methods=["DELETE"], endpoint="delete_task")
 @api_or_login_required
 def delete_task(task_id: int):
     from ..services.sheety_failover import SheetyFailoverService
+    from ..repositories.sheety_accounts import get_active_api_account
 
     db_name = current_app.config["DB_NAME"]
     user_id = int(getattr(g, "user_id", 0) or 0)
@@ -601,12 +779,128 @@ def delete_task(task_id: int):
         conn.close()
         return jsonify({"error": "Task not found"}), 404
 
+    row_id = int(row["id"])
     sheety_id = row["sheety_id"]
     if sheety_id is None:
         conn.close()
         return jsonify({"error": "Task is not linked to a Sheety row"}), 400
 
+    def parse_datetime(date_value: str, time_value: str) -> Optional[datetime]:
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+            try:
+                return datetime.strptime(f"{date_value} {time_value}", fmt)
+            except ValueError:
+                continue
+        return None
+
+    deleted_start = parse_datetime(row["start_date"], row["start_time"])
+    deleted_end = parse_datetime(row["end_date"], row["end_time"])
+
+    other_rows = conn.execute(
+        "SELECT * FROM logs WHERE user_id = ? AND id != ? ORDER BY start_date ASC, start_time ASC",
+        (int(user_id), row_id),
+    ).fetchall()
+
+    next_row = None
+    next_start = None
+    next_end = None
+    if deleted_end is not None:
+        for candidate in other_rows:
+            candidate_start = parse_datetime(candidate["start_date"], candidate["start_time"])
+            if candidate_start is None:
+                continue
+            if candidate_start >= deleted_end:
+                next_row = candidate
+                next_start = candidate_start
+                next_end = parse_datetime(candidate["end_date"], candidate["end_time"])
+                break
+
+    empty_window = None
+    if deleted_start is not None and deleted_end is not None and deleted_end > deleted_start:
+        overlaps = False
+        for candidate in other_rows:
+            candidate_start = parse_datetime(candidate["start_date"], candidate["start_time"])
+            candidate_end = parse_datetime(candidate["end_date"], candidate["end_time"])
+            if candidate_start is None or candidate_end is None:
+                continue
+            if candidate_end <= deleted_start or candidate_start >= deleted_end:
+                continue
+            overlaps = True
+            break
+        if not overlaps:
+            empty_window = {
+                "start": deleted_start.isoformat(),
+                "end": deleted_end.isoformat(),
+                "date": deleted_start.strftime("%Y-%m-%d"),
+                "start_label": deleted_start.strftime("%I:%M %p"),
+                "end_label": deleted_end.strftime("%I:%M %p"),
+            }
+
+    def format_time(dt: datetime) -> str:
+        return dt.strftime("%I:%M%p").lstrip("0").lower()
+
+    def format_date(dt: datetime) -> str:
+        return dt.strftime("%d/%m/%Y")
+
+    def build_log_payload(
+        task_label: str,
+        tag_value_raw: str,
+        is_urgent: bool,
+        is_important: bool,
+        start_value: datetime,
+        end_value: datetime,
+    ) -> Tuple[Dict[str, str], str]:
+        tags_list = filter_special_tags(tag_value_raw)
+        meta_tokens: List[str] = []
+        if tags_list:
+            meta_tokens.extend([tag.lower() for tag in tags_list])
+        if is_urgent:
+            meta_tokens.append("urgent")
+        if is_important:
+            meta_tokens.append("important")
+
+        log_entry = f"{format_date(start_value)} {format_time(start_value)} {format_time(end_value)} {task_label}".strip()
+        if meta_tokens:
+            log_entry = f"{log_entry}. {' '.join(meta_tokens)}"
+
+        logged_time = end_value.isoformat()
+        tag_value = ", ".join(tags_list) if tags_list else "Waste"
+        return {"logEntry": log_entry, "loggedTime": logged_time}, tag_value
+
     service = SheetyFailoverService(db_name, user_id)
+
+    adjusted_next = False
+    if (
+        next_row
+        and next_start is not None
+        and next_end is not None
+        and deleted_end is not None
+        and next_start == deleted_end
+        and next_row["sheety_id"] is not None
+    ):
+        sheet_name = "sheet1"
+        active_account = get_active_api_account(db_name, user_id)
+        if active_account:
+            base_url = row_value(active_account, "api_base_url") or ""
+            parsed = urlparse(base_url)
+            path = parsed.path.rstrip("/") if parsed.path else ""
+            if path:
+                sheet_name = path.split("/")[-1] or sheet_name
+
+        next_payload, _ = build_log_payload(
+            next_row["task"],
+            next_row["tags"] or "",
+            bool(next_row["urg"]),
+            bool(next_row["imp"]),
+            next_start,
+            next_end,
+        )
+        success, _, error = service.make_request("PUT", str(next_row["sheety_id"]), {sheet_name: next_payload})
+        if not success:
+            conn.close()
+            return jsonify({"error": error or "Failed to update the next task in Sheety"}), 502
+        adjusted_next = True
+
     success, _, error = service.make_request("DELETE", str(sheety_id), None)
     if not success:
         conn.close()
@@ -619,7 +913,9 @@ def delete_task(task_id: int):
     conn.commit()
     conn.close()
 
-    response_payload = {"success": True}
+    response_payload = {"success": True, "adjusted_next": adjusted_next}
+    if empty_window:
+        response_payload["empty_window"] = empty_window
     failover = service.get_failover_notification()
     if failover:
         response_payload["failover"] = failover

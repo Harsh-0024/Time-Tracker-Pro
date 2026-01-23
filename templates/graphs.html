@@ -630,6 +630,56 @@
             });
         }
 
+        function getNetworkErrorMessage(error, action) {
+            const raw = String(error?.message || '').trim();
+            const lower = raw.toLowerCase();
+            if (lower.includes('failed to fetch') || lower.includes('network') || lower.includes('load failed')) {
+                return `Network error while ${action}. Check your connection and try again.`;
+            }
+            if (lower.includes('http 401') || lower.includes('unauthorized')) {
+                return 'Your session expired. Please log in again.';
+            }
+            if (lower.includes('http 403')) {
+                return 'Access denied. Please verify your account and try again.';
+            }
+            if (lower.includes('http 404')) {
+                return `We couldn't find the task. Sync and try again.`;
+            }
+            return raw ? `Unable to ${action}. ${raw}` : `Unable to ${action}. Please try again.`;
+        }
+
+        let lastGraphModalFocus = null;
+        function getFocusableElements(container) {
+            if (!container) return [];
+            return Array.from(
+                container.querySelectorAll(
+                    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                )
+            ).filter(el => el.offsetParent !== null);
+        }
+
+        function focusModal(modal) {
+            lastGraphModalFocus = document.activeElement;
+            const focusable = getFocusableElements(modal);
+            if (focusable.length) {
+                focusable[0].focus();
+            }
+        }
+
+        function trapModalFocus(modal, event) {
+            const focusable = getFocusableElements(modal);
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
+
         function renderGraphTaskStats() {
             const activeTasks = graphTasks.filter(task => {
                 const taskName = String(task.task || '').trim().toLowerCase();
@@ -898,7 +948,7 @@
                     const tagStyle = `background-color: ${tagColor}15; color: ${tagColor}; border: 1px solid ${tagColor}30;`;
                     tagBadge = `<span class="px-2 py-0.5 rounded-full text-xs font-medium" style="${tagStyle}">${displayTag}</span>`;
                 }
-                const taskId = Number(task.id || 0);
+                const taskId = Number(task.sheety_id || task.id || 0);
                 const actionButtons = (taskId && task.sheety_id != null)
                     ? `<div class="flex items-center gap-2">
                             <button class="px-2.5 py-1 rounded-full border border-slate-200 text-[11px] font-semibold text-gray-600 hover:bg-white" data-action="edit-task" data-task-id="${taskId}">Edit</button>
@@ -933,7 +983,11 @@
         }
 
         function getGraphTaskById(taskId) {
-            return graphTasks.find(task => Number(task.id || 0) === Number(taskId));
+            return graphTasks.find(task => {
+                const localId = Number(task.id || 0);
+                const remoteId = Number(task.sheety_id || 0);
+                return localId === Number(taskId) || (remoteId && remoteId === Number(taskId));
+            });
         }
 
         function closeGraphEditPanel() {
@@ -960,7 +1014,8 @@
             const importantInput = document.getElementById('graphEditTaskImportant');
             const urgentInput = document.getElementById('graphEditTaskUrgent');
             const idInput = document.getElementById('graphEditTaskId');
-            if (idInput) idInput.value = task.id || '';
+            const resolvedTaskId = task.sheety_id ?? task.id ?? '';
+            if (idInput) idInput.value = resolvedTaskId;
             if (nameInput) nameInput.value = String(task.task || '').trim();
             if (durationInput) durationInput.value = Number(task.duration_hours || task.duration_minutes / 60 || 0) || '';
             if (tagInput) {
@@ -996,7 +1051,7 @@
             closeGraphEditPanel();
             const panel = document.getElementById('graphTaskDeleteConfirm');
             if (!panel) return;
-            graphPendingDeleteTaskId = task.id || null;
+            graphPendingDeleteTaskId = task.sheety_id ?? task.id ?? null;
             const label = document.getElementById('graphDeleteTaskLabel');
             if (label) {
                 const taskName = String(task.task || '').trim() || 'this task';
@@ -1357,11 +1412,15 @@
             renderGraphTaskChart();
             renderGraphTaskList();
             graphTaskModal.classList.add('active');
+            focusModal(graphTaskModal);
         }
 
         function closeGraphTaskModal() {
             if (!graphTaskModal) return;
             graphTaskModal.classList.remove('active');
+            if (lastGraphModalFocus && typeof lastGraphModalFocus.focus === 'function') {
+                lastGraphModalFocus.focus();
+            }
         }
 
         function updateReviewButton() {
@@ -1405,6 +1464,12 @@
                 }
             } catch (e) {
                 console.error('Failed to load graph data', e);
+                const message = getNetworkErrorMessage(e, 'load graph data');
+                if (window.showErrorToast) {
+                    window.showErrorToast(message);
+                } else {
+                    alert(message);
+                }
             }
         }
 
@@ -1462,21 +1527,30 @@
             });
         });
 
-        graphSearchApply.addEventListener('click', () => {
+        graphSearchApply.addEventListener('click', async () => {
+            const originalText = graphSearchApply.textContent;
+            graphSearchApply.disabled = true;
+            graphSearchApply.textContent = 'Applying...';
             const query = (graphSearchInput.value || '').trim();
             graphExcludedIds = new Set();
             if (graphFocusValue === 'search_only') {
                 graphSearchQuery = query;
-                fetchGraphData({ includeTasks: true });
+                await fetchGraphData({ includeTasks: true });
+                graphSearchApply.textContent = originalText || 'Apply';
+                graphSearchApply.disabled = false;
                 return;
             }
             if (graphComboToggle.checked) {
                 graphSearchQuery = query;
-                fetchGraphData({ includeTasks: Boolean(query) });
+                await fetchGraphData({ includeTasks: Boolean(query) });
+                graphSearchApply.textContent = originalText || 'Apply';
+                graphSearchApply.disabled = false;
                 return;
             }
             graphSearchQuery = '';
-            fetchGraphData();
+            await fetchGraphData();
+            graphSearchApply.textContent = originalText || 'Apply';
+            graphSearchApply.disabled = false;
         });
 
         graphSearchInput.addEventListener('keydown', (event) => {
@@ -1583,7 +1657,7 @@
                     closeGraphEditPanel();
                     await refreshGraphTaskModal();
                 } catch (error) {
-                    const message = error?.message || 'Failed to update task';
+                    const message = getNetworkErrorMessage(error, 'update the task');
                     if (window.showErrorToast) {
                         window.showErrorToast(message);
                     } else {
@@ -1623,7 +1697,7 @@
                     await refreshGraphTaskModal();
                     promptAddTaskAfterDelete();
                 } catch (error) {
-                    const message = error?.message || 'Failed to delete task';
+                    const message = getNetworkErrorMessage(error, 'delete the task');
                     if (window.showErrorToast) {
                         window.showErrorToast(message);
                     } else {
@@ -1643,8 +1717,13 @@
         });
 
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && graphTaskModal.classList.contains('active')) {
+            if (!graphTaskModal || !graphTaskModal.classList.contains('active')) return;
+            if (event.key === 'Escape') {
                 closeGraphTaskModal();
+                return;
+            }
+            if (event.key === 'Tab') {
+                trapModalFocus(graphTaskModal, event);
             }
         });
 
