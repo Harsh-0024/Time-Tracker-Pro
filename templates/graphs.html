@@ -265,7 +265,7 @@
                         </label>
                         <div class="relative" id="graphHelpWrapper">
                             <button id="graphHelpBtn" type="button" class="graph-help-btn" aria-label="Search syntax help">!</button>
-                            <div id="graphHelpTooltip" class="graph-help-tooltip hidden absolute left-0 top-full mt-2">Default is mutually exclusive. Toggle “Allow search with focus” to combine. Use commas or “or” for alternatives, “and” for strict matches, and “not” to exclude.</div>
+                            <div id="graphHelpTooltip" class="graph-help-tooltip hidden absolute left-0 top-full mt-2">Search matches full words or full tags only. Use AND/OR/NOT and parentheses, or commas for OR. Quotes keep words together ("deep work").</div>
                         </div>
                     </div>
                     <div class="grid gap-2 sm:flex sm:flex-wrap sm:items-center">
@@ -716,27 +716,205 @@
             return Number.isNaN(stamp) ? 0 : stamp;
         }
 
-        function graphTaskMatchesQuery(task, query) {
-            const clean = String(query || '').trim().toLowerCase();
-            if (!clean) return true;
-            const terms = clean.split(/\s+/).filter(Boolean);
-            if (!terms.length) return true;
-            const values = [
-                normalizeGraphTaskKey(task.task),
-                String(task.tag || '').toLowerCase(),
-                String(task.raw_tag || '').toLowerCase(),
-                String(task.date || '').toLowerCase()
-            ];
-            return terms.every(term => {
-                if (term === 'urgent' || term === 'urg') return Boolean(task.urgent);
-                if (term === 'important' || term === 'imp') return Boolean(task.important);
-                return values.some(value => value.includes(term));
+        const GRAPH_QUERY_TOKEN_RE = /"[^"]*"|'[^']*'|\(|\)|,|\bAND\b|\bOR\b|\bNOT\b|[^\s()]+/gi;
+
+        function tokenizeGraphQuery(raw) {
+            const cleaned = String(raw || '').trim();
+            if (!cleaned) return [];
+            const matches = cleaned.match(GRAPH_QUERY_TOKEN_RE) || [];
+            const tokens = [];
+            matches.forEach(match => {
+                const token = String(match || '').trim();
+                if (!token) return;
+                if (token === ',') {
+                    tokens.push({ type: 'OR' });
+                    return;
+                }
+                if (token === '(' || token === ')') {
+                    tokens.push({ type: token });
+                    return;
+                }
+                const upper = token.toUpperCase();
+                if (upper === 'AND' || upper === 'OR' || upper === 'NOT') {
+                    tokens.push({ type: upper });
+                    return;
+                }
+                let term = token;
+                if ((term.startsWith('"') && term.endsWith('"')) || (term.startsWith("'") && term.endsWith("'"))) {
+                    term = term.slice(1, -1);
+                }
+                term = term.trim().toLowerCase();
+                if (term) {
+                    tokens.push({ type: 'TERM', value: term });
+                }
             });
+            return tokens;
+        }
+
+        function parseGraphTaskQuery(raw) {
+            const tokens = tokenizeGraphQuery(raw);
+            if (!tokens.length) return null;
+            let index = 0;
+
+            const peek = () => tokens[index];
+            const consume = () => tokens[index++];
+
+            const parsePrimary = () => {
+                const token = peek();
+                if (!token) return null;
+                if (token.type === 'TERM') {
+                    consume();
+                    return { type: 'term', value: token.value };
+                }
+                if (token.type === '(') {
+                    consume();
+                    const expr = parseOr();
+                    if (peek() && peek().type === ')') consume();
+                    return expr;
+                }
+                return null;
+            };
+
+            const parseNot = () => {
+                const token = peek();
+                if (token && token.type === 'NOT') {
+                    consume();
+                    const expr = parseNot();
+                    return expr ? { type: 'not', expr } : null;
+                }
+                return parsePrimary();
+            };
+
+            const parseAnd = () => {
+                let left = parseNot();
+                if (!left) return null;
+                while (true) {
+                    const token = peek();
+                    if (!token) break;
+                    if (token.type === 'AND') {
+                        consume();
+                        const right = parseNot();
+                        if (!right) break;
+                        left = { type: 'and', left, right };
+                        continue;
+                    }
+                    if (token.type === 'TERM' || token.type === '(' || token.type === 'NOT') {
+                        const right = parseNot();
+                        if (!right) break;
+                        left = { type: 'and', left, right };
+                        continue;
+                    }
+                    break;
+                }
+                return left;
+            };
+
+            const parseOr = () => {
+                let left = parseAnd();
+                if (!left) return null;
+                while (true) {
+                    const token = peek();
+                    if (token && token.type === 'OR') {
+                        consume();
+                        const right = parseAnd();
+                        if (!right) break;
+                        left = { type: 'or', left, right };
+                        continue;
+                    }
+                    break;
+                }
+                return left;
+            };
+
+            return parseOr();
+        }
+
+        function normalizeGraphValue(value) {
+            return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        }
+
+        function splitGraphTokens(value) {
+            const clean = normalizeGraphValue(value);
+            if (!clean) return [];
+            return clean.split(/[^a-z0-9]+/).filter(Boolean);
+        }
+
+        function hasTokenSequence(tokens, sequence) {
+            if (!tokens.length || !sequence.length || sequence.length > tokens.length) return false;
+            for (let i = 0; i <= tokens.length - sequence.length; i += 1) {
+                let match = true;
+                for (let j = 0; j < sequence.length; j += 1) {
+                    if (tokens[i + j] !== sequence[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) return true;
+            }
+            return false;
+        }
+
+        function getGraphTaskTagPhrases(task) {
+            const raw = String(task.tag || task.raw_tag || '');
+            const directTags = raw
+                .split(',')
+                .map(tag => normalizeGraphValue(tag))
+                .filter(Boolean);
+            const displayTags = formatTagNames(raw)
+                .split(',')
+                .map(tag => normalizeGraphValue(tag))
+                .filter(Boolean);
+            const primaryTag = normalizeTagName(raw);
+            const normalizedPrimary = primaryTag ? normalizeGraphValue(primaryTag) : '';
+            return Array.from(new Set([...directTags, ...displayTags, normalizedPrimary].filter(Boolean)));
+        }
+
+        function graphTaskTermMatches(task, term) {
+            const clean = normalizeGraphValue(term);
+            if (!clean) return false;
+            if (clean === 'urgent') return Boolean(task.urgent);
+            if (clean === 'important') return Boolean(task.important);
+
+            const termTokens = splitGraphTokens(clean);
+            if (!termTokens.length) return false;
+
+            const tokenGroups = [];
+            const taskTokens = splitGraphTokens(task.task);
+            if (taskTokens.length) tokenGroups.push(taskTokens);
+            const dateTokens = splitGraphTokens(task.date);
+            if (dateTokens.length) tokenGroups.push(dateTokens);
+
+            getGraphTaskTagPhrases(task).forEach(tag => {
+                const tagTokens = splitGraphTokens(tag);
+                if (tagTokens.length) tokenGroups.push(tagTokens);
+            });
+
+            if (termTokens.length === 1) {
+                const token = termTokens[0];
+                return tokenGroups.some(tokens => tokens.includes(token));
+            }
+
+            return tokenGroups.some(tokens => hasTokenSequence(tokens, termTokens));
+        }
+
+        function evaluateGraphTaskQuery(expr, task) {
+            if (!expr) return true;
+            if (expr.type === 'term') return graphTaskTermMatches(task, expr.value);
+            if (expr.type === 'not') return !evaluateGraphTaskQuery(expr.expr, task);
+            if (expr.type === 'and') return evaluateGraphTaskQuery(expr.left, task) && evaluateGraphTaskQuery(expr.right, task);
+            if (expr.type === 'or') return evaluateGraphTaskQuery(expr.left, task) || evaluateGraphTaskQuery(expr.right, task);
+            return true;
+        }
+
+        function graphTaskMatchesQuery(task, expr) {
+            if (!expr) return true;
+            return evaluateGraphTaskQuery(expr, task);
         }
 
         function renderGraphTaskStats() {
+            const searchExpr = parseGraphTaskQuery(graphTaskQuery);
             const activeTasks = graphTasks.filter(task => {
-                if (!graphTaskMatchesQuery(task, graphTaskQuery)) return false;
+                if (!graphTaskMatchesQuery(task, searchExpr)) return false;
                 const taskNameNormalized = normalizeGraphTaskKey(task.task);
                 for (const hiddenKey in graphHiddenTags) {
                     if (hiddenKey.toLowerCase() === taskNameNormalized) return false;
@@ -747,27 +925,36 @@
             const taskCount = activeTasks.length;
             const uniqueTasks = new Set(activeTasks.map(t => normalizeGraphTaskKey(t.task))).size;
             const avgMinutes = taskCount ? totalMinutes / taskCount : 0;
+            const activeDates = new Set(
+                activeTasks.map(task => String(task.date || '').trim()).filter(Boolean)
+            );
+            const activeDays = Math.max(activeDates.size, 1);
+            const canAverage = activeDays > 1;
+            if (!canAverage && graphTaskStatsMode === 'avg') {
+                graphTaskStatsMode = 'total';
+            }
             const statItem = (value, label) => `
                 <div class="rounded-xl border border-slate-100 bg-white/80 px-3 py-3 text-center">
                     <div class="text-xl md:text-2xl font-light text-gray-900">${value}</div>
                     <div class="text-[10px] md:text-xs text-gray-500 mt-1 uppercase tracking-wider">${label}</div>
                 </div>
             `;
-            const useAverage = graphTaskStatsMode === 'avg' && currentDays > 1;
-            const divisor = useAverage ? Math.max(currentDays, 1) : 1;
-            const totalHours = (totalMinutes / 60) / divisor;
-            const avgHours = avgMinutes / 60;
+            const useAverage = graphTaskStatsMode === 'avg' && canAverage;
+            const totalHours = totalMinutes / 60;
+            const avgDayHours = totalHours / activeDays;
+            const avgTaskHours = avgMinutes / 60;
             const totalLabel = useAverage ? 'Avg/day' : 'Total hours';
+            const displayHours = useAverage ? avgDayHours : totalHours;
             const stats = [
                 statItem(uniqueTasks, 'Unique tasks'),
-                statItem(`<span class="js-hover-hours hover-swap" data-hours="${totalHours}">${formatHours(totalHours, 1)}</span>`, totalLabel),
-                statItem(`<span class="js-hover-hours hover-swap" data-hours="${avgHours}">${formatHours(avgHours, 1)}</span>`, 'Avg/task')
+                statItem(`<span class="js-hover-hours hover-swap" data-hours="${displayHours}">${formatHours(displayHours, 1)}</span>`, totalLabel),
+                statItem(`<span class="js-hover-hours hover-swap" data-hours="${avgTaskHours}">${formatHours(avgTaskHours, 1)}</span>`, 'Avg/task')
             ];
             if (graphTaskStats) {
                 graphTaskStats.innerHTML = stats.join('');
-                graphTaskStats.classList.toggle('cursor-pointer', currentDays > 1);
-                if (!graphTaskStats.__toggleBound && currentDays > 1) {
-                    graphTaskStats.title = 'Click to toggle total/avg';
+                graphTaskStats.classList.toggle('cursor-pointer', canAverage);
+                graphTaskStats.title = canAverage ? 'Click to toggle total/avg' : '';
+                if (!graphTaskStats.__toggleBound) {
                     graphTaskStats.addEventListener('click', () => {
                         graphTaskStatsMode = graphTaskStatsMode === 'avg' ? 'total' : 'avg';
                         renderGraphTaskStats();
@@ -781,10 +968,13 @@
 
         function renderGraphTaskChart() {
             if (!graphTaskChart) return;
+            const searchExpr = parseGraphTaskQuery(graphTaskQuery);
             const activeTasks = graphTasks.filter(task => {
-                const taskName = String(task.task || '').trim().toLowerCase();
-                const query = graphTaskQuery.toLowerCase();
-                if (query && !taskName.includes(query)) return false;
+                if (!graphTaskMatchesQuery(task, searchExpr)) return false;
+                const taskNameNormalized = normalizeGraphTaskKey(task.task);
+                for (const hiddenKey in graphHiddenTags) {
+                    if (hiddenKey.toLowerCase() === taskNameNormalized) return false;
+                }
                 return true;
             });
             if (!activeTasks.length) {
@@ -794,9 +984,8 @@
             const taskGroups = {};
             const taskDisplayNames = {};
             activeTasks.forEach(task => {
-                let rawKey = String(task.task || '').trim();
-                if (!rawKey || /^(undefined|null|none|nan)$/i.test(rawKey)) rawKey = 'Unspecified';
-                const normalizedKey = rawKey.toLowerCase();
+                const rawKey = normalizeGraphTaskName(task.task);
+                const normalizedKey = normalizeGraphTaskKey(task.task);
                 const hours = Number(task.duration_hours || 0);
                 taskGroups[normalizedKey] = (taskGroups[normalizedKey] || 0) + hours;
                 if (!taskDisplayNames[normalizedKey]) {
@@ -965,14 +1154,19 @@
 
         function renderGraphTaskList() {
             if (!graphTasksList) return;
+            const searchExpr = parseGraphTaskQuery(graphTaskQuery);
             let filteredTasks = graphTasks.filter(task => {
-                if (!graphTaskMatchesQuery(task, graphTaskQuery)) return false;
+                if (!graphTaskMatchesQuery(task, searchExpr)) return false;
                 const taskNameNormalized = normalizeGraphTaskKey(task.task);
                 for (const hiddenKey in graphHiddenTags) {
                     if (hiddenKey.toLowerCase() === taskNameNormalized) return false;
                 }
                 return true;
             });
+            if (!filteredTasks.length) {
+                graphTasksList.innerHTML = '<div class="text-center py-8 text-gray-400">No tasks found</div>';
+                return;
+            }
             const sortKey = graphTaskSort || 'time_desc';
             if (sortKey === 'time_desc') {
                 filteredTasks.sort((a, b) => {
@@ -1038,9 +1232,6 @@
             });
             graphTasksList.innerHTML = html.join('');
             attachHoverSwap();
-            if (!filteredTasks.length) {
-                return;
-            }
         }
 
         function getGraphTaskById(taskId) {
