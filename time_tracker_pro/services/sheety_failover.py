@@ -11,6 +11,7 @@ from ..repositories.sheety_accounts import (
     update_account_test_result,
     get_user_api_accounts
 )
+from ..core.rows import row_value
 
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class SheetyFailoverService:
         """Test if an API account is working. Returns (success, row_count, error_message)."""
         try:
             api_base_url = account['api_base_url']
-            headers = self._build_headers(account.get('api_token'))
+            headers = self._build_headers(row_value(account, 'api_token'))
             
             response = requests.get(api_base_url, headers=headers, timeout=10)
             
@@ -70,7 +71,7 @@ class SheetyFailoverService:
         try:
             api_base_url = account['api_base_url']
             url = f"{api_base_url.rstrip('/')}/{endpoint.lstrip('/')}" if endpoint else api_base_url
-            headers = self._build_headers(account.get('api_token'))
+            headers = self._build_headers(row_value(account, 'api_token'))
             
             if method.upper() == 'GET':
                 response = requests.get(url, headers=headers, timeout=15)
