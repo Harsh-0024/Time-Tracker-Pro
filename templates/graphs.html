@@ -499,10 +499,12 @@
         let graphTaskSortLabel = 'Time ↓';
         let graphHiddenTags = {};
         let graphPendingDeleteTaskId = null;
+        let graphTaskStatsMode = 'total';
 
-        function formatHours(value) {
+        function formatHours(value, decimals = 1, suffix = true) {
             const num = Number(value) || 0;
-            return `${num.toFixed(1)}h`;
+            const formatted = num.toFixed(decimals);
+            return suffix ? `${formatted}h` : formatted;
         }
 
         const parseColor = (value) => {
@@ -680,13 +682,62 @@
             }
         }
 
+        function normalizeGraphTaskName(value) {
+            const raw = String(value || '').trim();
+            if (!raw || /^(undefined|null|none|nan)$/i.test(raw)) {
+                return 'Untitled';
+            }
+            return raw;
+        }
+
+        function normalizeGraphTaskKey(value) {
+            return normalizeGraphTaskName(value).toLowerCase();
+        }
+
+        function parseGraphTaskTime(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '00:00:00';
+            const match = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?$/i);
+            if (!match) return raw;
+            let hours = Number(match[1]);
+            const minutes = Number(match[2]);
+            const seconds = Number(match[3] || 0);
+            const meridian = (match[4] || '').toLowerCase();
+            if (meridian === 'pm' && hours < 12) hours += 12;
+            if (meridian === 'am' && hours === 12) hours = 0;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function getGraphTaskTimestamp(task) {
+            const date = String(task.date || '').trim();
+            if (!date) return 0;
+            const time = parseGraphTaskTime(task.start_time);
+            const stamp = Date.parse(`${date}T${time}`);
+            return Number.isNaN(stamp) ? 0 : stamp;
+        }
+
+        function graphTaskMatchesQuery(task, query) {
+            const clean = String(query || '').trim().toLowerCase();
+            if (!clean) return true;
+            const terms = clean.split(/\s+/).filter(Boolean);
+            if (!terms.length) return true;
+            const values = [
+                normalizeGraphTaskKey(task.task),
+                String(task.tag || '').toLowerCase(),
+                String(task.raw_tag || '').toLowerCase(),
+                String(task.date || '').toLowerCase()
+            ];
+            return terms.every(term => {
+                if (term === 'urgent' || term === 'urg') return Boolean(task.urgent);
+                if (term === 'important' || term === 'imp') return Boolean(task.important);
+                return values.some(value => value.includes(term));
+            });
+        }
+
         function renderGraphTaskStats() {
             const activeTasks = graphTasks.filter(task => {
-                const taskName = String(task.task || '').trim().toLowerCase();
-                const query = graphTaskQuery.toLowerCase();
-                if (query && !taskName.includes(query)) return false;
-                const taskNameOriginal = String(task.task || '').trim();
-                const taskNameNormalized = taskNameOriginal.toLowerCase();
+                if (!graphTaskMatchesQuery(task, graphTaskQuery)) return false;
+                const taskNameNormalized = normalizeGraphTaskKey(task.task);
                 for (const hiddenKey in graphHiddenTags) {
                     if (hiddenKey.toLowerCase() === taskNameNormalized) return false;
                 }
@@ -694,23 +745,36 @@
             });
             const totalMinutes = activeTasks.reduce((sum, task) => sum + Number(task.duration_minutes || 0), 0);
             const taskCount = activeTasks.length;
-            const uniqueTasks = new Set(activeTasks.map(t => String(t.task || 'Untitled').trim())).size;
-            const avgMinutes = uniqueTasks ? totalMinutes / uniqueTasks : 0;
+            const uniqueTasks = new Set(activeTasks.map(t => normalizeGraphTaskKey(t.task))).size;
+            const avgMinutes = taskCount ? totalMinutes / taskCount : 0;
             const statItem = (value, label) => `
                 <div class="rounded-xl border border-slate-100 bg-white/80 px-3 py-3 text-center">
                     <div class="text-xl md:text-2xl font-light text-gray-900">${value}</div>
                     <div class="text-[10px] md:text-xs text-gray-500 mt-1 uppercase tracking-wider">${label}</div>
                 </div>
             `;
-            const totalHours = totalMinutes / 60;
+            const useAverage = graphTaskStatsMode === 'avg' && currentDays > 1;
+            const divisor = useAverage ? Math.max(currentDays, 1) : 1;
+            const totalHours = (totalMinutes / 60) / divisor;
             const avgHours = avgMinutes / 60;
+            const totalLabel = useAverage ? 'Avg/day' : 'Total hours';
             const stats = [
                 statItem(uniqueTasks, 'Unique tasks'),
-                statItem(`<span class="js-hover-hours hover-swap" data-hours="${totalHours}">${formatHours(totalHours, 1)}</span>`, 'Total hours'),
+                statItem(`<span class="js-hover-hours hover-swap" data-hours="${totalHours}">${formatHours(totalHours, 1)}</span>`, totalLabel),
                 statItem(`<span class="js-hover-hours hover-swap" data-hours="${avgHours}">${formatHours(avgHours, 1)}</span>`, 'Avg/task')
             ];
             if (graphTaskStats) {
                 graphTaskStats.innerHTML = stats.join('');
+                graphTaskStats.classList.toggle('cursor-pointer', currentDays > 1);
+                if (!graphTaskStats.__toggleBound && currentDays > 1) {
+                    graphTaskStats.title = 'Click to toggle total/avg';
+                    graphTaskStats.addEventListener('click', () => {
+                        graphTaskStatsMode = graphTaskStatsMode === 'avg' ? 'total' : 'avg';
+                        renderGraphTaskStats();
+                        renderGraphTaskList();
+                    });
+                    graphTaskStats.__toggleBound = true;
+                }
                 attachHoverSwap();
             }
         }
@@ -902,11 +966,8 @@
         function renderGraphTaskList() {
             if (!graphTasksList) return;
             let filteredTasks = graphTasks.filter(task => {
-                const taskName = String(task.task || '').trim().toLowerCase();
-                const query = graphTaskQuery.toLowerCase();
-                if (query && !taskName.includes(query)) return false;
-                const taskNameOriginal = String(task.task || '').trim();
-                const taskNameNormalized = taskNameOriginal.toLowerCase();
+                if (!graphTaskMatchesQuery(task, graphTaskQuery)) return false;
+                const taskNameNormalized = normalizeGraphTaskKey(task.task);
                 for (const hiddenKey in graphHiddenTags) {
                     if (hiddenKey.toLowerCase() === taskNameNormalized) return false;
                 }
@@ -915,28 +976,28 @@
             const sortKey = graphTaskSort || 'time_desc';
             if (sortKey === 'time_desc') {
                 filteredTasks.sort((a, b) => {
-                    const aTime = `${a.date} ${a.start_time}`;
-                    const bTime = `${b.date} ${b.start_time}`;
-                    return bTime.localeCompare(aTime);
+                    return getGraphTaskTimestamp(b) - getGraphTaskTimestamp(a);
                 });
             } else if (sortKey === 'time_asc') {
                 filteredTasks.sort((a, b) => {
-                    const aTime = `${a.date} ${a.start_time}`;
-                    const bTime = `${b.date} ${b.start_time}`;
-                    return aTime.localeCompare(bTime);
+                    return getGraphTaskTimestamp(a) - getGraphTaskTimestamp(b);
                 });
             } else if (sortKey === 'duration_desc') {
                 filteredTasks.sort((a, b) => Number(b.duration_hours || 0) - Number(a.duration_hours || 0));
             } else if (sortKey === 'duration_asc') {
                 filteredTasks.sort((a, b) => Number(a.duration_hours || 0) - Number(b.duration_hours || 0));
             } else if (sortKey === 'task_az') {
-                filteredTasks.sort((a, b) => String(a.task || '').localeCompare(String(b.task || '')));
+                filteredTasks.sort((a, b) => normalizeGraphTaskName(a.task).localeCompare(normalizeGraphTaskName(b.task)));
             } else if (sortKey === 'task_za') {
-                filteredTasks.sort((a, b) => String(b.task || '').localeCompare(String(a.task || '')));
+                filteredTasks.sort((a, b) => normalizeGraphTaskName(b.task).localeCompare(normalizeGraphTaskName(a.task)));
+            } else if (sortKey === 'imp_desc') {
+                filteredTasks.sort((a, b) => Number(Boolean(b.important)) - Number(Boolean(a.important)));
+            } else if (sortKey === 'urg_desc') {
+                filteredTasks.sort((a, b) => Number(Boolean(b.urgent)) - Number(Boolean(a.urgent)));
             }
             const html = filteredTasks.map(task => {
                 const dur = Number(task.duration_hours || 0);
-                const durText = formatHours(dur, 1);
+                const durText = hoursToHuman(dur);
                 const badges = [];
                 if (task.important) badges.push('<span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-xs rounded-full">Important</span>');
                 if (task.urgent) badges.push('<span class="px-2 py-1 bg-red-50 text-red-700 text-xs rounded-full">Urgent</span>');
@@ -959,7 +1020,7 @@
                     <div class="luxury-card rounded-2xl p-4 md:p-5 mb-3 shadow-lg">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex-1 min-w-0">
-                                <div class="font-medium text-gray-900 mb-1 truncate">${task.task || 'Untitled task'}</div>
+                                <div class="font-medium text-gray-900 mb-1 truncate">${normalizeGraphTaskName(task.task) || 'Untitled task'}</div>
                                 <div class="flex flex-wrap items-center gap-2 text-[13px] text-gray-600">
                                     <span class="text-gray-500">${task.date}</span>
                                     <span class="text-gray-500">${task.start_time} - ${task.end_time}</span>

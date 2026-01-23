@@ -1286,8 +1286,16 @@
         window.openCreateTaskPanel = function() {
             const panel = document.getElementById('taskCreatePanel');
             if (!panel) return;
-            window.closeEditTaskPanel();
-            window.closeDeleteTaskConfirm();
+            const modal = document.getElementById('taskModal');
+            if (modal && !modal.classList.contains('active')) {
+                return;
+            }
+            if (window.closeEditTaskPanel) {
+                window.closeEditTaskPanel();
+            }
+            if (window.closeDeleteTaskConfirm) {
+                window.closeDeleteTaskConfirm();
+            }
             const nameInput = document.getElementById('createTaskName');
             const dateInput = document.getElementById('createTaskDate');
             const timeInput = document.getElementById('createTaskStart');
@@ -1311,6 +1319,12 @@
                 timeInput.value = `${hours}:${minutes}`;
             }
             panel.classList.remove('hidden');
+            try {
+                const focusTarget = document.getElementById('createTaskName');
+                if (focusTarget) focusTarget.focus();
+            } catch (e) {
+                // ignore focus errors
+            }
             try {
                 panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } catch (e) {
@@ -2062,6 +2076,7 @@
 
         window.closeModal = function() {
             document.getElementById('taskModal').classList.remove('active');
+            window.closeCreateTaskPanel();
             if (lastModalFocus && typeof lastModalFocus.focus === 'function') {
                 lastModalFocus.focus();
             }
