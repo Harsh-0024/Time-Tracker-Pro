@@ -232,14 +232,14 @@
             </div>
 
             <div class="mt-6 p-4 rounded-2xl bg-amber-50 border border-amber-200">
-                <div class="flex gap-3">
+                <div class="flex flex-col sm:flex-row gap-3">
                     <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <div class="text-xs text-amber-800">
+                    <div class="text-xs text-amber-800 break-words">
                         <strong>Automatic Failover:</strong> If the active API fails, the system will automatically try the next account in priority order. You'll be notified when a switch happens.
                         <div class="mt-2 text-xs text-amber-800">
-                            <strong>Required Sheety access:</strong> Enable GET, POST, PUT, and DELETE for your sheet. We call <code class="font-semibold">[base]</code> for GET/POST and <code class="font-semibold">[base]/&lt;Object ID&gt;</code> for edit/delete.
+                            <strong>Required Sheety access:</strong> Enable GET, POST, PUT, and DELETE for your sheet. We call <code class="font-semibold break-all">[base]</code> for GET/POST and <code class="font-semibold break-all">[base]/&lt;Object ID&gt;</code> for edit/delete.
                         </div>
                     </div>
                 </div>

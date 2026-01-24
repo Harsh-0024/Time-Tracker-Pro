@@ -114,10 +114,11 @@
         .period-selector {
             display: flex;
             gap: 4px;
-            background: rgba(255, 255, 255, 0.45);
+            background: rgba(255, 255, 255, 0.8);
             padding: 4px;
-            border-radius: 12px;
-            border: 1px solid rgba(148, 126, 86, 0.32);
+            border-radius: 9999px;
+            border: 1px solid rgba(148, 126, 86, 0.35);
+            box-shadow: 0 10px 24px rgba(148, 126, 86, 0.2);
         }
         .period-btn {
             padding: 8px 16px;
@@ -134,6 +135,10 @@
             background: linear-gradient(135deg, #F8D574, #F5B826);
             color: #111827;
             box-shadow: 0 10px 24px rgba(185, 132, 40, 0.35);
+        }
+        .period-btn:hover {
+            color: #1F2937;
+            background: #F7F1E6;
         }
         .primary-cta {
             display: inline-flex;
@@ -686,7 +691,7 @@
 
     </main>
 
-    <nav class="fixed bottom-0 inset-x-0 md:hidden z-40">
+    <nav class="fixed bottom-0 inset-x-0 md:hidden z-40" style="position: fixed;">
         <div class="mx-auto max-w-7xl">
             <div class="flex items-center justify-around bg-white/95 backdrop-blur border-t border-slate-200 shadow-lg px-2 py-2" style="padding-bottom: env(safe-area-inset-bottom);">
                 <button id="navHome" class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-gray-600">
@@ -1694,6 +1699,22 @@
                 if (meridian === 'AM' && hour === 12) hour = 0;
                 return (hour * 60) + minute;
             };
+            const getTaskTimestamp = (task) => {
+                const date = String(task.date || '').trim();
+                if (!date) return 0;
+                const timeValue = String(task.start_time || '').trim();
+                if (!timeValue) return 0;
+                const match = timeValue.match(/(\d{1,2})(?::(\d{2}))?(?::(\d{2}))?\s*(AM|PM)?/i);
+                if (!match) return 0;
+                let hour = Number(match[1] || 0);
+                const minute = Number(match[2] || 0);
+                const second = Number(match[3] || 0);
+                const meridian = (match[4] || '').toUpperCase();
+                if (meridian === 'PM' && hour < 12) hour += 12;
+                if (meridian === 'AM' && hour === 12) hour = 0;
+                const iso = `${date}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`;
+                return new Date(iso).getTime();
+            };
             const getKey = (task) => {
                 if (filterType === 'tag') {
                     let key = String(task.task || '').trim();
@@ -1731,8 +1752,8 @@
                 })
                 : active;
             const sorters = {
-                time_asc: (a, b) => timeToMinutes(a.start_time) - timeToMinutes(b.start_time),
-                time_desc: (a, b) => timeToMinutes(b.start_time) - timeToMinutes(a.start_time),
+                time_asc: (a, b) => getTaskTimestamp(a) - getTaskTimestamp(b),
+                time_desc: (a, b) => getTaskTimestamp(b) - getTaskTimestamp(a),
                 duration_desc: (a, b) => (b.duration || 0) - (a.duration || 0),
                 duration_asc: (a, b) => (a.duration || 0) - (b.duration || 0),
                 task_az: (a, b) => String(a.task || '').localeCompare(String(b.task || '')),
@@ -2013,7 +2034,7 @@
                 };
             }
             const chartContainer = document.getElementById('modalChart');
-            chartContainer.innerHTML = '<div class="relative w-full" style="height: 280px;"><canvas id="filterChart" class="w-full h-full"></canvas></div><div id="mobileModalLegend" class="mt-4 mb-4 md:hidden flex flex-wrap gap-2 justify-center text-[11px] text-gray-700 px-2"></div>';
+            chartContainer.innerHTML = '<div class="relative w-full" style="height: 280px;"><canvas id="filterChart" class="w-full h-full"></canvas></div><div id="mobileModalLegend" class="mt-4 mb-4 md:hidden flex flex-wrap gap-2 justify-center text-[11px] text-gray-700 px-2"></div><div id="desktopModalLegend" class="mt-4 hidden md:flex flex-wrap gap-3 justify-center text-[11px] text-gray-700 px-4"></div>';
             const sortLabels = {
                 time_desc: 'Time ↓',
                 time_asc: 'Time ↑',
@@ -2172,38 +2193,26 @@
                     }
                 };
                 updateMobileLegend(null);
-                const legendLabelOptions = {
-                    font: { family: 'Inter', size: 11, weight: '500' },
-                    padding: 14,
-                    color: '#374151',
-                    usePointStyle: true,
-                    pointStyle: 'circle'
+
+                const desktopLegendEl = document.getElementById('desktopModalLegend');
+                const updateDesktopLegend = (chart) => {
+                    if (!desktopLegendEl) return;
+                    if (isModalMobile) {
+                        desktopLegendEl.innerHTML = '';
+                        return;
+                    }
+                    desktopLegendEl.innerHTML = labels.map((label, idx) => {
+                        const color = colors[idx] || '#9CA3AF';
+                        const isHidden = chart ? !chart.getDataVisibility(idx) : false;
+                        const textDecoration = isHidden ? 'line-through' : 'none';
+                        const opacity = isHidden ? '0.5' : '1';
+                        return `<span class="inline-flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity" data-legend-idx="${idx}" style="opacity:${opacity}">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
+                            <span style="text-decoration:${textDecoration}" class="max-w-[160px] truncate">${label}</span>
+                        </span>`;
+                    }).join('');
                 };
-                const legendGenerateLabels = (chart) => {
-                    const labels = chart.data.labels || [];
-                    const values = chart.data.datasets[0]?.data || [];
-                    const meta = chart.getDatasetMeta(0);
-                    const total = values.reduce((sum, v) => sum + (Number(v) || 0), 0);
-                    return labels.map((rawLabel, idx) => {
-                        const style = meta?.controller?.getStyle
-                            ? meta.controller.getStyle(idx)
-                            : {};
-                        const baseText = String(rawLabel ?? '').trim();
-                        const safeText = baseText && !/^(undefined|null|none|nan)$/i.test(baseText)
-                            ? baseText
-                            : (window.modalFilterType === 'tag' ? 'Unspecified' : 'Waste');
-                        const labelText = safeText;
-                        return {
-                            text: labelText,
-                            fillStyle: style.backgroundColor,
-                            strokeStyle: style.borderColor,
-                            lineWidth: style.borderWidth,
-                            hidden: !chart.getDataVisibility(idx),
-                            index: idx,
-                            datasetIndex: 0
-                        };
-                    });
-                };
+
                 const chart = new Chart(ctx, {
                     type: 'pie',
                     data: {
@@ -2236,29 +2245,7 @@
                                 precision: 0
                             },
                             legend: {
-                                display: !isModalMobile,
-                                position: 'bottom',
-                                labels: {
-                                    ...legendLabelOptions,
-                                    pointStyle: 'circle'
-                                },
-                                generateLabels: legendGenerateLabels,
-                                onClick: function(e, legendItem, legend) {
-                                    const ci = legend.chart;
-                                    const index = legendItem.index;
-                                    const label = ci.data.labels[index];
-                                    const currentlyVisible = ci.getDataVisibility(index) !== false;
-                                    ci.toggleDataVisibility(index);
-                                    ci.update();
-                                    if (!window.hiddenTags) window.hiddenTags = {};
-                                    if (currentlyVisible) {
-                                        window.hiddenTags[label] = true;
-                                    } else {
-                                        delete window.hiddenTags[label];
-                                    }
-                                    updateMobileLegend(ci);
-                                    window.renderModalTasks();
-                                }
+                                display: false
                             },
                             tooltip: {
                                 backgroundColor: 'rgba(17, 24, 39, 0.96)',
@@ -2301,31 +2288,37 @@
                                 delete window.hiddenTags[label];
                             }
                             updateMobileLegend(chart);
+                            updateDesktopLegend(chart);
                             window.renderModalTasks();
                         }
                     }
                 });
-                
-                // Mobile legend click handler
+                updateMobileLegend(chart);
+                updateDesktopLegend(chart);
+                const legendClickHandler = (e) => {
+                    const legendItem = e.target.closest('[data-legend-idx]');
+                    if (!legendItem) return;
+                    const index = parseInt(legendItem.dataset.legendIdx, 10);
+                    if (!Number.isFinite(index)) return;
+                    const label = chart.data.labels[index];
+                    const currentlyVisible = chart.getDataVisibility(index) !== false;
+                    chart.toggleDataVisibility(index);
+                    chart.update();
+                    if (!window.hiddenTags) window.hiddenTags = {};
+                    if (currentlyVisible) {
+                        window.hiddenTags[label] = true;
+                    } else {
+                        delete window.hiddenTags[label];
+                    }
+                    updateMobileLegend(chart);
+                    updateDesktopLegend(chart);
+                    window.renderModalTasks();
+                };
                 if (mobileLegendEl) {
-                    mobileLegendEl.addEventListener('click', (e) => {
-                        const legendItem = e.target.closest('[data-legend-idx]');
-                        if (!legendItem) return;
-                        const index = parseInt(legendItem.dataset.legendIdx, 10);
-                        if (!Number.isFinite(index)) return;
-                        const label = chart.data.labels[index];
-                        const currentlyVisible = chart.getDataVisibility(index) !== false;
-                        chart.toggleDataVisibility(index);
-                        chart.update();
-                        if (!window.hiddenTags) window.hiddenTags = {};
-                        if (currentlyVisible) {
-                            window.hiddenTags[label] = true;
-                        } else {
-                            delete window.hiddenTags[label];
-                        }
-                        updateMobileLegend(chart);
-                        window.renderModalTasks();
-                    });
+                    mobileLegendEl.addEventListener('click', legendClickHandler);
+                }
+                if (desktopLegendEl) {
+                    desktopLegendEl.addEventListener('click', legendClickHandler);
                 }
             }
             window.renderModalTasks();
@@ -2336,7 +2329,10 @@
 
         window.closeModal = function() {
             document.getElementById('taskModal').classList.remove('active');
+            setGlobalLoading(false);
             window.closeCreateTaskPanel();
+            window.closeEditTaskPanel();
+            window.closeDeleteTaskConfirm();
             if (lastModalFocus && typeof lastModalFocus.focus === 'function') {
                 lastModalFocus.focus();
             }
@@ -2485,6 +2481,10 @@
             document.addEventListener('keydown', (event) => {
                 const modal = document.getElementById('taskModal');
                 if (!modal || !modal.classList.contains('active')) return;
+                if (event.key === 'Escape') {
+                    window.closeModal();
+                    return;
+                }
                 if (event.key === 'Tab') {
                     trapModalFocus(modal, event);
                 }

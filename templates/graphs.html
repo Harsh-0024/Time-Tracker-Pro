@@ -1005,36 +1005,44 @@
             const palette = [baseColor, accentColor].filter(Boolean).concat(['#16A34A', '#A16207', '#7C3AED', '#0EA5A4', '#9F1239', '#9CA3AF', '#F59E0B']);
             const colors = labels.map((_, idx) => palette[idx % palette.length]);
             const isModalMobile = window.matchMedia('(max-width: 767px)').matches;
-            graphTaskChart.innerHTML = '<div class="relative w-full px-4 md:px-8" style="height: 300px;"><canvas id="graphTaskChartCanvas" class="w-full h-full"></canvas></div><div id="graphTaskMobileLegend" class="mt-6 mb-2 md:hidden flex flex-wrap gap-2 justify-center text-[11px] text-gray-700 px-2"></div>';
+            graphTaskChart.innerHTML = '<div class="relative w-full px-4 md:px-8" style="height: 300px;"><canvas id="graphTaskChartCanvas" class="w-full h-full"></canvas></div><div id="graphTaskMobileLegend" class="mt-6 mb-2 md:hidden flex flex-wrap gap-2 justify-center text-[11px] text-gray-700 px-2"></div><div id="graphTaskDesktopLegend" class="mt-4 hidden md:flex flex-wrap gap-3 justify-center text-[11px] text-gray-700 px-4"></div>';
             const mobileLegendEl = document.getElementById('graphTaskMobileLegend');
-            if (mobileLegendEl && isModalMobile) {
-                mobileLegendEl.innerHTML = labels.map((label, idx) => {
+            const desktopLegendEl = document.getElementById('graphTaskDesktopLegend');
+            const updateMobileLegend = (chart) => {
+                if (mobileLegendEl && isModalMobile) {
+                    mobileLegendEl.innerHTML = labels.map((label, idx) => {
+                        const color = colors[idx] || '#9CA3AF';
+                        const isHidden = chart ? !chart.getDataVisibility(idx) : false;
+                        const textDecoration = isHidden ? 'line-through' : 'none';
+                        const opacity = isHidden ? '0.5' : '1';
+                        return `<span class="inline-flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity" data-legend-idx="${idx}" style="opacity:${opacity}">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
+                            <span style="text-decoration:${textDecoration}">${label}</span>
+                        </span>`;
+                    }).join('');
+                } else if (mobileLegendEl) {
+                    mobileLegendEl.innerHTML = '';
+                }
+            };
+            const updateDesktopLegend = (chart) => {
+                if (!desktopLegendEl) return;
+                if (isModalMobile) {
+                    desktopLegendEl.innerHTML = '';
+                    return;
+                }
+                desktopLegendEl.innerHTML = labels.map((label, idx) => {
                     const color = colors[idx] || '#9CA3AF';
-                    return `<span class="inline-flex items-center gap-1">
+                    const isHidden = chart ? !chart.getDataVisibility(idx) : false;
+                    const textDecoration = isHidden ? 'line-through' : 'none';
+                    const opacity = isHidden ? '0.5' : '1';
+                    return `<span class="inline-flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity" data-legend-idx="${idx}" style="opacity:${opacity}">
                         <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
-                        ${label}
+                        <span style="text-decoration:${textDecoration}" class="max-w-[160px] truncate">${label}</span>
                     </span>`;
                 }).join('');
-            }
-            const legendGenerateLabels = (chart) => {
-                const labels = chart.data.labels || [];
-                const values = chart.data.datasets[0]?.data || [];
-                const meta = chart.getDatasetMeta(0);
-                return labels.map((rawLabel, idx) => {
-                    const style = meta?.controller?.getStyle ? meta.controller.getStyle(idx) : {};
-                    const baseText = String(rawLabel ?? '').trim();
-                    const safeText = baseText && !/^(undefined|null|none|nan)$/i.test(baseText) ? baseText : 'Unspecified';
-                    return {
-                        text: safeText,
-                        fillStyle: style.backgroundColor,
-                        strokeStyle: style.borderColor,
-                        lineWidth: style.borderWidth,
-                        hidden: !chart.getDataVisibility(idx),
-                        index: idx,
-                        datasetIndex: 0
-                    };
-                });
             };
+            updateMobileLegend(null);
+            updateDesktopLegend(null);
             const ctx = document.getElementById('graphTaskChartCanvas').getContext('2d');
             if (graphTaskChartInstance) {
                 graphTaskChartInstance.destroy();
@@ -1071,39 +1079,7 @@
                             precision: 0
                         },
                         legend: {
-                            display: !isModalMobile,
-                            position: 'bottom',
-                            labels: {
-                                font: { family: 'Inter', size: 11, weight: '500' },
-                                padding: 16,
-                                color: '#374151',
-                                usePointStyle: true,
-                                pointStyle: 'circle',
-                                boxWidth: 8,
-                                boxHeight: 8
-                            },
-                            generateLabels: legendGenerateLabels,
-                            onHover: function(e, legendItem, legend) {
-                                e.native.target.style.cursor = 'pointer';
-                            },
-                            onLeave: function(e, legendItem, legend) {
-                                e.native.target.style.cursor = 'default';
-                            },
-                            onClick: function(e, legendItem, legend) {
-                                const ci = legend.chart;
-                                const index = legendItem.index;
-                                const label = ci.data.labels[index];
-                                const currentlyVisible = ci.getDataVisibility(index) !== false;
-                                ci.toggleDataVisibility(index);
-                                ci.update();
-                                if (currentlyVisible) {
-                                    graphHiddenTags[label] = true;
-                                } else {
-                                    delete graphHiddenTags[label];
-                                }
-                                renderGraphTaskStats();
-                                renderGraphTaskList();
-                            }
+                            display: false
                         },
                         tooltip: {
                             backgroundColor: 'rgba(17, 24, 39, 0.96)',
@@ -1144,11 +1120,40 @@
                         } else {
                             delete graphHiddenTags[label];
                         }
+                        updateMobileLegend(graphTaskChartInstance);
+                        updateDesktopLegend(graphTaskChartInstance);
                         renderGraphTaskStats();
                         renderGraphTaskList();
                     }
                 }
             });
+            updateMobileLegend(graphTaskChartInstance);
+            updateDesktopLegend(graphTaskChartInstance);
+            const legendClickHandler = (event) => {
+                const legendItem = event.target.closest('[data-legend-idx]');
+                if (!legendItem) return;
+                const index = parseInt(legendItem.dataset.legendIdx, 10);
+                if (!Number.isFinite(index)) return;
+                const label = graphTaskChartInstance.data.labels[index];
+                const currentlyVisible = graphTaskChartInstance.getDataVisibility(index) !== false;
+                graphTaskChartInstance.toggleDataVisibility(index);
+                graphTaskChartInstance.update();
+                if (currentlyVisible) {
+                    graphHiddenTags[label] = true;
+                } else {
+                    delete graphHiddenTags[label];
+                }
+                updateMobileLegend(graphTaskChartInstance);
+                updateDesktopLegend(graphTaskChartInstance);
+                renderGraphTaskStats();
+                renderGraphTaskList();
+            };
+            if (mobileLegendEl) {
+                mobileLegendEl.addEventListener('click', legendClickHandler);
+            }
+            if (desktopLegendEl) {
+                desktopLegendEl.addEventListener('click', legendClickHandler);
+            }
         }
 
         function renderGraphTaskList() {
