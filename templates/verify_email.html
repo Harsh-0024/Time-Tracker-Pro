@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#F7CF6B">
+    <meta name="theme-color" content="#F7F1E6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Time Tracker Pro">
@@ -36,6 +36,7 @@
                 <div class="mb-6">
                     <h1 class="text-2xl font-semibold text-gray-900 tracking-tight">{{ title or 'Verify your email' }}</h1>
                     <p class="text-sm text-gray-600 mt-1">{{ subtitle or 'We sent a 6-digit code to' }} <span class="font-semibold">{{ email }}</span></p>
+                    <p class="text-xs text-amber-600 mt-2">⏱️ Code expires in 10 minutes</p>
                 </div>
 
                 {% if error %}
@@ -55,11 +56,11 @@
                         <input id="verifyCode" name="code" type="tel" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="6" required autofocus class="w-full px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-base tracking-[0.2em] text-center" />
                     </div>
 
-                    <button type="submit" class="w-full py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform">
+                    <button id="verifyBtn" type="submit" class="w-full py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform">
                         Verify & Continue
                     </button>
 
-                    <button type="submit" name="action" value="resend" formnovalidate class="w-full py-3 rounded-2xl border border-[rgba(148,126,86,0.35)] text-gray-700 font-semibold bg-white/80 hover:bg-[#F7F1E6] transition-all">
+                    <button id="resendBtn" type="submit" name="action" value="resend" formnovalidate class="w-full py-3 rounded-2xl border border-[rgba(148,126,86,0.35)] text-gray-700 font-semibold bg-white/80 hover:bg-[#F7F1E6] transition-all">
                         Resend code
                     </button>
                 </form>
@@ -69,6 +70,23 @@
         </div>
     </main>
     <script>
+        const verifyForm = document.querySelector('form[method="POST"]');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const resendBtn = document.getElementById('resendBtn');
+        
+        if (verifyForm) {
+            verifyForm.addEventListener('submit', (e) => {
+                const submitter = e.submitter;
+                if (submitter === verifyBtn) {
+                    verifyBtn.disabled = true;
+                    verifyBtn.textContent = 'Verifying...';
+                } else if (submitter === resendBtn) {
+                    resendBtn.disabled = true;
+                    resendBtn.textContent = 'Sending...';
+                }
+            });
+        }
+        
         (function () {
             const focusCode = () => {
                 const el = document.getElementById('verifyCode');

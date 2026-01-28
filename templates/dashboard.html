@@ -948,7 +948,7 @@
                         : 'text-gray-700 hover:bg-[#F5EDE1]'
                 ].join(' ');
                 btn.onclick = function() {
-                    const iso = d.toISOString().slice(0, 10);
+                    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     window.changeDate(iso);
                 };
                 grid.appendChild(btn);

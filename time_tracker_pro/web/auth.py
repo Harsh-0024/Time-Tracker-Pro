@@ -103,19 +103,6 @@ def login():
                     session.permanent = remember
                     session["ua_hash"] = _ua_hash(request.headers.get("User-Agent") or "")
 
-                    settings = get_user_settings(db_name, int(row_value(user, "id")))
-                    multi_user = get_user_count(db_name) > 1
-                    if multi_user:
-                        if not settings.get("sheety_endpoint"):
-                            return redirect(url_for("main.settings"))
-                    else:
-                        if not (
-                            settings.get("sheety_endpoint")
-                            or (current_app.config.get("SHEETY_ENDPOINT") or "")
-                            or os.getenv("SHEETY_ENDPOINT")
-                        ):
-                            return redirect(url_for("main.settings"))
-
                     return redirect(next_url or url_for("main.dashboard"))
 
     if request.args.get("verify"):
@@ -127,7 +114,7 @@ def login():
 @bp.route("/forgot-password", methods=["GET", "POST"], endpoint="forgot_password")
 def forgot_password():
     if session.get("user_id") is not None:
-        return redirect(url_for("main.settings"))
+        return redirect(url_for("main.dashboard"))
 
     db_name = current_app.config["DB_NAME"]
     error: Optional[str] = None
@@ -283,15 +270,13 @@ def verify_email():
                         session["user_id"] = int(user["id"])
                         session.permanent = remember
                         session["ua_hash"] = _ua_hash(request.headers.get("User-Agent") or "")
-                        return redirect(url_for("main.settings"))
+                        return redirect(url_for("main.dashboard"))
                     if purpose == "login_otp":
                         remember = bool(session.pop("pending_remember", False))
                         session["user_id"] = int(user["id"])
                         session.permanent = remember
                         session["ua_hash"] = _ua_hash(request.headers.get("User-Agent") or "")
-                        session["otp_authenticated"] = True
-                        session["password_reset_user_id"] = int(user["id"])
-                        return redirect(url_for("auth.reset_password"))
+                        return redirect(next_url or url_for("main.dashboard"))
                     if purpose == "forgot_password":
                         session["otp_authenticated"] = True
                     session["password_reset_user_id"] = int(user["id"])
@@ -349,7 +334,7 @@ def reset_password():
             session["user_id"] = int(user["id"])
             session.permanent = True
             success = "Password updated."
-            return redirect(url_for("main.settings"))
+            return redirect(url_for("main.dashboard"))
 
     return render_template("reset_password.html", error=error, success=success)
 
