@@ -48,9 +48,11 @@ def login():
     next_url = safe_next_url(request.args.get("next"))
     error: Optional[str] = None
     show_verify = False
+    identifier_value = ""
 
     if request.method == "POST":
         identifier = (request.form.get("identifier") or request.form.get("username") or "").strip()
+        identifier_value = identifier
         password = request.form.get("password") or ""
         remember = bool(request.form.get("remember"))
         next_url = safe_next_url(request.form.get("next")) or next_url
@@ -108,7 +110,13 @@ def login():
     if request.args.get("verify"):
         show_verify = True
 
-    return render_template("login.html", error=error, next=next_url or "", show_verify=show_verify)
+    return render_template(
+        "login.html",
+        error=error,
+        next=next_url or "",
+        show_verify=show_verify,
+        identifier=identifier_value,
+    )
 
 
 @bp.route("/forgot-password", methods=["GET", "POST"], endpoint="forgot_password")

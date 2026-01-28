@@ -142,10 +142,10 @@ def graph_term_matches(row: pd.Series, term: str) -> bool:
     clean = str(term or "").strip().lower()
     if not clean:
         return False
-    if clean == "important":
-        return bool(row.get("important"))
-    if clean == "urgent":
-        return bool(row.get("urgent"))
+    if clean == "important" and bool(row.get("important")):
+        return True
+    if clean == "urgent" and bool(row.get("urgent")):
+        return True
 
     def normalize_text(value: Any) -> str:
         return re.sub(r"\s+", " ", str(value or "").strip().lower())

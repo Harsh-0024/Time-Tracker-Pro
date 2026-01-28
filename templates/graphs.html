@@ -1449,7 +1449,35 @@
             }
         }
 
+        function deriveValuesFromTasks(labels) {
+            const totals = {};
+            graphTasks.forEach(task => {
+                const date = String(task.date || '').trim();
+                if (!date) return;
+                const minutes = Number(task.duration_minutes || 0);
+                totals[date] = (totals[date] || 0) + minutes;
+            });
+            return labels.map(label => Number(((totals[label] || 0) / 60).toFixed(2)));
+        }
+
+        function computeAverageHours(values) {
+            const total = values.reduce((sum, v) => sum + (Number(v) || 0), 0);
+            const firstIndex = values.findIndex(v => v > 0);
+            if (firstIndex < 0) return { total, avg: 0, max: 0 };
+            const activeDays = Math.max(1, values.length - firstIndex);
+            const avg = total / activeDays;
+            const max = Math.max(...values, 0);
+            return { total: Number(total.toFixed(2)), avg: Number(avg.toFixed(2)), max: Number(max.toFixed(2)) };
+        }
+
         function updateChart({ labels, values, total_hours, avg_hours, max_hours }, metricKey) {
+            if (graphSearchQuery && graphTasks.length) {
+                values = deriveValuesFromTasks(labels);
+                const totals = computeAverageHours(values);
+                total_hours = totals.total;
+                avg_hours = totals.avg;
+                max_hours = totals.max;
+            }
             const ctx = document.getElementById('graphCanvas').getContext('2d');
             const colors = graphColorScheme || { primary: metricColors[metricKey] || '#111827', secondary: null };
             const color = colors.primary;
