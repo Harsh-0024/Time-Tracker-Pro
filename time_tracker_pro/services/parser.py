@@ -209,11 +209,18 @@ class TimeLogParser:
         client_now_str: str,
         previous_end_dt: Optional[datetime],
     ) -> Dict[str, Any]:
-        try:
-            client_now = pd.to_datetime(client_now_str)
-            if pd.isna(client_now):
-                raise ValueError
-        except Exception:
+        client_now: datetime
+        if client_now_str:
+            try:
+                client_now = datetime.strptime(str(client_now_str).strip(), "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                try:
+                    client_now = pd.to_datetime(client_now_str)
+                    if pd.isna(client_now):
+                        raise ValueError
+                except Exception:
+                    client_now = datetime.now()
+        else:
             client_now = datetime.now()
 
         if log_entry is None or (isinstance(log_entry, float) and pd.isna(log_entry)):

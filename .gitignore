@@ -8,6 +8,7 @@ merged_code.txt
 __pycache__/
 *.pyc
 venv/
+Related Excel Files
 
 # 3. Mac System Files (Junk)
 .DS_Store
