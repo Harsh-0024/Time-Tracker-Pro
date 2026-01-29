@@ -39,6 +39,12 @@
                     iconColor = '#FFFFFF';
                     iconPath = 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4';
                     break;
+                case 'shortcut':
+                    bgColor = '#0F172A';
+                    borderColor = '#334155';
+                    iconColor = '#F8D574';
+                    iconPath = 'M12 3v18m9-9H3';
+                    break;
                 default: // info
                     bgColor = '#3B82F6';
                     borderColor = '#2563EB';
@@ -47,8 +53,8 @@
             }
             
             toast.innerHTML = `
-                <div class="flex items-start gap-3 px-4 py-3 rounded-xl shadow-2xl border-2" 
-                     style="background: ${bgColor}; border-color: ${borderColor}; min-width: 280px; max-width: 400px;">
+                <div class="flex items-start gap-3 px-4 py-3 rounded-xl shadow-2xl border-2 toast-surface" 
+                     style="background: ${bgColor}; border-color: ${borderColor}; min-width: 280px; max-width: 420px;">
                     <svg class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
                     </svg>
@@ -129,6 +135,27 @@
 </script>
 
 <style>
+    .toast-surface {
+        backdrop-filter: blur(6px);
+    }
+    .toast-kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2px 8px;
+        border-radius: 8px;
+        border: 1px solid rgba(248, 213, 116, 0.45);
+        background: rgba(248, 213, 116, 0.12);
+        color: #F8D574;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+    .toast-kbd-label {
+        color: rgba(226, 232, 240, 0.9);
+        font-size: 0.75rem;
+        margin-right: 0.35rem;
+    }
     @media (max-width: 640px) {
         #toastContainer {
             top: 8px;

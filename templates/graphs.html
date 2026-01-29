@@ -635,18 +635,24 @@
             const raw = String(error?.message || '').trim();
             const lower = raw.toLowerCase();
             if (lower.includes('failed to fetch') || lower.includes('network') || lower.includes('load failed')) {
-                return `Network error while ${action}. Check your connection and try again.`;
+                return `Network error: Unable to ${action}. Check your internet connection and refresh the page.`;
             }
             if (lower.includes('http 401') || lower.includes('unauthorized')) {
-                return 'Your session expired. Please log in again.';
+                return 'Session expired. Please log in again to continue.';
             }
             if (lower.includes('http 403')) {
-                return 'Access denied. Please verify your account and try again.';
+                return 'Access denied. Verify your account permissions or contact support.';
             }
             if (lower.includes('http 404')) {
-                return `We couldn't find the task. Sync and try again.`;
+                return `Task not found. It may have been deleted. Try syncing or refreshing the page.`;
             }
-            return raw ? `Unable to ${action}. ${raw}` : `Unable to ${action}. Please try again.`;
+            if (lower.includes('http 500') || lower.includes('server error')) {
+                return `Server error while trying to ${action}. Wait a moment and try again.`;
+            }
+            if (lower.includes('timeout')) {
+                return `Request timed out. Check your connection and try again.`;
+            }
+            return raw ? `Failed to ${action}: ${raw}` : `Unable to ${action}. Refresh the page and try again.`;
         }
 
         let lastGraphModalFocus = null;
@@ -1574,6 +1580,8 @@
             const label = metricLabels[metricKey] || 'Total time';
             if (graphFocusValue === 'search_only' && graphSearchQuery) {
                 chartTitle.textContent = `Search: ${graphSearchQuery}`;
+            } else if (graphSearchQuery) {
+                chartTitle.textContent = `${label} and (${graphSearchQuery})`;
             } else {
                 chartTitle.textContent = label;
             }
@@ -2004,10 +2012,19 @@
             if (!graphTaskModal || !graphTaskModal.classList.contains('active')) return;
             if (event.key === 'Escape') {
                 closeGraphTaskModal();
-                return;
             }
             if (event.key === 'Tab') {
                 trapModalFocus(graphTaskModal, event);
+            }
+        });
+
+        const dashboardUrl = "{{ url_for('main.dashboard') }}";
+        document.addEventListener('keydown', (event) => {
+            const tag = event.target?.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
+            if (event.metaKey || event.ctrlKey || event.altKey) return;
+            if (event.key.toLowerCase() === 'd') {
+                window.location.href = dashboardUrl;
             }
         });
 

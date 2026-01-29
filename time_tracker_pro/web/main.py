@@ -169,6 +169,7 @@ def dashboard():
         avg_end_date = avg_start_date
 
     matrix = get_matrix_stats(period_df)
+    task_count = int(len(period_df)) if not period_df.empty else 0
 
     idx = (selected_date.weekday() + 1) % 7
     start_of_week = selected_date - timedelta(days=idx)
@@ -227,6 +228,7 @@ def dashboard():
             "dashboard.html",
             matrix=matrix,
             tags={"labels": tag_labels, "data": tag_data},
+            task_count=task_count,
             week_days=week_days,
             week_total=round(week_total, 1),
             current_month=period_label,

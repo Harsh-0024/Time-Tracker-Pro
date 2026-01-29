@@ -22,6 +22,7 @@
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
         }
+
         .luxury-card {
             background: linear-gradient(135deg, #FEFCF8, #F5EDE1);
             border: 1px solid rgba(148, 126, 86, 0.18);
@@ -79,8 +80,8 @@
                 <a href="{{ url_for('api.export_csv') }}" class="px-4 py-2 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-lg">Export CSV</a>
             </div>
 
-            <div class="mt-6 grid gap-6">
-                <div class="rounded-2xl border border-[rgba(148,126,86,0.25)] bg-white/80 p-5">
+            <div class="mt-6">
+                <div class="rounded-2xl border border-[rgba(148,126,86,0.25)] bg-white/80 p-5 mb-6">
                     <h3 class="text-sm font-semibold text-gray-900">Current Profile</h3>
                     <div class="mt-3 text-sm text-gray-600 space-y-1">
                         <div><span class="font-semibold text-gray-700">Name:</span> {{ profile_info.name or profile_info.username }}</div>
@@ -89,88 +90,101 @@
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-[rgba(148,126,86,0.25)] bg-white/80 p-5">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div>
-                            <h3 class="text-sm font-semibold text-gray-900">Update Username</h3>
-                            <p class="text-xs text-gray-500 mt-1">Choose how you want to confirm this change.</p>
-                        </div>
-                        <div class="flex flex-wrap gap-2 text-xs">
-                            <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="username" data-mode="password">Use password</button>
-                            <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="username" data-mode="otp">Change via OTP</button>
-                        </div>
-                    </div>
-                    <form id="usernameOtpForm" method="POST" action="{{ url_for('auth.profile_request_otp') }}">
-                        <input type="hidden" name="purpose" value="change_username" />
-                    </form>
-                    <form id="updateUsernameForm" method="POST" action="{{ url_for('auth.update_profile') }}" class="mt-4 space-y-3">
-                        <input type="hidden" name="action" value="update_username" />
-                        <input id="settingsNewUsername" name="new_username" placeholder="New username" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
-                        <div class="profile-auth-field" data-target="username" data-mode="password">
-                            <input id="settingsUsernamePassword" type="password" name="current_password" placeholder="Current password" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
-                        </div>
-                        <div class="profile-auth-field hidden" data-target="username" data-mode="otp">
-                            <input id="settingsUsernameOtp" name="otp_code" placeholder="Email code" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
-                            <button type="submit" form="usernameOtpForm" class="mt-2 w-full py-2.5 rounded-2xl border border-[rgba(148,126,86,0.35)] text-gray-700 font-semibold bg-white/80 hover:bg-[#F7F1E6] transition-all">Send code</button>
-                        </div>
-                        <button type="submit" class="w-full py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform">Update Username</button>
-                    </form>
+                <div class="flex gap-2 mb-4 border-b border-[rgba(148,126,86,0.25)]">
+                    <button type="button" class="profile-tab px-4 py-2 text-sm font-semibold border-b-2 border-gray-900 text-gray-900" data-tab="username">Username</button>
+                    <button type="button" class="profile-tab px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="email">Email</button>
+                    <button type="button" class="profile-tab px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="password">Password</button>
                 </div>
 
-                <div class="rounded-2xl border border-[rgba(148,126,86,0.25)] bg-white/80 p-5">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div>
-                            <h3 class="text-sm font-semibold text-gray-900">Change Password</h3>
-                            <p class="text-xs text-gray-500 mt-1">Choose how you want to confirm this change.</p>
+                <div class="profile-tab-content" data-tab-content="username">
+                    <div class="rounded-2xl border border-[rgba(148,126,86,0.25)] bg-white/80 p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">Update Profile</h3>
+                                <p class="text-xs text-gray-500 mt-1">Update your full name or user ID.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="username" data-mode="password">Use password</button>
+                                <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="username" data-mode="otp">Change via OTP</button>
+                            </div>
                         </div>
-                        <div class="flex flex-wrap gap-2 text-xs">
-                            <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="password" data-mode="password">Use password</button>
-                            <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="password" data-mode="otp">Change via OTP</button>
-                        </div>
+                        <form id="usernameOtpForm" method="POST" action="{{ url_for('auth.profile_request_otp') }}">
+                            <input type="hidden" name="purpose" value="change_username" />
+                        </form>
+                        <form id="updateUsernameForm" method="POST" action="{{ url_for('auth.update_profile') }}" class="space-y-3" autocomplete="off">
+                            <input type="hidden" name="action" value="update_username" />
+                            <input id="settingsNewName" name="new_name" placeholder="Full name" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" autocomplete="off" autocapitalize="words" spellcheck="false" />
+                            <input id="settingsNewUserId" name="new_user_id" placeholder="User ID" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" autocomplete="off" spellcheck="false" />
+                            <div class="profile-auth-field" data-target="username" data-mode="password">
+                                <input id="settingsUsernamePassword" type="password" name="current_password" placeholder="Current password" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                            </div>
+                            <div class="profile-auth-field hidden" data-target="username" data-mode="otp">
+                                <input id="settingsUsernameOtp" name="otp_code" placeholder="Email code" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                                <button type="submit" form="usernameOtpForm" class="mt-2 w-full py-2.5 rounded-2xl border border-[rgba(148,126,86,0.35)] text-gray-700 font-semibold bg-white/80 hover:bg-[#F7F1E6] transition-all">Send code</button>
+                            </div>
+                            <button type="submit" class="w-full py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform" id="updateUsernameBtn">Update Profile</button>
+                        </form>
                     </div>
-                    <form id="passwordOtpForm" method="POST" action="{{ url_for('auth.profile_request_otp') }}">
-                        <input type="hidden" name="purpose" value="change_password" />
-                    </form>
-                    <form id="updatePasswordForm" method="POST" action="{{ url_for('auth.update_profile') }}" class="mt-4 space-y-3">
-                        <input type="hidden" name="action" value="update_password" />
-                        <input id="settingsNewPassword" type="password" name="new_password" placeholder="New password" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
-                        <input id="settingsConfirmPassword" type="password" name="confirm_password" placeholder="Confirm new password" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
-                        <div class="profile-auth-field" data-target="password" data-mode="password">
-                            <input id="settingsPasswordCurrent" type="password" name="current_password" placeholder="Current password" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
-                        </div>
-                        <div class="profile-auth-field hidden" data-target="password" data-mode="otp">
-                            <input id="settingsPasswordOtp" name="otp_code" placeholder="Email code" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
-                            <button type="submit" form="passwordOtpForm" class="mt-2 w-full py-2.5 rounded-2xl border border-[rgba(148,126,86,0.35)] text-gray-700 font-semibold bg-white/80 hover:bg-[#F7F1E6] transition-all">Send code</button>
-                        </div>
-                        <button type="submit" class="w-full py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform">Update Password</button>
-                    </form>
                 </div>
 
-                <div class="rounded-2xl border border-[rgba(148,126,86,0.25)] bg-white/80 p-5">
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-900">Change Email</h3>
-                        <p class="text-xs text-gray-500 mt-1">We will send codes to both your old and new emails.</p>
+                <div class="profile-tab-content hidden" data-tab-content="email">
+                    <div class="rounded-2xl border border-[rgba(148,126,86,0.25)] bg-white/80 p-5">
+                        <div class="mb-4">
+                            <h3 class="text-sm font-semibold text-gray-900">Change Email</h3>
+                            <p class="text-xs text-gray-500 mt-1">We will send codes to both your old and new emails.</p>
+                        </div>
+                        <form method="POST" action="{{ url_for('auth.profile_request_otp') }}" class="space-y-3">
+                            <input type="hidden" name="purpose" value="change_email" />
+                            <input id="settingsEmail" name="new_email" placeholder="New email" value="{{ pending_email or '' }}" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <button type="button" class="email-domain-chip px-3 py-1.5 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-gray-600 hover:bg-[#F7F1E6] transition-all" data-domain="gmail.com">@gmail.com</button>
+                                <button type="button" class="email-domain-chip px-3 py-1.5 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-gray-600 hover:bg-[#F7F1E6] transition-all" data-domain="icloud.com">@icloud.com</button>
+                                <button type="button" class="email-domain-chip px-3 py-1.5 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-gray-600 hover:bg-[#F7F1E6] transition-all" data-domain="outlook.com">@outlook.com</button>
+                                <button type="button" class="email-domain-chip px-3 py-1.5 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-gray-600 hover:bg-[#F7F1E6] transition-all" data-domain="yahoo.com">@yahoo.com</button>
+                            </div>
+                            <button type="submit" class="w-full py-3 rounded-2xl border border-[rgba(148,126,86,0.35)] text-gray-700 font-semibold bg-white/80 hover:bg-[#F7F1E6] transition-all" id="sendEmailCodesBtn">Send Verification Codes</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('auth.update_profile') }}" class="mt-4 space-y-3">
+                            <input type="hidden" name="action" value="update_email" />
+                            <input type="hidden" name="new_email" value="{{ pending_email or '' }}" />
+                            <div class="grid sm:grid-cols-2 gap-3">
+                                <input name="old_email_code" placeholder="Code sent to old email" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                                <input name="new_email_code" placeholder="Code sent to new email" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                            </div>
+                            <button type="submit" class="w-full py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform" id="updateEmailBtn">Update Email</button>
+                        </form>
                     </div>
-                    <form method="POST" action="{{ url_for('auth.profile_request_otp') }}" class="mt-4 space-y-3">
-                        <input type="hidden" name="purpose" value="change_email" />
-                        <input id="settingsEmail" name="new_email" placeholder="New email" value="{{ pending_email or '' }}" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
-                        <div class="flex flex-wrap gap-2 text-xs">
-                            <button type="button" class="email-domain-chip px-3 py-1.5 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-gray-600 hover:bg-[#F7F1E6] transition-all" data-domain="gmail.com">@gmail.com</button>
-                            <button type="button" class="email-domain-chip px-3 py-1.5 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-gray-600 hover:bg-[#F7F1E6] transition-all" data-domain="icloud.com">@icloud.com</button>
-                            <button type="button" class="email-domain-chip px-3 py-1.5 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-gray-600 hover:bg-[#F7F1E6] transition-all" data-domain="outlook.com">@outlook.com</button>
-                            <button type="button" class="email-domain-chip px-3 py-1.5 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-gray-600 hover:bg-[#F7F1E6] transition-all" data-domain="yahoo.com">@yahoo.com</button>
+                </div>
+
+                <div class="profile-tab-content hidden" data-tab-content="password">
+                    <div class="rounded-2xl border border-[rgba(148,126,86,0.25)] bg-white/80 p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-900">Change Password</h3>
+                                <p class="text-xs text-gray-500 mt-1">Choose how you want to confirm this change.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="password" data-mode="password">Use password</button>
+                                <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="password" data-mode="otp">Change via OTP</button>
+                            </div>
                         </div>
-                        <button type="submit" class="w-full py-3 rounded-2xl border border-[rgba(148,126,86,0.35)] text-gray-700 font-semibold bg-white/80 hover:bg-[#F7F1E6] transition-all">Send Verification Codes</button>
-                    </form>
-                    <form method="POST" action="{{ url_for('auth.update_profile') }}" class="mt-4 space-y-3">
-                        <input type="hidden" name="action" value="update_email" />
-                        <input type="hidden" name="new_email" value="{{ pending_email or '' }}" />
-                        <div class="grid sm:grid-cols-2 gap-3">
-                            <input name="old_email_code" placeholder="Code sent to old email" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
-                            <input name="new_email_code" placeholder="Code sent to new email" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
-                        </div>
-                        <button type="submit" class="w-full py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform">Update Email</button>
-                    </form>
+                        <form id="passwordOtpForm" method="POST" action="{{ url_for('auth.profile_request_otp') }}">
+                            <input type="hidden" name="purpose" value="change_password" />
+                        </form>
+                        <form id="updatePasswordForm" method="POST" action="{{ url_for('auth.update_profile') }}" class="space-y-3">
+                            <input type="hidden" name="action" value="update_password" />
+                            <input id="settingsNewPassword" type="password" name="new_password" placeholder="New password" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                            <input id="settingsConfirmPassword" type="password" name="confirm_password" placeholder="Confirm new password" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                            <div class="profile-auth-field" data-target="password" data-mode="password">
+                                <input id="settingsPasswordCurrent" type="password" name="current_password" placeholder="Current password" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                            </div>
+                            <div class="profile-auth-field hidden" data-target="password" data-mode="otp">
+                                <input id="settingsPasswordOtp" name="otp_code" placeholder="Email code" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                                <button type="submit" form="passwordOtpForm" class="mt-2 w-full py-2.5 rounded-2xl border border-[rgba(148,126,86,0.35)] text-gray-700 font-semibold bg-white/80 hover:bg-[#F7F1E6] transition-all">Send code</button>
+                            </div>
+                            <button type="submit" class="w-full py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform" id="updatePasswordBtn">Update Password</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -233,7 +247,7 @@
                         <input id="newApiToken" name="api_token" placeholder="Bearer token if required" class="w-full px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-base" />
                     </div>
                     <div class="flex gap-3">
-                        <button type="submit" class="flex-1 py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform">
+                        <button type="submit" class="flex-1 py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform" id="saveApiAccountBtn">
                             Save Account
                         </button>
                         <button type="button" id="cancelAddApi" class="flex-1 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] text-gray-700 font-semibold hover:bg-[#F7F1E6] transition-all">
@@ -269,7 +283,7 @@
                         <input type="file" name="icon" accept="image/png" class="w-full px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-base" required />
                     </div>
                     <p class="text-xs text-gray-500">After updating, remove and re-add the app on iOS to refresh the icon.</p>
-                    <button type="submit" class="w-full py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform">
+                    <button type="submit" class="w-full py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform" id="updateIconBtn">
                         Update App Icon
                     </button>
                 </form>
@@ -277,6 +291,16 @@
         {% endif %}
     </main>
     <script>
+        let allowSettingsFocus = false;
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+                document.activeElement.blur();
+            }
+            setTimeout(() => {
+                allowSettingsFocus = true;
+            }, 800);
+        });
+
         const settingsEmail = document.getElementById('settingsEmail');
         if (settingsEmail) {
             const applyDomain = (domain) => {
@@ -304,7 +328,8 @@
         }
 
         const profileFields = [
-            { id: 'settingsNewUsername', key: 'settings.new_username' },
+            { id: 'settingsNewName', key: 'settings.new_name' },
+            { id: 'settingsNewUserId', key: 'settings.new_user_id' },
             { id: 'settingsNewPassword', key: 'settings.new_password' },
             { id: 'settingsConfirmPassword', key: 'settings.confirm_password' },
             { id: 'settingsUsernameOtp', key: 'settings.username_otp' },
@@ -322,16 +347,84 @@
             });
         });
 
+        const preventAutoFocus = () => {
+            const active = document.activeElement;
+            if (!allowSettingsFocus && active && active.id === 'settingsNewUserId') {
+                active.blur();
+            }
+        };
+        const userIdInput = document.getElementById('settingsNewUserId');
+        if (userIdInput) {
+            userIdInput.readOnly = true;
+            setTimeout(() => {
+                userIdInput.readOnly = false;
+            }, 700);
+        }
+        setTimeout(preventAutoFocus, 0);
+        window.addEventListener('pageshow', () => setTimeout(preventAutoFocus, 0));
+        document.addEventListener('focusin', preventAutoFocus);
+
         const updateForms = ['updateUsernameForm', 'updatePasswordForm'];
         updateForms.forEach(formId => {
             const form = document.getElementById(formId);
             if (!form) return;
-            form.addEventListener('submit', () => {
-                sessionStorage.removeItem('settings.new_username');
+            form.addEventListener('submit', (e) => {
+                const btn = form.querySelector('button[type="submit"]');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.dataset.originalText = btn.textContent;
+                    btn.textContent = 'Updating...';
+                }
+                sessionStorage.removeItem('settings.new_name');
+                sessionStorage.removeItem('settings.new_user_id');
                 sessionStorage.removeItem('settings.new_password');
                 sessionStorage.removeItem('settings.confirm_password');
                 sessionStorage.removeItem('settings.username_otp');
                 sessionStorage.removeItem('settings.password_otp');
+            });
+        });
+
+        const emailForms = document.querySelectorAll('form[action*="profile_request_otp"], form[action*="update_profile"]');
+        emailForms.forEach(form => {
+            form.addEventListener('submit', () => {
+                const btn = form.querySelector('button[type="submit"]');
+                if (btn && !btn.disabled) {
+                    btn.disabled = true;
+                    btn.dataset.originalText = btn.textContent;
+                    btn.textContent = btn.textContent.includes('Send') ? 'Sending...' : 'Updating...';
+                }
+            });
+        });
+
+        const iconForm = document.querySelector('form[action*="update_app_icon"]');
+        if (iconForm) {
+            iconForm.addEventListener('submit', () => {
+                const btn = iconForm.querySelector('button[type="submit"]');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.dataset.originalText = btn.textContent;
+                    btn.textContent = 'Uploading...';
+                }
+            });
+        }
+
+        const profileTabs = document.querySelectorAll('.profile-tab');
+        const profileTabContents = document.querySelectorAll('.profile-tab-content');
+        const switchTab = (tabName) => {
+            profileTabs.forEach(tab => {
+                const isActive = tab.dataset.tab === tabName;
+                tab.classList.toggle('border-gray-900', isActive);
+                tab.classList.toggle('text-gray-900', isActive);
+                tab.classList.toggle('border-transparent', !isActive);
+                tab.classList.toggle('text-gray-500', !isActive);
+            });
+            profileTabContents.forEach(content => {
+                content.classList.toggle('hidden', content.dataset.tabContent !== tabName);
+            });
+        };
+        profileTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                switchTab(tab.dataset.tab || 'username');
             });
         });
 
@@ -501,6 +594,16 @@
                     btn.textContent = 'Test';
                     btn.disabled = false;
                 }
+            }
+        });
+
+        const dashboardUrl = "{{ url_for('main.dashboard') }}";
+        document.addEventListener('keydown', (event) => {
+            const tag = event.target?.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
+            if (event.metaKey || event.ctrlKey || event.altKey) return;
+            if (event.key.toLowerCase() === 'd') {
+                window.location.href = dashboardUrl;
             }
         });
     </script>

@@ -186,6 +186,38 @@
             box-shadow: 0 20px 40px rgba(17, 24, 39, 0.7);
             filter: brightness(1.03);
         }
+        .mobile-cta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.55rem 1.1rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.85);
+            color: #111827;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid rgba(148, 126, 86, 0.35);
+            box-shadow: 0 8px 18px rgba(148, 126, 86, 0.18);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        .mobile-cta:hover {
+            background: #F7F1E6;
+            box-shadow: 0 12px 22px rgba(148, 126, 86, 0.26);
+        }
+        .app-title-btn:hover {
+            color: #7C5E24;
+        }
+        .summary-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .summary-card:active {
+            transform: translateY(-1px) scale(0.99);
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+        }
+        .summary-card:focus-visible {
+            outline: 2px solid rgba(245, 182, 38, 0.7);
+            outline-offset: 3px;
+        }
         .water-fill {
             position: absolute;
             bottom: 0;
@@ -306,7 +338,9 @@
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
                 <div class="flex items-center justify-between md:block">
                     <div>
-                        <h1 id="appTitleBtn" class="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight cursor-pointer" aria-label="Sync and reload">Time Tracker Pro</h1>
+                        <h1 id="appTitleBtn" class="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight cursor-pointer app-title-btn" aria-label="Sync and reload" title="Click to sync now">
+                            Time Tracker Pro
+                        </h1>
                         <p class="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1">Personal productivity analytics</p>
                     </div>
                     <div class="flex items-center gap-2 md:hidden">
@@ -387,22 +421,20 @@
                     </button>
                 </div>
             </div>
-            <div class="flex items-center justify-between mb-6 md:mb-8">
-                <div>
+            <div class="flex items-center justify-between gap-4 mb-6 md:mb-8">
+                <div class="min-w-0">
                     <h2 class="text-3xl md:text-4xl font-light text-gray-900 mb-1 md:mb-2 tracking-tight">{{ current_month }}</h2>
                     <p class="text-gray-700 md:text-gray-500 text-sm">Where did your day go?</p>
                 </div>
-                <div class="flex items-center gap-3 md:gap-4">
+                <div class="flex items-center gap-2 md:gap-4">
                     <!-- View Full Period Button -->
                     <button id="viewFullBtn" onclick="viewFullDay()" class="primary-cta hidden md:inline-flex">
                         View Full Day
                     </button>
+                    <button id="viewFullBtnMobile" onclick="viewFullDay()" class="mobile-cta md:hidden">
+                        View Full Day
+                    </button>
                 </div>
-            </div>
-            <div class="md:hidden flex items-center gap-3 mb-4">
-                <button id="viewFullBtnMobile" onclick="viewFullDay()" class="px-5 py-3 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-lg active:scale-[0.98] transition-transform">
-                    View Full Day
-                </button>
             </div>
 
             <!-- Week Selector (only show for day/week views) -->
@@ -467,7 +499,7 @@
             {% set top_quad_bar_class = 'from-[#F87171] via-[#FB7185] to-[#FECACA]' %}
         {% endif %}
         <div class="md:hidden mb-6">
-            <div class="luxury-card rounded-2xl p-5 flex items-center justify-between cursor-pointer" data-filter="{{ top_quad_key }}" data-title="{{ top_quad_label }}" data-chart="tasks" role="button">
+            <div class="luxury-card rounded-2xl p-5 flex items-center justify-between cursor-pointer summary-card" data-filter="{{ top_quad_key }}" data-title="{{ top_quad_label }}" data-chart="tasks" role="button" tabindex="0">
                 <div>
                     <div class="text-xs font-semibold tracking-[0.16em] text-gray-400 uppercase">Dominant quadrant</div>
                     <div class="mt-2 text-2xl font-light text-gray-900"><span class="js-hover-hours js-summary-hours" data-summary-hours data-total-hours="{{ top_quad_hours }}" data-hours="{{ top_quad_hours }}">{{ top_quad_hours }}h</span></div>
@@ -478,8 +510,12 @@
                 </span>
             </div>
         </div>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Summary</h2>
+            <button id="exportSummaryBtn" class="px-3 py-1.5 rounded-full bg-white border border-[rgba(148,126,86,0.35)] text-gray-700 text-xs font-semibold hover:bg-[#F7F1E6] transition-all">Export Summary</button>
+        </div>
         <div class="hidden md:grid grid-cols-3 gap-6 mb-12">
-            <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between cursor-pointer" data-filter="all" data-title="Full {{ period | title }} Log" data-chart="tasks" role="button">
+            <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between cursor-pointer summary-card" data-filter="all" data-title="Full {{ period | title }} Log" data-chart="tasks" role="button" tabindex="0">
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <div class="text-xs font-semibold tracking-[0.16em] text-gray-400 uppercase" id="summaryPeriodTitle" data-total-label="Period total" data-avg-label="Period avg">Period total</div>
@@ -494,7 +530,7 @@
                 </div>
                 <div class="mt-3 text-xs text-gray-500" id="summaryPeriodCaption" data-total-text="{{ current_month }} · {{ period | title }} view totals." data-avg-text="{{ current_month }} · {{ period | title }} avg/day.">{{ current_month }} · {{ period | title }} view totals.</div>
             </div>
-            <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between {% if tags.labels %}cursor-pointer{% endif %}" {% if tags.labels %}data-filter="tag" data-title="{{ top_tag_label }}" data-tag="{{ top_tag_label }}" data-chart="tasks" role="button"{% endif %}>
+            <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between {% if tags.labels %}cursor-pointer summary-card{% endif %}" {% if tags.labels %}data-filter="tag" data-title="{{ top_tag_label }}" data-tag="{{ top_tag_label }}" data-chart="tasks" role="button" tabindex="0"{% endif %}>
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <div class="text-xs font-semibold tracking-[0.16em] text-gray-400 uppercase">Top category</div>
@@ -510,7 +546,7 @@
                 </div>
                 <div class="mt-3 text-xs text-gray-500">{{ top_tag_pct }}% of logged time this period.</div>
             </div>
-            <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between cursor-pointer" data-filter="{{ top_quad_key }}" data-title="{{ top_quad_label }}" data-chart="tasks" role="button">
+            <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between cursor-pointer summary-card" data-filter="{{ top_quad_key }}" data-title="{{ top_quad_label }}" data-chart="tasks" role="button" tabindex="0">
                 <div class="flex items-center justify-between mb-4">
                     <div>
                         <div class="text-xs font-semibold tracking-[0.16em] text-gray-400 uppercase">Dominant quadrant</div>
@@ -1202,8 +1238,9 @@
 
         function formatMinutesToTime(minutes) {
             const safe = Math.max(0, Math.min(Math.round(minutes), 24 * 60));
-            let hour = Math.floor(safe / 60);
-            const minute = safe % 60;
+            const normalized = safe === 24 * 60 ? 0 : safe;
+            let hour = Math.floor(normalized / 60);
+            const minute = normalized % 60;
             const meridian = hour >= 12 ? 'PM' : 'AM';
             hour = hour % 12;
             if (hour === 0) hour = 12;
@@ -1397,18 +1434,24 @@
             const raw = String(error?.message || '').trim();
             const lower = raw.toLowerCase();
             if (lower.includes('failed to fetch') || lower.includes('network') || lower.includes('load failed')) {
-                return `Network error while ${action}. Check your connection and try again.`;
+                return `Network error: Unable to ${action}. Check your internet connection and refresh the page.`;
             }
             if (lower.includes('http 401') || lower.includes('unauthorized')) {
-                return 'Your session expired. Please log in again.';
+                return 'Session expired. Please log in again to continue.';
             }
             if (lower.includes('http 403')) {
-                return 'Access denied. Please verify your account and try again.';
+                return 'Access denied. Verify your account permissions or contact support.';
             }
             if (lower.includes('http 404')) {
-                return `We couldn't find the task. Sync and try again.`;
+                return `Task not found. It may have been deleted. Try syncing or refreshing the page.`;
             }
-            return raw ? `Unable to ${action}. ${raw}` : `Unable to ${action}. Please try again.`;
+            if (lower.includes('http 500') || lower.includes('server error')) {
+                return `Server error while trying to ${action}. Wait a moment and try again.`;
+            }
+            if (lower.includes('timeout')) {
+                return `Request timed out. Check your connection and try again.`;
+            }
+            return raw ? `Failed to ${action}: ${raw}` : `Unable to ${action}. Refresh the page and try again.`;
         }
 
         let lastModalFocus = null;
@@ -1995,14 +2038,19 @@
                     missingContainer.innerHTML = '';
                     return;
                 }
-                const intervals = (data.tasks || [])
-                    .map(task => {
-                        const start = window.timeStringToMinutes(task.start_time);
-                        const end = window.timeStringToMinutes(task.end_time);
-                        return { start, end };
-                    })
-                    .filter(item => item.start != null && item.end != null && item.end > item.start)
-                    .sort((a, b) => a.start - b.start);
+                const intervals = [];
+                (data.tasks || []).forEach(task => {
+                    const start = window.timeStringToMinutes(task.start_time);
+                    const end = window.timeStringToMinutes(task.end_time);
+                    if (start == null || end == null || start === end) return;
+                    if (end > start) {
+                        intervals.push({ start, end });
+                    } else if (end < start) {
+                        intervals.push({ start, end: 24 * 60 });
+                        intervals.push({ start: 0, end });
+                    }
+                });
+                intervals.sort((a, b) => a.start - b.start);
 
                 const merged = [];
                 intervals.forEach(item => {
@@ -2489,7 +2537,7 @@
 
             const summaryCards = document.querySelectorAll('[data-filter], [data-action]');
             summaryCards.forEach(card => {
-                card.addEventListener('click', () => {
+                const triggerCard = () => {
                     const action = card.dataset.action;
                     if (action === 'full-period') {
                         viewFullDay();
@@ -2501,6 +2549,13 @@
                     const chart = card.dataset.chart || 'auto';
                     if (filter) {
                         window.applyFilter(filter, title, tag, chart);
+                    }
+                };
+                card.addEventListener('click', triggerCard);
+                card.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        triggerCard();
                     }
                 });
             });
@@ -2521,6 +2576,71 @@
                 }
                 if (event.key === 'Tab') {
                     trapModalFocus(modal, event);
+                }
+            });
+
+            const graphsUrl = "{{ url_for('main.graphs') }}";
+            const settingsUrl = "{{ url_for('main.settings') }}";
+            const dashboardUrl = "{{ url_for('main.dashboard') }}";
+            document.addEventListener('keydown', (event) => {
+                const tag = event.target?.tagName;
+                if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
+                const key = event.key.toLowerCase();
+                if (event.metaKey && event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
+                    event.preventDefault();
+                    const order = ['day', 'week', 'month'];
+                    const idx = order.indexOf(window.currentPeriod || 'day');
+                    const direction = event.key === 'ArrowRight' ? 1 : -1;
+                    const next = order[(idx + direction + order.length) % order.length];
+                    window.changePeriod(next);
+                    return;
+                }
+                if (event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
+                    event.preventDefault();
+                    const base = new Date(window.currentDate);
+                    const delta = event.key === 'ArrowRight' ? 1 : -1;
+                    base.setDate(base.getDate() + delta);
+                    const iso = base.toISOString().slice(0, 10);
+                    window.changeDate(iso);
+                    return;
+                }
+                if (event.metaKey || event.ctrlKey || event.altKey) return;
+                if (key === 'g') {
+                    window.location.href = graphsUrl;
+                } else if (key === 's') {
+                    window.location.href = settingsUrl;
+                } else if (key === 'd') {
+                    window.location.href = dashboardUrl;
+                } else if (key === '?') {
+                    if (window.showInfoToast) {
+                        window.showToast(`
+                            <div class="space-y-3">
+                                <div class="text-xs uppercase tracking-[0.2em] text-white/80 font-semibold">Keyboard Shortcuts</div>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">⌥</kbd><kbd class="toast-kbd">←</kbd><kbd class="toast-kbd">→</kbd>
+                                        <span class="toast-kbd-label">Change date</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">⌘</kbd><kbd class="toast-kbd">⌥</kbd><kbd class="toast-kbd">←</kbd><kbd class="toast-kbd">→</kbd>
+                                        <span class="toast-kbd-label">Change period</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">G</kbd>
+                                        <span class="toast-kbd-label">Graphs</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">S</kbd>
+                                        <span class="toast-kbd-label">Settings</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">D</kbd>
+                                        <span class="toast-kbd-label">Dashboard</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `, 'shortcut', 7000);
+                    }
                 }
             });
 
@@ -3010,6 +3130,59 @@
             const titleBtn = document.getElementById('appTitleBtn');
             if (titleBtn) {
                 titleBtn.addEventListener('click', () => runManualSync());
+            }
+
+            const exportSummaryBtn = document.getElementById('exportSummaryBtn');
+            if (exportSummaryBtn) {
+                exportSummaryBtn.addEventListener('click', () => {
+                    const categoryLabels = {{ (tags.labels or []) | tojson }};
+                    const categoryHours = {{ (tags.data or []) | tojson }};
+                    const categories = {};
+                    categoryLabels.forEach((label, idx) => {
+                        categories[label] = Number(categoryHours[idx] || 0);
+                    });
+                    const summaryData = {
+                        period: {{ period | default('') | tojson }},
+                        date: {{ selected_date | default('') | tojson }},
+                        month: {{ current_month | default('') | tojson }},
+                        total_hours: {{ matrix.total_hours | default(0) | tojson }},
+                        total_tasks: {{ task_count | default(0) | tojson }},
+                        top_category: {
+                            name: {{ top_tag_label | default('') | tojson }},
+                            hours: {{ top_tag_hours | default(0) | tojson }},
+                            percentage: {{ top_tag_pct | default(0) | tojson }}
+                        },
+                        dominant_quadrant: {
+                            name: {{ top_quad_label | default('') | tojson }},
+                            hours: {{ top_quad_hours | default(0) | tojson }},
+                            percentage: {{ top_quad_pct | default(0) | tojson }},
+                            subtitle: {{ top_quad_sub | default('') | tojson }}
+                        },
+                        quadrants: {
+                            important_urgent: {{ matrix.q1.hours | default(0) | tojson }},
+                            important_not_urgent: {{ matrix.q2.hours | default(0) | tojson }},
+                            not_important_urgent: {{ matrix.q3.hours | default(0) | tojson }},
+                            not_important_not_urgent: {{ matrix.q4.hours | default(0) | tojson }},
+                            important_total: {{ matrix.important.hours | default(0) | tojson }},
+                            not_important_total: {{ matrix.not_important.hours | default(0) | tojson }},
+                            urgent_total: {{ matrix.urgent.hours | default(0) | tojson }},
+                            not_urgent_total: {{ matrix.not_urgent.hours | default(0) | tojson }}
+                        },
+                        categories: categories
+                    };
+                    const blob = new Blob([JSON.stringify(summaryData, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `time-tracker-summary-${summaryData.date}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    if (window.showSuccessToast) {
+                        window.showSuccessToast('Summary exported successfully');
+                    }
+                });
             }
             setTimeout(() => {
                 runManualSync({ reload: false, showLoading: false });

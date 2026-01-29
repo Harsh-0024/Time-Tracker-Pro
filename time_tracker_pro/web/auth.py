@@ -420,26 +420,38 @@ def update_profile():
         return False, "Provide your current password or a verification code."
 
     if action == "update_username":
-        new_username = (request.form.get("new_username") or "").strip()
-        if not new_username:
-            session["profile_error"] = "Please enter a new username."
+        new_user_id = (request.form.get("new_user_id") or "").strip()
+        new_name = (request.form.get("new_name") or "").strip()
+        if not new_user_id and not new_name:
+            session["profile_error"] = "Please enter a new user ID or name."
             return redirect(url_for("main.settings"))
-        existing = get_user_by_username_or_id_or_email(db_name, new_username)
-        if existing and int(existing["id"]) != int(user["id"]):
-            session["profile_error"] = "That username is already taken."
+        existing = get_user_by_public_id(db_name, new_user_id) if new_user_id else None
+        if new_user_id and existing and int(existing["id"]) != int(user["id"]):
+            session["profile_error"] = "That user ID is already taken."
             return redirect(url_for("main.settings"))
         ok, message = confirm_with_password_or_otp("change_username")
         if not ok:
             session["profile_error"] = message
             return redirect(url_for("main.settings"))
         conn = get_db_connection(db_name)
-        conn.execute(
-            "UPDATE users SET username = ?, user_id = ? WHERE id = ?",
-            (new_username, new_username, int(user["id"])),
-        )
+        if new_user_id and new_name:
+            conn.execute(
+                "UPDATE users SET username = ?, user_id = ?, name = ? WHERE id = ?",
+                (new_user_id, new_user_id, new_name, int(user["id"])),
+            )
+        elif new_user_id:
+            conn.execute(
+                "UPDATE users SET username = ?, user_id = ? WHERE id = ?",
+                (new_user_id, new_user_id, int(user["id"])),
+            )
+        else:
+            conn.execute(
+                "UPDATE users SET name = ? WHERE id = ?",
+                (new_name, int(user["id"])),
+            )
         conn.commit()
         conn.close()
-        session["profile_success"] = "Username updated."
+        session["profile_success"] = "Profile updated."
         return redirect(url_for("main.settings"))
 
     if action == "update_password":
