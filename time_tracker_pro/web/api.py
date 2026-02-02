@@ -30,7 +30,7 @@ bp = Blueprint("api", __name__)
 logger = logging.getLogger(__name__)
 
 SearchExpr = Tuple[str, Any]
-SEARCH_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|\(|\)|,|\bAND\b|\bOR\b|\bNOT\b|[^\s()]+', re.IGNORECASE)
+SEARCH_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|\(|\)|,|\+|\-|\*|\bAND\b|\bOR\b|\bNOT\b|[^\s()+*\-()]+', re.IGNORECASE)
 
 
 def parse_graph_search(raw: str) -> Optional[SearchExpr]:
@@ -44,6 +44,15 @@ def parse_graph_search(raw: str) -> Optional[SearchExpr]:
             continue
         if token == ",":
             tokens.append(("OR", None))
+            continue
+        if token == "+":
+            tokens.append(("OR", None))
+            continue
+        if token == "*":
+            tokens.append(("AND", None))
+            continue
+        if token == "-":
+            tokens.append(("MINUS", None))
             continue
         if token in {"(", ")"}:
             tokens.append((token, None))
@@ -89,7 +98,7 @@ def parse_graph_search(raw: str) -> Optional[SearchExpr]:
 
     def parse_not() -> Optional[SearchExpr]:
         token = peek()
-        if token and token[0] == "NOT":
+        if token and token[0] in {"NOT", "MINUS"}:
             consume()
             expr = parse_not()
             return ("not", expr) if expr else None
@@ -109,6 +118,13 @@ def parse_graph_search(raw: str) -> Optional[SearchExpr]:
                 if not right:
                     break
                 left = ("and", left, right)
+                continue
+            if token[0] == "MINUS":
+                consume()
+                right = parse_not()
+                if not right:
+                    break
+                left = ("and", left, ("not", right))
                 continue
             if token[0] in {"TERM", "(", "NOT"}:
                 right = parse_not()

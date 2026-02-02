@@ -319,9 +319,9 @@
 </head>
 <body class="antialiased overflow-x-hidden">
 
-    <div id="globalLoading" class="fixed bottom-4 right-4 z-50 hidden">
-        <div class="px-4 py-2 rounded-full bg-gray-900/90 text-xs text-gray-100 shadow-lg flex items-center gap-2">
-            <span class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
+    <div id="globalLoading" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/30 backdrop-blur-sm md:inset-auto md:bottom-4 md:right-4 md:items-start md:justify-start md:bg-transparent md:backdrop-blur-0">
+        <div class="px-5 py-3 rounded-2xl bg-white/95 text-sm md:text-xs text-gray-700 shadow-2xl ring-1 ring-white/60 flex items-center gap-3 md:bg-gray-900/90 md:text-gray-100 md:ring-0">
+            <span class="h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse"></span>
             <span>Loading insights…</span>
         </div>
     </div>
@@ -789,7 +789,7 @@
         <div class="modal-content p-8" role="document">
             <div class="flex justify-between items-center mb-6">
                 <h2 id="modalTitle" class="text-2xl font-semibold text-gray-900"></h2>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition">
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1734,6 +1734,171 @@
                 });
         };
 
+        const MODAL_QUERY_TOKEN_RE = /"[^"]*"|'[^']*'|\(|\)|,|\+|\-|\*|\bAND\b|\bOR\b|\bNOT\b|[^\s()+*\-()]+/gi;
+
+        function tokenizeModalQuery(raw) {
+            const cleaned = String(raw || '').trim();
+            if (!cleaned) return [];
+            const matches = cleaned.match(MODAL_QUERY_TOKEN_RE) || [];
+            const tokens = [];
+            matches.forEach(match => {
+                const token = String(match || '').trim();
+                if (!token) return;
+                if (token === ',') {
+                    tokens.push({ type: 'OR' });
+                    return;
+                }
+                if (token === '+') {
+                    tokens.push({ type: 'OR' });
+                    return;
+                }
+                if (token === '*') {
+                    tokens.push({ type: 'AND' });
+                    return;
+                }
+                if (token === '-') {
+                    tokens.push({ type: 'MINUS' });
+                    return;
+                }
+                if (token === '(' || token === ')') {
+                    tokens.push({ type: token });
+                    return;
+                }
+                const upper = token.toUpperCase();
+                if (upper === 'AND' || upper === 'OR' || upper === 'NOT') {
+                    tokens.push({ type: upper });
+                    return;
+                }
+                let term = token;
+                if ((term.startsWith('"') && term.endsWith('"')) || (term.startsWith("'") && term.endsWith("'"))) {
+                    term = term.slice(1, -1);
+                }
+                term = term.trim().toLowerCase();
+                if (term) {
+                    tokens.push({ type: 'TERM', value: term });
+                }
+            });
+            return tokens;
+        }
+
+        function parseModalQuery(raw) {
+            const tokens = tokenizeModalQuery(raw);
+            if (!tokens.length) return null;
+            let index = 0;
+
+            const peek = () => tokens[index];
+            const consume = () => tokens[index++];
+
+            const parsePrimary = () => {
+                const token = peek();
+                if (!token) return null;
+                if (token.type === 'TERM') {
+                    consume();
+                    return { type: 'term', value: token.value };
+                }
+                if (token.type === '(') {
+                    consume();
+                    const expr = parseOr();
+                    if (peek() && peek().type === ')') consume();
+                    return expr;
+                }
+                return null;
+            };
+
+            const parseNot = () => {
+                const token = peek();
+                if (token && (token.type === 'NOT' || token.type === 'MINUS')) {
+                    consume();
+                    const expr = parseNot();
+                    return expr ? { type: 'not', expr } : null;
+                }
+                return parsePrimary();
+            };
+
+            const parseAnd = () => {
+                let left = parseNot();
+                if (!left) return null;
+                while (true) {
+                    const token = peek();
+                    if (!token) break;
+                    if (token.type === 'AND') {
+                        consume();
+                        const right = parseNot();
+                        if (!right) break;
+                        left = { type: 'and', left, right };
+                        continue;
+                    }
+                    if (token.type === 'MINUS') {
+                        consume();
+                        const right = parseNot();
+                        if (!right) break;
+                        left = { type: 'and', left, right: { type: 'not', expr: right } };
+                        continue;
+                    }
+                    if (token.type === 'TERM' || token.type === '(' || token.type === 'NOT') {
+                        const right = parseNot();
+                        if (!right) break;
+                        left = { type: 'and', left, right };
+                        continue;
+                    }
+                    break;
+                }
+                return left;
+            };
+
+            const parseOr = () => {
+                let left = parseAnd();
+                if (!left) return null;
+                while (true) {
+                    const token = peek();
+                    if (token && token.type === 'OR') {
+                        consume();
+                        const right = parseAnd();
+                        if (!right) break;
+                        left = { type: 'or', left, right };
+                        continue;
+                    }
+                    break;
+                }
+                return left;
+            };
+
+            return parseOr();
+        }
+
+        function normalizeModalValue(value) {
+            return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        }
+
+        function modalTermMatches(task, term) {
+            const clean = normalizeModalValue(term);
+            if (!clean) return false;
+            if (clean === 'imp' || clean === 'important') {
+                return Number(task.important) > 0;
+            }
+            if (clean === 'urg' || clean === 'urgent') {
+                return Number(task.urgent) > 0;
+            }
+            const taskText = normalizeModalValue(task.task);
+            const tagText = normalizeModalValue(formatTagNames(task.tag) || '');
+            const rawTag = normalizeModalValue(task.tag);
+            return taskText.includes(clean) || tagText.includes(clean) || rawTag.includes(clean);
+        }
+
+        function evaluateModalQuery(expr, task) {
+            if (!expr) return true;
+            if (expr.type === 'term') return modalTermMatches(task, expr.value);
+            if (expr.type === 'not') return !evaluateModalQuery(expr.expr, task);
+            if (expr.type === 'and') return evaluateModalQuery(expr.left, task) && evaluateModalQuery(expr.right, task);
+            if (expr.type === 'or') return evaluateModalQuery(expr.left, task) || evaluateModalQuery(expr.right, task);
+            return true;
+        }
+
+        function modalTaskMatchesQuery(task, expr) {
+            if (!expr) return true;
+            return evaluateModalQuery(expr, task);
+        }
+
         window.renderModalTasks = function() {
             const container = document.getElementById('modalTasks');
             if (!container || !window.modalData) return;
@@ -1741,21 +1906,8 @@
             const tasks = window.modalData.tasks || [];
             const filterType = window.modalFilterType || 'all';
             const sortKey = window.modalSort || 'time_desc';
-            const query = String(window.modalQuery || '').trim().toLowerCase();
-            const queryParts = query
-                ? query.split(',').map(s => String(s || '').trim().toLowerCase()).filter(Boolean)
-                : [];
-            const parsedTerms = queryParts
-                .map(part => {
-                    const match = part.match(/^(?:if\s+not|not)\s+(.+)$/);
-                    if (match && match[1]) {
-                        return { term: match[1].trim(), negate: true };
-                    }
-                    return { term: part, negate: false };
-                })
-                .filter(item => item.term);
-            const includeTerms = parsedTerms.filter(item => !item.negate).map(item => item.term);
-            const excludeTerms = parsedTerms.filter(item => item.negate).map(item => item.term);
+            const query = String(window.modalQuery || '').trim();
+            const searchExpr = parseModalQuery(query);
             const timeToMinutes = (value) => {
                 if (!value) return 0;
                 const parts = String(value).trim().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
@@ -1795,29 +1947,8 @@
                 ? tasks.filter(t => !hidden[getKey(t)])
                 : tasks.slice();
             window.modalActiveTasks = active;
-            const matchesTerm = (t, term) => {
-                const clean = String(term || '').trim().toLowerCase();
-                if (!clean) return true;
-                if (clean === 'imp' || clean === 'important') {
-                    return Number(t.important) > 0;
-                }
-                if (clean === 'urg' || clean === 'urgent') {
-                    return Number(t.urgent) > 0;
-                }
-                const taskText = String(t.task || '').toLowerCase();
-                const tagText = String(formatTagNames(t.tag) || '').toLowerCase();
-                const rawTag = String(t.tag || '').toLowerCase();
-                return taskText.includes(clean) || tagText.includes(clean) || rawTag.includes(clean);
-            };
-            const searched = parsedTerms.length
-                ? active.filter(t => {
-                    const matchesInclude = includeTerms.length
-                        ? includeTerms.some(part => matchesTerm(t, part))
-                        : true;
-                    if (!matchesInclude) return false;
-                    if (excludeTerms.length && excludeTerms.some(part => matchesTerm(t, part))) return false;
-                    return true;
-                })
+            const searched = searchExpr
+                ? active.filter(t => modalTaskMatchesQuery(t, searchExpr))
                 : active;
             const sorters = {
                 time_asc: (a, b) => getTaskTimestamp(a) - getTaskTimestamp(b),
