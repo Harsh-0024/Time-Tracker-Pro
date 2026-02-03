@@ -10,10 +10,31 @@ from flask import abort, current_app, g, jsonify, redirect, request, session, ur
 from ..core.admins import is_admin_email
 from ..core.rows import row_value
 from ..repositories.users import get_user_by_id, get_user_count, update_user_role
-from .utils import get_current_user_id, safe_next_url
+from .utils import _ua_hash, get_current_user_id, safe_next_url
 
 
 API_AUTH_TOKEN_ENV = "TIME_TRACKER_API_TOKEN"
+
+
+def _resolve_bypass_user_id(db_name: str) -> Optional[int]:
+    if not current_app.config.get("LOCAL_AUTH_BYPASS"):
+        return None
+    configured_id = current_app.config.get("LOCAL_AUTH_USER_ID")
+    if configured_id:
+        try:
+            user = get_user_by_id(db_name, int(configured_id))
+        except Exception:
+            user = None
+        if user:
+            return int(user["id"])
+    from ..db import get_db_connection
+
+    conn = get_db_connection(db_name)
+    row = conn.execute("SELECT id FROM users ORDER BY id ASC LIMIT 1").fetchone()
+    conn.close()
+    if row:
+        return int(row["id"])
+    return None
 
 
 def token_is_valid(headers: Dict[str, str]) -> bool:
@@ -34,6 +55,10 @@ def resolve_request_user_id(headers: Dict[str, str]) -> Optional[int]:
         if not user or not int(row_value(user, "is_verified") or 0):
             return None
         return int(session_uid)
+
+    bypass_user_id = _resolve_bypass_user_id(db_name)
+    if bypass_user_id is not None:
+        return int(bypass_user_id)
 
     if not token_is_valid(headers):
         return None
@@ -77,9 +102,17 @@ def login_required(fn: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(*args, **kwargs):
         uid = get_current_user_id()
         db_name = current_app.config["DB_NAME"]
+        bypass_active = False
+        if uid is None and current_app.config.get("LOCAL_AUTH_BYPASS"):
+            bypass_user_id = _resolve_bypass_user_id(db_name)
+            if bypass_user_id is not None:
+                session["user_id"] = int(bypass_user_id)
+                session["ua_hash"] = _ua_hash(request.headers.get("User-Agent") or "")
+                uid = int(bypass_user_id)
+                bypass_active = True
         if uid is not None:
             user = get_user_by_id(db_name, int(uid))
-            if user and not int(row_value(user, "is_verified") or 0):
+            if user and not int(row_value(user, "is_verified") or 0) and not bypass_active:
                 session.clear()
                 session["pending_user_id"] = int(uid)
                 if request.path.startswith("/api/"):

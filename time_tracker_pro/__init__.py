@@ -14,6 +14,13 @@ from .db import init_db
 from .repositories.app_settings import get_app_setting
 
 
+_ENV_NAME = (os.getenv("FLASK_ENV") or os.getenv("ENV") or "").strip().lower()
+_IS_LOCAL_ENV = _ENV_NAME in {"dev", "development", "local"}
+LOCAL_AUTH_BYPASS = _IS_LOCAL_ENV and (os.getenv("LOCAL_AUTH_BYPASS") == "1")
+_raw_auth_user_id = (os.getenv("LOCAL_AUTH_USER_ID") or "").strip()
+LOCAL_AUTH_USER_ID: Optional[int] = int(_raw_auth_user_id) if _raw_auth_user_id.isdigit() else None
+
+
 def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
     load_dotenv()
 
@@ -46,6 +53,8 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
     app.permanent_session_lifetime = timedelta(days=int(os.getenv("SESSION_LIFETIME_DAYS", "30")))
 
     app.config["DB_NAME"] = (os.getenv("DB_PATH") or "productivity.db").strip() or "productivity.db"
+    app.config["LOCAL_AUTH_BYPASS"] = LOCAL_AUTH_BYPASS
+    app.config["LOCAL_AUTH_USER_ID"] = LOCAL_AUTH_USER_ID
 
     if config_overrides:
         app.config.update(config_overrides)

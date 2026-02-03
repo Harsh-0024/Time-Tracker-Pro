@@ -96,6 +96,8 @@ def init_db(db_name: str) -> None:
     if "is_verified" not in user_cols:
         conn.execute("ALTER TABLE users ADD COLUMN is_verified INTEGER DEFAULT 0")
         conn.execute("UPDATE users SET is_verified = 1 WHERE is_verified IS NULL")
+    if "avatar_url" not in user_cols:
+        conn.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
 
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id)")
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)")
@@ -143,6 +145,24 @@ def init_db(db_name: str) -> None:
         """
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_sheety_accounts_user ON sheety_api_accounts(user_id, priority)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS graph_bookmarks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            focus TEXT NOT NULL,
+            search_query TEXT,
+            combo_enabled INTEGER DEFAULT 0,
+            days INTEGER DEFAULT 30,
+            ma_window INTEGER DEFAULT 7,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_graph_bookmarks_user ON graph_bookmarks(user_id, created_at)")
 
     conn.commit()
     conn.close()
