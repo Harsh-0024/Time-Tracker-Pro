@@ -117,6 +117,26 @@ class LogEntryParserRulesTests(unittest.TestCase):
         self.assertEqual(parsed["start_dt"], datetime(2026, 1, 21, 21, 0))
         self.assertEqual(parsed["end_dt"], datetime(2026, 1, 21, 22, 10))
 
+    def test_split_date_tokens_then_time(self) -> None:
+        previous_end = datetime(2026, 2, 3, 22, 17)
+        parsed = self.parse_with_now(
+            "3 feb 11 pm restfully laid before sleep . Rest",
+            "2026-02-04 07:04:09",
+            previous_end=previous_end,
+        )
+        self.assertEqual(parsed["start_dt"], previous_end)
+        self.assertEqual(parsed["end_dt"], datetime(2026, 2, 3, 23, 0))
+
+    def test_followup_row_uses_previous_end(self) -> None:
+        previous_end = datetime(2026, 2, 3, 23, 0)
+        parsed = self.parse_with_now(
+            "Sleep . Necessity Urgent",
+            "2026-02-04 07:04:19",
+            previous_end=previous_end,
+        )
+        self.assertEqual(parsed["start_dt"], previous_end)
+        self.assertEqual(parsed["end_dt"], datetime(2026, 2, 4, 7, 4, 19))
+
     def test_generated_permutations_do_not_crash(self) -> None:
         time_seqs = [
             ("9",),

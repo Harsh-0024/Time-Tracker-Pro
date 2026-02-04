@@ -2116,7 +2116,6 @@
                     }
                     closeGraphDeleteConfirm();
                     await refreshGraphTaskModal();
-                    promptAddTaskAfterDelete();
                 } catch (error) {
                     const message = getNetworkErrorMessage(error, 'delete the task');
                     if (window.showErrorToast) {

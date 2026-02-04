@@ -43,9 +43,6 @@ class TimeLogParser:
         normalized = (token or "").strip().lower().strip(".,")
         if not normalized:
             return None
-        if normalized.isdigit():
-            month = int(normalized)
-            return month if 1 <= month <= 12 else None
         months = {
             "jan": 1,
             "january": 1,
@@ -83,7 +80,10 @@ class TimeLogParser:
         day = int(day_token)
         if not (1 <= day <= 31):
             return None, 0
-        month = self._month_from_token(tokens[idx + 1])
+        month_token = (tokens[idx + 1] or "").strip()
+        if not re.search(r"[A-Za-z]", month_token):
+            return None, 0
+        month = self._month_from_token(month_token)
         if month is None:
             return None, 0
 
@@ -92,6 +92,12 @@ class TimeLogParser:
         if idx + 2 < len(tokens):
             year_token = (tokens[idx + 2] or "").strip().strip(".,")
             if re.fullmatch(r"\d{2,4}", year_token):
+                if (
+                    len(year_token) == 2
+                    and idx + 3 < len(tokens)
+                    and (tokens[idx + 3] or "").strip().lower().strip(".,") in {"am", "pm", "a", "p", "a.m", "p.m", "a.m.", "p.m."}
+                ):
+                    return datetime(year, month, day).date(), consumed
                 year = int(year_token)
                 if len(year_token) == 2:
                     year += 2000
@@ -173,7 +179,7 @@ class TimeLogParser:
         if not match:
             if re.search(r"[ap]m", token, re.IGNORECASE) or ":" in token:
                 return None
-            if re.search(r"[A-Za-z]", token) or re.search(r"[./-]", token) or re.fullmatch(r"\d{4}", token):
+            if re.search(r"\d", token) or re.search(r"[./-]", token) or re.fullmatch(r"\d{4}", token):
                 try:
                     parsed = date_parser.parse(token, default=ref_date, dayfirst=True, fuzzy=False)
                     return parsed.date()
@@ -247,6 +253,21 @@ class TimeLogParser:
             token = tokens[i]
             trailing_dot = token.endswith(".")
             cleaned = token.rstrip(".").rstrip(",")
+
+            split_date, split_consumed = self._parse_split_date(tokens, i, client_now)
+            if split_date is not None and split_consumed:
+                trailing_dot = trailing_dot or any(
+                    (tokens[i + j] or "").strip().endswith(".") for j in range(split_consumed)
+                )
+                if i == 0 and any((tokens[i + j] or "").strip().endswith(",") for j in range(split_consumed)):
+                    leading_date_has_comma = True
+                elements.append(("date", split_date))
+                dot_positions.append(trailing_dot)
+                consumed += split_consumed
+                i += split_consumed
+                if len(elements) >= 4:
+                    break
+                continue
 
             time_val = self._parse_time_token(cleaned, client_now)
             consumed_extra = 0

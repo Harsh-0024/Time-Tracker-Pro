@@ -3047,19 +3047,8 @@
                         if (window.showSuccessToast) {
                             window.showSuccessToast('Task deleted');
                         }
-                        if (result?.empty_window && window.showInfoToast) {
-                            const windowInfo = result.empty_window;
-                            const label = windowInfo?.start_label && windowInfo?.end_label
-                                ? `${windowInfo.start_label} - ${windowInfo.end_label}`
-                                : 'an empty window';
-                            const dateLabel = windowInfo?.date ? ` on ${windowInfo.date}` : '';
-                            window.showInfoToast(`Open time created: ${label}${dateLabel}.`);
-                        }
                         window.closeDeleteTaskConfirm();
                         window.refreshModalData();
-                        if (window.promptAddTaskAfterDelete) {
-                            window.promptAddTaskAfterDelete();
-                        }
                     } catch (error) {
                         const message = getNetworkErrorMessage(error, 'delete the task');
                         if (window.showErrorToast) {
