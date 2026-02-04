@@ -106,18 +106,18 @@ def update_app_icon():
     db_name = current_app.config["DB_NAME"]
     file = request.files.get("icon")
     if not file or not file.filename:
-        return redirect(url_for("main.settings", icon_error="Please choose a PNG icon to upload."))
+        return redirect(url_for("admin.admin_users", error="Please choose a PNG icon to upload."))
     if file.mimetype not in {"image/png", "image/x-png"}:
-        return redirect(url_for("main.settings", icon_error="Icon must be a PNG file."))
+        return redirect(url_for("admin.admin_users", error="Icon must be a PNG file."))
     data = file.read()
     if not data:
-        return redirect(url_for("main.settings", icon_error="Uploaded icon file was empty."))
+        return redirect(url_for("admin.admin_users", error="Uploaded icon file was empty."))
     if len(data) > 5 * 1024 * 1024:
-        return redirect(url_for("main.settings", icon_error="Icon is too large (max 5MB)."))
+        return redirect(url_for("admin.admin_users", error="Icon is too large (max 5MB)."))
     icon_path = _icon_storage_path()
     icon_path.write_bytes(data)
     upsert_app_setting(db_name, "app_icon_version", str(int(time.time())))
-    return redirect(url_for("main.settings", icon_success="App icon updated. Re-add the app to refresh."))
+    return redirect(url_for("admin.admin_users", success="App icon updated. Re-add the app to refresh."))
 
 
 @bp.route("/", endpoint="dashboard")
