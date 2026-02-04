@@ -2715,11 +2715,12 @@
             const graphsUrl = "{{ url_for('main.graphs') }}";
             const settingsUrl = "{{ url_for('main.settings') }}";
             const dashboardUrl = "{{ url_for('main.dashboard') }}";
+            const adminUrl = "{{ url_for('admin.admin_users') if is_admin else '' }}";
             document.addEventListener('keydown', (event) => {
                 const tag = event.target?.tagName;
                 if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
                 const key = event.key.toLowerCase();
-                if (event.metaKey && event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
+                if (event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
                     event.preventDefault();
                     const order = ['day', 'week', 'month'];
                     const idx = order.indexOf(window.currentPeriod || 'day');
@@ -2728,7 +2729,7 @@
                     window.changePeriod(next);
                     return;
                 }
-                if (event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
+                if (!event.metaKey && !event.ctrlKey && !event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
                     event.preventDefault();
                     const base = new Date(window.currentDate);
                     const delta = event.key === 'ArrowRight' ? 1 : -1;
@@ -2744,6 +2745,8 @@
                     window.location.href = settingsUrl;
                 } else if (key === 'd') {
                     window.location.href = dashboardUrl;
+                } else if (key === 'a' && adminUrl) {
+                    window.location.href = adminUrl;
                 } else if (key === '?') {
                     if (window.showInfoToast) {
                         window.showToast(`
@@ -2751,11 +2754,11 @@
                                 <div class="text-xs uppercase tracking-[0.2em] text-white/80 font-semibold">Keyboard Shortcuts</div>
                                 <div class="space-y-2 text-sm">
                                     <div class="flex items-center gap-2">
-                                        <kbd class="toast-kbd">⌥</kbd><kbd class="toast-kbd">←</kbd><kbd class="toast-kbd">→</kbd>
+                                        <kbd class="toast-kbd">←</kbd><kbd class="toast-kbd">→</kbd>
                                         <span class="toast-kbd-label">Change date</span>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        <kbd class="toast-kbd">⌘</kbd><kbd class="toast-kbd">⌥</kbd><kbd class="toast-kbd">←</kbd><kbd class="toast-kbd">→</kbd>
+                                        <kbd class="toast-kbd">⌥</kbd><kbd class="toast-kbd">←</kbd><kbd class="toast-kbd">→</kbd>
                                         <span class="toast-kbd-label">Change period</span>
                                     </div>
                                     <div class="flex items-center gap-2">
@@ -2770,6 +2773,12 @@
                                         <kbd class="toast-kbd">D</kbd>
                                         <span class="toast-kbd-label">Dashboard</span>
                                     </div>
+                                    ${adminUrl ? `
+                                    <div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">A</kbd>
+                                        <span class="toast-kbd-label">Admin</span>
+                                    </div>
+                                    ` : ''}
                                 </div>
                             </div>
                         `, 'shortcut', 7000);

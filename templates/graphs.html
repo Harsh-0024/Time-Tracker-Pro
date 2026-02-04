@@ -264,7 +264,7 @@
                             <button type="button" class="graph-focus-option w-full text-left px-4 py-3 hover:bg-[#F7F1E6] text-sm transition-colors" data-value="total">Total time</button>
                         </div>
                     </div>
-                    <input id="graphSearchInput" type="text" class="flex-1 px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] text-sm md:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="sleep, rest · work · important and not work · workout or yoga">
+                    <input id="graphSearchInput" type="text" class="flex-1 px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] text-sm md:text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="sleep, rest · only sleep · important and not work">
                 </div>
                 <div class="flex flex-col gap-3">
                     <div class="flex flex-wrap items-center gap-3">
@@ -274,7 +274,7 @@
                         </label>
                         <div class="relative graph-help-wrapper" id="graphHelpWrapper">
                             <button id="graphHelpBtn" type="button" class="graph-help-btn" aria-label="Search syntax help">!</button>
-                            <div id="graphHelpTooltip" class="graph-help-tooltip hidden absolute left-0 top-full mt-2">Search matches full words or tags. Use AND/OR/NOT, + (OR), * (AND), - (AND NOT), parentheses, or commas for OR. Quotes keep words together ("deep work").</div>
+                            <div id="graphHelpTooltip" class="graph-help-tooltip hidden absolute left-0 top-full mt-2">Search matches full words or tags. Use ONLY for exact task names ("only sleep"), AND/OR/NOT, + (OR), * (AND), - (AND NOT), parentheses, or commas for OR. Quotes keep words together ("deep work").</div>
                         </div>
                     </div>
                     <div class="grid gap-2 sm:flex sm:flex-wrap sm:items-center">
@@ -796,7 +796,7 @@
                     return;
                 }
                 const upper = token.toUpperCase();
-                if (upper === 'AND' || upper === 'OR' || upper === 'NOT') {
+                if (upper === 'AND' || upper === 'OR' || upper === 'NOT' || upper === 'ONLY') {
                     tokens.push({ type: upper });
                     return;
                 }
@@ -826,6 +826,14 @@
                 if (token.type === 'TERM') {
                     consume();
                     return { type: 'term', value: token.value };
+                }
+                if (token.type === 'ONLY') {
+                    consume();
+                    const next = parsePrimary();
+                    if (next && next.type === 'term') {
+                        return { type: 'only', value: next.value };
+                    }
+                    return next;
                 }
                 if (token.type === '(') {
                     consume();
@@ -866,7 +874,7 @@
                         left = { type: 'and', left, right: { type: 'not', expr: right } };
                         continue;
                     }
-                    if (token.type === 'TERM' || token.type === '(' || token.type === 'NOT') {
+                    if (token.type === 'TERM' || token.type === '(' || token.type === 'NOT' || token.type === 'ONLY') {
                         const right = parseNot();
                         if (!right) break;
                         left = { type: 'and', left, right };
@@ -965,9 +973,17 @@
             return tokenGroups.some(tokens => hasTokenSequence(tokens, termTokens));
         }
 
+        function graphTaskExactMatch(task, term) {
+            const clean = normalizeGraphValue(term);
+            if (!clean) return false;
+            const taskName = normalizeGraphValue(normalizeGraphTaskName(task.task));
+            return taskName === clean;
+        }
+
         function evaluateGraphTaskQuery(expr, task) {
             if (!expr) return true;
             if (expr.type === 'term') return graphTaskTermMatches(task, expr.value);
+            if (expr.type === 'only') return graphTaskExactMatch(task, expr.value);
             if (expr.type === 'not') return !evaluateGraphTaskQuery(expr.expr, task);
             if (expr.type === 'and') return evaluateGraphTaskQuery(expr.left, task) && evaluateGraphTaskQuery(expr.right, task);
             if (expr.type === 'or') return evaluateGraphTaskQuery(expr.left, task) || evaluateGraphTaskQuery(expr.right, task);
@@ -2147,6 +2163,7 @@
         });
 
         const dashboardUrl = "{{ url_for('main.dashboard') }}";
+        const adminUrl = "{{ url_for('admin.admin_users') if is_admin else '' }}";
         const navHome = document.getElementById('navHome');
         const navMatrix = document.getElementById('navMatrix');
         const navTags = document.getElementById('navTags');
@@ -2178,6 +2195,8 @@
             if (event.metaKey || event.ctrlKey || event.altKey) return;
             if (event.key.toLowerCase() === 'd') {
                 window.location.href = dashboardUrl;
+            } else if (event.key.toLowerCase() === 'a' && adminUrl) {
+                window.location.href = adminUrl;
             }
         });
 

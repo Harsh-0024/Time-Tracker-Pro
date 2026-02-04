@@ -58,7 +58,7 @@ def parse_graph_search(raw: str) -> Optional[SearchExpr]:
             tokens.append((token, None))
             continue
         upper = token.upper()
-        if upper in {"AND", "OR", "NOT"}:
+        if upper in {"AND", "OR", "NOT", "ONLY"}:
             tokens.append((upper, None))
             continue
         if token[0] in {'"', "'"} and token[-1] == token[0]:
@@ -88,6 +88,12 @@ def parse_graph_search(raw: str) -> Optional[SearchExpr]:
         if token[0] == "TERM":
             consume()
             return ("term", token[1] or "")
+        if token[0] == "ONLY":
+            consume()
+            expr = parse_primary()
+            if expr and expr[0] == "term":
+                return ("only", expr[1])
+            return expr
         if token[0] == "(":
             consume()
             expr = parse_or()
@@ -126,7 +132,7 @@ def parse_graph_search(raw: str) -> Optional[SearchExpr]:
                     break
                 left = ("and", left, ("not", right))
                 continue
-            if token[0] in {"TERM", "(", "NOT"}:
+            if token[0] in {"TERM", "(", "NOT", "ONLY"}:
                 right = parse_not()
                 if not right:
                     break
@@ -200,12 +206,22 @@ def graph_term_matches(row: pd.Series, term: str) -> bool:
     return clean in tokens
 
 
+def graph_only_matches(row: pd.Series, term: str) -> bool:
+    clean = str(term or "").strip().lower()
+    if not clean:
+        return False
+    task_value = re.sub(r"\s+", " ", str(row.get("task") or "").strip().lower())
+    return clean == task_value
+
+
 def graph_row_matches(row: pd.Series, expr: Optional[SearchExpr]) -> bool:
     if not expr:
         return True
     op = expr[0]
     if op == "term":
         return graph_term_matches(row, expr[1])
+    if op == "only":
+        return graph_only_matches(row, expr[1])
     if op == "not":
         return not graph_row_matches(row, expr[1]) if expr[1] else True
     if op == "and":
