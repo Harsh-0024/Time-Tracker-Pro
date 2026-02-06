@@ -2716,6 +2716,7 @@
             const settingsUrl = "{{ url_for('main.settings') }}";
             const dashboardUrl = "{{ url_for('main.dashboard') }}";
             const adminUrl = "{{ url_for('admin.admin_users') if is_admin else '' }}";
+            let shortcutToast = null;
             document.addEventListener('keydown', (event) => {
                 const tag = event.target?.tagName;
                 if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
@@ -2748,8 +2749,17 @@
                 } else if (key === 'a' && adminUrl) {
                     window.location.href = adminUrl;
                 } else if (key === '?') {
+                    event.preventDefault();
+                    if (shortcutToast && !document.body.contains(shortcutToast)) {
+                        shortcutToast = null;
+                    }
+                    if (shortcutToast?.__removeToast) {
+                        shortcutToast.__removeToast();
+                        shortcutToast = null;
+                        return;
+                    }
                     if (window.showInfoToast) {
-                        window.showToast(`
+                        shortcutToast = window.showToast(`
                             <div class="space-y-3">
                                 <div class="text-xs uppercase tracking-[0.2em] text-white/80 font-semibold">Keyboard Shortcuts</div>
                                 <div class="space-y-2 text-sm">

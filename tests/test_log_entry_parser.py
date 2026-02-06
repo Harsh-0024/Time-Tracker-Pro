@@ -137,6 +137,26 @@ class LogEntryParserRulesTests(unittest.TestCase):
         self.assertEqual(parsed["start_dt"], previous_end)
         self.assertEqual(parsed["end_dt"], datetime(2026, 2, 4, 7, 4, 19))
 
+    def test_task_name_with_tag_like_words_without_meta(self) -> None:
+        parsed = self.parse("Morning Urgentencies")
+        self.assertEqual(parsed["task"], "Morning Urgentencies")
+        self.assertFalse(parsed["urg"])
+        self.assertFalse(parsed["imp"])
+        self.assertEqual(parsed["tag"], "Waste")
+
+        parsed = self.parse("Work meeting")
+        self.assertEqual(parsed["task"], "Work meeting")
+        self.assertFalse(parsed["urg"])
+        self.assertFalse(parsed["imp"])
+        self.assertEqual(parsed["tag"], "Waste")
+
+    def test_meta_parsed_only_after_dot(self) -> None:
+        parsed = self.parse("9 Project v2.0 . Work Urgent")
+        self.assertEqual(parsed["task"], "Project v2.0")
+        self.assertTrue(parsed["urg"])
+        self.assertFalse(parsed["imp"])
+        self.assertEqual(parsed["tag"], "Work")
+
     def test_generated_permutations_do_not_crash(self) -> None:
         time_seqs = [
             ("9",),

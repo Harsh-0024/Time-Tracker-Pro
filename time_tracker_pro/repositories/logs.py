@@ -24,6 +24,7 @@ def fetch_local_data(db_name: str, user_id: int) -> pd.DataFrame:
     for _, row in df.iterrows():
         start = pd.to_datetime(f"{row['start_date']} {row['start_time']}")
         end = pd.to_datetime(f"{row['end_date']} {row['end_time']}")
+        duration_minutes = max(0.0, (end - start).total_seconds() / 60.0)
         sheety_id = row.get("sheety_id")
         if isinstance(sheety_id, float) and pd.isna(sheety_id):
             sheety_id = None
@@ -45,7 +46,7 @@ def fetch_local_data(db_name: str, user_id: int) -> pd.DataFrame:
                 "start_datetime": start,
                 "end_datetime": end,
                 "task": row["task"],
-                "duration": row["duration"],
+                "duration": duration_minutes,
                 "tag": tag_value,
                 "raw_tag": row["tags"],
                 "primary_tag": primary_tag,

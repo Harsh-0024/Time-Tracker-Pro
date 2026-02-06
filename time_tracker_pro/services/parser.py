@@ -362,16 +362,38 @@ class TimeLogParser:
                     tags.append(canonical)
                 return
 
-        if "." in raw_text:
-            before, after = raw_text.split(".", 1)
-            task_name = before.strip() or task_name
-            meta = after.strip()
-            if meta:
-                for tok in re.split(r"[\s,]+", meta):
-                    apply_token(tok)
-        else:
-            for tok in re.split(r"\s+", raw_text.strip()):
-                apply_token(tok)
+        def is_meta_token(raw_token: str) -> bool:
+            token = re.sub(r"[^A-Za-z]+", "", raw_token).lower()
+            return token in {"urg", "urgent", "imp", "important", "work", "necessity", "soul", "rest", "waste"}
+
+        def has_meta_tokens(tokens: list[str]) -> bool:
+            return any(is_meta_token(tok) for tok in tokens)
+
+        task_tokens = None
+        meta_tokens = None
+        for idx, token in enumerate(remaining_tokens):
+            candidate_task = None
+            candidate_meta = None
+            if token == ".":
+                candidate_task = remaining_tokens[:idx]
+                candidate_meta = remaining_tokens[idx + 1 :]
+            elif token.endswith(".") and token != ".":
+                candidate_task = remaining_tokens[:idx] + [token[:-1]]
+                candidate_meta = remaining_tokens[idx + 1 :]
+            elif token.startswith(".") and token != ".":
+                candidate_task = remaining_tokens[:idx]
+                candidate_meta = [token[1:]] + remaining_tokens[idx + 1 :]
+
+            if candidate_meta and has_meta_tokens(candidate_meta):
+                task_tokens = candidate_task
+                meta_tokens = candidate_meta
+                break
+
+        if meta_tokens is not None:
+            task_name = " ".join(task_tokens).strip() or task_name
+            for tok in meta_tokens:
+                for part in re.split(r"[\s,]+", tok):
+                    apply_token(part)
 
         tag = ", ".join(tags) if tags else "Waste"
 
