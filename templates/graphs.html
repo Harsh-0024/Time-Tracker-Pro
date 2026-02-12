@@ -293,8 +293,13 @@
                     <p class="text-xs md:text-sm text-gray-500" id="chartSubtitle">Last 30 days · 7-day avg</p>
                 </div>
             </div>
-            <div class="relative" style="height: 280px;">
+            <div class="relative" style="height: 280px;" id="graphCanvasWrap">
                 <canvas id="graphCanvas"></canvas>
+                <div id="graphPointDetail" class="hidden absolute z-50 max-w-[260px] rounded-2xl border border-[rgba(148,126,86,0.35)] bg-white/95 backdrop-blur px-4 py-3 text-xs text-gray-800 shadow-2xl">
+                    <div class="font-semibold text-gray-900" id="graphPointDetailTitle"></div>
+                    <div class="mt-1 text-gray-600" id="graphPointDetailBody"></div>
+                    <div class="mt-2 text-[11px] font-semibold text-amber-700">Tap to open day</div>
+                </div>
             </div>
         </div>
 
@@ -315,6 +320,7 @@
                         <button class="ma-pill soft-pill px-3 py-1.5 rounded-full text-xs font-medium text-gray-700 active" data-ma="7">7d</button>
                         <button class="ma-pill soft-pill px-3 py-1.5 rounded-full text-xs font-medium text-gray-700" data-ma="14">14d</button>
                         <button class="ma-pill soft-pill px-3 py-1.5 rounded-full text-xs font-medium text-gray-700" data-ma="30">30d</button>
+                        <button class="ma-pill soft-pill px-3 py-1.5 rounded-full text-xs font-medium text-gray-700" data-ma="48">48d</button>
                     </div>
                 </div>
             </div>
@@ -535,6 +541,10 @@
         const graphTaskChart = document.getElementById('graphTaskChart');
         const graphTaskTools = document.getElementById('graphTaskTools');
         const closeGraphTasks = document.getElementById('closeGraphTasks');
+        const graphCanvasWrap = document.getElementById('graphCanvasWrap');
+        const graphPointDetail = document.getElementById('graphPointDetail');
+        const graphPointDetailTitle = document.getElementById('graphPointDetailTitle');
+        const graphPointDetailBody = document.getElementById('graphPointDetailBody');
         let graphTaskChartInstance = null;
         let graphTaskQuery = '';
         let graphTaskSort = 'time_desc';
@@ -543,11 +553,79 @@
         let graphPendingDeleteTaskId = null;
         let graphTaskStatsMode = 'avg';
         let graphTaskConsistencyMode = 'weekly';
+        let graphRawDates = [];
+        let graphRawValues = [];
+        let graphMaValues = [];
+        let graphDetailIndex = null;
 
         function formatHours(value, decimals = 1, suffix = true) {
             const num = Number(value) || 0;
             const formatted = num.toFixed(decimals);
             return suffix ? `${formatted}h` : formatted;
+        }
+
+        function isGraphMobile() {
+            return window.matchMedia('(max-width: 767px)').matches;
+        }
+
+        function formatGraphDetailDate(dateStr) {
+            const raw = String(dateStr || '').trim();
+            if (!raw) return '';
+            const date = new Date(`${raw}T00:00:00`);
+            if (Number.isNaN(date.getTime())) return raw;
+            return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function navigateToGraphDate(dateStr) {
+            const raw = String(dateStr || '').trim();
+            if (!raw) return;
+            window.location.href = `/?date=${encodeURIComponent(raw)}&period=day`;
+        }
+
+        function closeGraphPointDetail() {
+            if (!graphPointDetail) return;
+            graphPointDetail.classList.add('hidden');
+            graphPointDetail.style.left = '';
+            graphPointDetail.style.top = '';
+            graphPointDetail.dataset.date = '';
+            graphDetailIndex = null;
+        }
+
+        function showGraphPointDetail(chart, pointIndex, activePoint) {
+            if (!graphPointDetail || !graphCanvasWrap) return;
+            const dateStr = graphRawDates[pointIndex];
+            if (!dateStr) return;
+            const actual = graphRawValues[pointIndex];
+            const ma = graphMaValues[pointIndex];
+            if (graphPointDetailTitle) graphPointDetailTitle.textContent = formatGraphDetailDate(dateStr);
+            if (graphPointDetailBody) graphPointDetailBody.textContent = `Day: ${formatHours(actual, 2)} · MA (${maWindow}d): ${formatHours(ma, 2)}`;
+            graphPointDetail.dataset.date = dateStr;
+            graphDetailIndex = pointIndex;
+
+            const element = activePoint?.element || null;
+            const position = element && typeof element.tooltipPosition === 'function'
+                ? element.tooltipPosition()
+                : null;
+            const wrapRect = graphCanvasWrap.getBoundingClientRect();
+            const canvasRect = chart?.canvas?.getBoundingClientRect?.();
+            const offsetLeft = (canvasRect ? canvasRect.left : wrapRect.left) - wrapRect.left;
+            const offsetTop = (canvasRect ? canvasRect.top : wrapRect.top) - wrapRect.top;
+            const anchorX = position ? position.x + offsetLeft : wrapRect.width / 2;
+            const anchorY = position ? position.y + offsetTop : wrapRect.height / 2;
+
+            graphPointDetail.classList.remove('hidden');
+            const boxRect = graphPointDetail.getBoundingClientRect();
+            const boxWidth = boxRect.width || 260;
+            const boxHeight = boxRect.height || 90;
+
+            const padding = 12;
+            let left = anchorX - boxWidth / 2;
+            let top = anchorY - boxHeight - 14;
+            left = Math.max(padding, Math.min(left, wrapRect.width - boxWidth - padding));
+            top = Math.max(padding, Math.min(top, wrapRect.height - boxHeight - padding));
+
+            graphPointDetail.style.left = `${left}px`;
+            graphPointDetail.style.top = `${top}px`;
         }
 
         const parseColor = (value) => {
@@ -1607,6 +1685,7 @@
         }
 
         function updateChart({ labels, values, total_hours, avg_hours, max_hours }, metricKey, rangeDays = currentDays) {
+            closeGraphPointDetail();
             if (graphSearchQuery && graphTasks.length) {
                 values = deriveValuesFromTasks(labels);
                 const totals = computeAverageHours(values);
@@ -1622,6 +1701,9 @@
             gradient.addColorStop(1, hexToRgba(colors.secondary || colors.primary, 0.05));
             const avgValues = movingAverage(values, maWindow);
             const avgColor = color.startsWith('#') && color.length === 7 ? `${color}99` : 'rgba(17,24,39,0.55)';
+            graphRawDates = Array.isArray(labels) ? labels.slice() : [];
+            graphRawValues = Array.isArray(values) ? values.slice() : [];
+            graphMaValues = Array.isArray(avgValues) ? avgValues.slice() : [];
 
             const shortLabels = labels.map(label => {
                 const d = new Date(label);
@@ -1631,31 +1713,91 @@
             const xMinLabel = shortLabels[rangeBounds.startIndex] || shortLabels[0];
             const xMaxLabel = shortLabels[rangeBounds.endIndex] || shortLabels[shortLabels.length - 1];
 
-            const avgDataset = {
-                label: `Moving avg (${maWindow}d)`,
+            const mobile = isGraphMobile();
+
+            const maDataset = {
+                __kind: 'ma',
+                label: `${metricLabels[metricKey] || 'Time'} (MA ${maWindow}d)`,
                 data: avgValues,
+                borderColor: color,
+                backgroundColor: gradient,
+                borderWidth: 3,
+                fill: true,
+                tension: 0.35,
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                pointHitRadius: 0
+            };
+
+            const rawDataset = {
+                __kind: 'raw',
+                label: `${metricLabels[metricKey] || 'Time'} (daily)`,
+                data: values,
                 borderColor: avgColor,
                 borderWidth: 2,
                 borderDash: [6, 6],
                 fill: false,
                 tension: 0.35,
-                pointRadius: 0,
-                pointHoverRadius: 0
+                pointRadius: 2,
+                pointHoverRadius: 5,
+                pointBackgroundColor: '#FFFFFF',
+                pointBorderColor: avgColor,
+                pointBorderWidth: 2
             };
 
             if (chartInstance) {
                 chartInstance.data.labels = shortLabels;
-                chartInstance.data.datasets[0].data = values;
-                chartInstance.data.datasets[0].borderColor = color;
-                chartInstance.data.datasets[0].backgroundColor = gradient;
-                if (chartInstance.data.datasets[1]) {
-                    chartInstance.data.datasets[1].data = avgValues;
-                    chartInstance.data.datasets[1].borderColor = avgColor;
-                } else {
-                    chartInstance.data.datasets.push(avgDataset);
-                }
+                const datasets = chartInstance.data.datasets || [];
+                if (!datasets[0]) datasets[0] = { __kind: 'ma' };
+                if (!datasets[1]) datasets[1] = { __kind: 'raw' };
+
+                Object.assign(datasets[0], maDataset);
+                Object.assign(datasets[1], rawDataset);
                 chartInstance.options.scales.x.min = xMinLabel;
                 chartInstance.options.scales.x.max = xMaxLabel;
+                if (chartInstance.options?.plugins?.tooltip) {
+                    chartInstance.options.plugins.tooltip.enabled = !mobile;
+                    chartInstance.options.plugins.tooltip.callbacks = {
+                        title: function(items) {
+                            const idx = items && items.length ? items[0].dataIndex : null;
+                            const rawDate = idx != null ? graphRawDates[idx] : '';
+                            return rawDate ? formatGraphDetailDate(rawDate) : '';
+                        },
+                        label: function(context) {
+                            const kind = context?.dataset?.__kind;
+                            const y = Number(context?.parsed?.y || 0);
+                            if (kind === 'raw') return `Day: ${y.toFixed(2)}h`;
+                            return `MA (${maWindow}d): ${y.toFixed(2)}h`;
+                        }
+                    };
+                }
+                chartInstance.options.animation = { duration: 650, easing: 'easeOutQuart' };
+                chartInstance.options.onHover = (evt) => {
+                    if (mobile) return;
+                    const points = chartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+                    const hit = points[0];
+                    const dataset = hit ? chartInstance.data.datasets[hit.datasetIndex] : null;
+                    if (evt?.native?.target) {
+                        evt.native.target.style.cursor = dataset?.__kind === 'raw' ? 'pointer' : 'default';
+                    }
+                };
+                chartInstance.options.onClick = (evt) => {
+                    const points = chartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+                    if (!points.length) {
+                        if (mobile) closeGraphPointDetail();
+                        return;
+                    }
+                    const hit = points[0];
+                    const dataset = chartInstance.data.datasets[hit.datasetIndex];
+                    if (dataset?.__kind !== 'raw') return;
+                    const rawDate = graphRawDates[hit.index];
+                    if (!rawDate) return;
+                    if (mobile) {
+                        showGraphPointDetail(chartInstance, hit.index, hit);
+                    } else {
+                        navigateToGraphDate(rawDate);
+                    }
+                };
                 chartInstance.update();
             } else {
                 chartInstance = new Chart(ctx, {
@@ -1663,35 +1805,62 @@
                     data: {
                         labels: shortLabels,
                         datasets: [
-                            {
-                                label: metricLabels[metricKey] || 'Time',
-                                data: values,
-                                borderColor: color,
-                                backgroundColor: gradient,
-                                borderWidth: 3,
-                                fill: true,
-                                tension: 0.35,
-                                pointRadius: 2,
-                                pointHoverRadius: 5
-                            },
-                            avgDataset
+                            maDataset,
+                            rawDataset
                         ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        interaction: { mode: 'nearest', intersect: true },
+                        animation: { duration: 650, easing: 'easeOutQuart' },
                         plugins: {
                             legend: { display: false },
                             tooltip: {
+                                enabled: !mobile,
                                 backgroundColor: 'rgba(17, 24, 39, 0.96)',
                                 padding: 12,
                                 titleFont: { family: 'Inter', size: 12, weight: '600' },
                                 bodyFont: { family: 'Inter', size: 12, weight: '400' },
                                 callbacks: {
+                                    title: function(items) {
+                                        const idx = items && items.length ? items[0].dataIndex : null;
+                                        const rawDate = idx != null ? graphRawDates[idx] : '';
+                                        return rawDate ? formatGraphDetailDate(rawDate) : '';
+                                    },
                                     label: function(context) {
-                                        return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}h`;
+                                        const kind = context?.dataset?.__kind;
+                                        const y = Number(context?.parsed?.y || 0);
+                                        if (kind === 'raw') return `Day: ${y.toFixed(2)}h`;
+                                        return `MA (${maWindow}d): ${y.toFixed(2)}h`;
                                     }
                                 }
+                            }
+                        },
+                        onHover: (evt) => {
+                            if (mobile) return;
+                            const points = chartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+                            const hit = points[0];
+                            const dataset = hit ? chartInstance.data.datasets[hit.datasetIndex] : null;
+                            if (evt?.native?.target) {
+                                evt.native.target.style.cursor = dataset?.__kind === 'raw' ? 'pointer' : 'default';
+                            }
+                        },
+                        onClick: (evt) => {
+                            const points = chartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+                            if (!points.length) {
+                                if (mobile) closeGraphPointDetail();
+                                return;
+                            }
+                            const hit = points[0];
+                            const dataset = chartInstance.data.datasets[hit.datasetIndex];
+                            if (dataset?.__kind !== 'raw') return;
+                            const rawDate = graphRawDates[hit.index];
+                            if (!rawDate) return;
+                            if (mobile) {
+                                showGraphPointDetail(chartInstance, hit.index, hit);
+                            } else {
+                                navigateToGraphDate(rawDate);
                             }
                         },
                         scales: {
@@ -1923,7 +2092,23 @@
             if (graphHelpWrapper && !event.target.closest('#graphHelpWrapper')) {
                 graphHelpTooltip.classList.add('hidden');
             }
+            if (graphPointDetail && !graphPointDetail.classList.contains('hidden')) {
+                const clickedDetail = Boolean(event.target.closest('#graphPointDetail'));
+                const clickedCanvas = Boolean(event.target.closest('#graphCanvas'));
+                if (!clickedDetail && !clickedCanvas) {
+                    closeGraphPointDetail();
+                }
+            }
         });
+
+        if (graphPointDetail) {
+            graphPointDetail.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const dateStr = graphPointDetail.dataset.date;
+                if (!dateStr) return;
+                navigateToGraphDate(dateStr);
+            });
+        }
 
         if (graphHelpBtn && graphHelpTooltip) {
             graphHelpBtn.addEventListener('click', (event) => {
