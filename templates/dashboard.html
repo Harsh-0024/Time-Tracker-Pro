@@ -335,7 +335,7 @@
     </div>
 
     <!-- Minimal Header -->
-    <header class="bg-white/90 backdrop-blur border-b border-slate-200 shadow-sm" role="banner">
+    <header class="relative z-50 bg-white/90 backdrop-blur border-b border-slate-200 shadow-sm" role="banner">
         <div class="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-6">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
                 <div class="flex items-center justify-between md:block">
@@ -361,8 +361,8 @@
                         <button class="period-btn {% if period == 'week' %}active{% endif %}" onclick="changePeriod('week')">Week</button>
                         <button class="period-btn {% if period == 'month' %}active{% endif %}" onclick="changePeriod('month')">Month</button>
                     </div>
-                    <div id="datePicker" class="relative flex-1 md:flex-none">
-                        <button type="button" onclick="toggleDatePicker()" class="w-full md:w-auto inline-flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs md:text-sm text-gray-700 shadow-sm hover:bg-[#F7F1E6] transition-all duration-200">
+                    <div id="datePicker" class="relative flex-1 md:flex-none flex items-center gap-2">
+                        <button type="button" onclick="toggleDatePicker()" class="flex-1 md:w-auto inline-flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs md:text-sm text-gray-700 shadow-sm hover:bg-[#F7F1E6] transition-all duration-200">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-700 md:w-4 md:h-4">
                                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                                 <line x1="16" y1="2" x2="16" y2="6"></line>
@@ -374,7 +374,7 @@
                                 <span class="sm:hidden">{{ selected_date.strftime("%b %-d") if selected_date else "" }}</span>
                             </span>
                         </button>
-                        <div id="dateDropdown" class="hidden absolute left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-0 mt-3 w-72 rounded-2xl bg-[#FEFCF8] border border-[rgba(148,126,86,0.35)] shadow-2xl shadow-[rgba(15,23,42,0.18)] p-4 z-50">
+                        <div id="dateDropdown" class="hidden absolute left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-0 mt-3 w-72 rounded-2xl bg-[#FEFCF8] border border-[rgba(148,126,86,0.35)] shadow-2xl shadow-[rgba(15,23,42,0.18)] p-4 z-[70]">
                             <div class="flex items-center justify-between mb-4 text-sm text-gray-700">
                                 <button type="button" onclick="navigateMonth(-1)" class="px-2 py-1 rounded-full hover:bg-[#F5EDE1]">&lsaquo;</button>
                                 <div id="dateDropdownLabel" class="font-medium"></div>
@@ -386,6 +386,9 @@
                             <div id="dateGrid" class="grid grid-cols-7 gap-1 text-xs"></div>
                         </div>
                     </div>
+                    <button id="todayBtn" type="button" onclick="goToToday()" class="shrink-0 inline-flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs md:text-sm font-medium tracking-wide text-gray-700 shadow-sm hover:bg-[#F7F1E6] transition-all duration-200" style="display: none;">
+                        Today
+                    </button>
                     {% if current_user and current_user.display_name %}
                         <div class="hidden md:flex items-center gap-2 pl-2">
                             <a href="{{ url_for('main.settings') }}" class="px-3 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs font-semibold text-gray-800 hover:bg-[#F7F1E6] transition-all">
@@ -423,43 +426,46 @@
                     </button>
                 </div>
             </div>
-            <div class="flex items-center justify-between gap-4 mb-6 md:mb-8">
-                <div class="min-w-0">
-                    <h2 class="text-3xl md:text-4xl font-light text-gray-900 mb-1 md:mb-2 tracking-tight">{{ current_month }}</h2>
-                    <p class="text-gray-700 md:text-gray-500 text-sm">Where did your day go?</p>
+            <div class="flex flex-col gap-4 mb-6 md:mb-8 md:flex-row md:items-end md:justify-between">
+                <div class="min-w-0 flex items-start justify-between gap-4 md:block md:pr-4">
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-light text-gray-900 mb-1 md:mb-2 tracking-tight">{{ current_month }}</h2>
+                        <p class="text-gray-700 md:text-gray-500 text-sm">Where did your day go?</p>
+                    </div>
+                    <button id="viewFullBtnMobile" onclick="viewFullDay()" class="mobile-cta md:hidden shrink-0">
+                        View Full Day
+                    </button>
                 </div>
-                <div class="flex items-center gap-2 md:gap-4">
-                    <!-- View Full Period Button -->
+
+                {% if period == 'day' %}
+                <div class="md:flex-1 md:flex md:justify-center">
+                    <div id="weekScroller" class="flex justify-start gap-6 overflow-x-auto pb-4 scroll-smooth scroll-px-6 md:justify-center md:gap-4 md:pb-2 md:max-w-[560px]">
+                        {% for day in week_days %}
+                        <a href="/?date={{ day.full_str }}&period={{ period }}" class="flex flex-col items-center min-w-[56px] group" {% if day.is_selected %}data-selected-day="true"{% endif %}>
+                            <span class="text-xs font-medium uppercase mb-3 tracking-wider
+                                {% if day.is_selected %} text-gray-900 {% else %} text-gray-400 group-hover:text-gray-600 {% endif %}">
+                                {{ day.day_name }}
+                            </span>
+                            <div class="w-14 h-14 flex items-center justify-center rounded-xl text-base font-semibold transition-all duration-200
+                                {% if day.is_selected %}
+                                    selected-day text-white
+                                {% else %}
+                                    bg-white text-gray-600 hover:bg-gray-50 luxury-card
+                                {% endif %}">
+                                {{ day.day_num }}
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="hidden md:flex items-center gap-2 md:gap-4 shrink-0">
                     <button id="viewFullBtn" onclick="viewFullDay()" class="primary-cta hidden md:inline-flex">
                         View Full Day
                     </button>
-                    <button id="viewFullBtnMobile" onclick="viewFullDay()" class="mobile-cta md:hidden">
-                        View Full Day
-                    </button>
                 </div>
             </div>
-
-            <!-- Week Selector (only show for day/week views) -->
-            {% if period == 'day' or period == 'week' %}
-            <div id="weekScroller" class="flex justify-start gap-6 overflow-x-auto pb-2 scroll-smooth scroll-px-6">
-                {% for day in week_days %}
-                <a href="/?date={{ day.full_str }}&period={{ period }}" class="flex flex-col items-center min-w-[56px] group" {% if day.is_selected %}data-selected-day="true"{% endif %}>
-                    <span class="text-xs font-medium uppercase mb-3 tracking-wider
-                        {% if day.is_selected %} text-gray-900 {% else %} text-gray-400 group-hover:text-gray-600 {% endif %}">
-                        {{ day.day_name }}
-                    </span>
-                    <div class="w-14 h-14 flex items-center justify-center rounded-xl text-base font-semibold transition-all duration-200
-                        {% if day.is_selected %}
-                            selected-day text-white
-                        {% else %}
-                            bg-white text-gray-600 hover:bg-gray-50 luxury-card
-                        {% endif %}">
-                        {{ day.day_num }}
-                    </div>
-                </a>
-                {% endfor %}
-            </div>
-            {% endif %}
         </div>
 
         {% set top_tag_label = tags.labels[0] if tags.labels else 'No tags' %}
@@ -514,7 +520,34 @@
         </div>
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Summary</h2>
-            <button id="exportSummaryBtn" class="px-3 py-1.5 rounded-full bg-white border border-[rgba(148,126,86,0.35)] text-gray-700 text-xs font-semibold hover:bg-[#F7F1E6] transition-all">Export Summary</button>
+            <button
+                id="exportSummaryBtn"
+                class="px-3 py-1.5 rounded-full bg-white border border-[rgba(148,126,86,0.35)] text-gray-700 text-xs font-semibold hover:bg-[#F7F1E6] transition-all"
+                data-category-labels='{{ (tags.labels or []) | tojson }}'
+                data-category-hours='{{ (tags.data or []) | tojson }}'
+                data-period='{{ period | default("") | tojson }}'
+                data-date='{{ selected_date | default("") | tojson }}'
+                data-month='{{ current_month | default("") | tojson }}'
+                data-total-hours='{{ matrix.total_hours | default(0) | tojson }}'
+                data-total-tasks='{{ task_count | default(0) | tojson }}'
+                data-top-category-name='{{ top_tag_label | default("") | tojson }}'
+                data-top-category-hours='{{ top_tag_hours | default(0) | tojson }}'
+                data-top-category-percentage='{{ top_tag_pct | default(0) | tojson }}'
+                data-dominant-quadrant-name='{{ top_quad_label | default("") | tojson }}'
+                data-dominant-quadrant-hours='{{ top_quad_hours | default(0) | tojson }}'
+                data-dominant-quadrant-percentage='{{ top_quad_pct | default(0) | tojson }}'
+                data-dominant-quadrant-subtitle='{{ top_quad_sub | default("") | tojson }}'
+                data-quadrant-important-urgent='{{ matrix.q1.hours | default(0) | tojson }}'
+                data-quadrant-important-not-urgent='{{ matrix.q2.hours | default(0) | tojson }}'
+                data-quadrant-not-important-urgent='{{ matrix.q3.hours | default(0) | tojson }}'
+                data-quadrant-not-important-not-urgent='{{ matrix.q4.hours | default(0) | tojson }}'
+                data-quadrant-important-total='{{ matrix.important.hours | default(0) | tojson }}'
+                data-quadrant-not-important-total='{{ matrix.not_important.hours | default(0) | tojson }}'
+                data-quadrant-urgent-total='{{ matrix.urgent.hours | default(0) | tojson }}'
+                data-quadrant-not-urgent-total='{{ matrix.not_urgent.hours | default(0) | tojson }}'
+            >
+                Export Summary
+            </button>
         </div>
         <div class="hidden md:grid grid-cols-3 gap-6 mb-12">
             <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between cursor-pointer summary-card" data-filter="all" data-title="Full {{ period | title }} Log" data-chart="tasks" role="button" tabindex="0">
@@ -859,15 +892,29 @@
                     </div>
                     <button id="closeEditPanel" class="text-xs font-semibold text-gray-500 hover:text-gray-700">Close</button>
                 </div>
-                <form id="taskEditForm" class="mt-4 grid gap-4 md:grid-cols-2">
+                <form id="taskEditForm" class="mt-4 grid gap-4 md:grid-cols-4">
                     <input type="hidden" id="editTaskId" />
-                    <div class="md:col-span-2">
+                    <div class="md:col-span-4">
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Task name</label>
                         <input id="editTaskName" type="text" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-300" required />
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Duration (hours)</label>
-                        <input id="editTaskDuration" type="number" min="0.01" step="0.05" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-300" required />
+                    <div class="md:col-span-4">
+                        <label class="block text-xs font-semibold text-gray-600 mb-2">Start / End</label>
+                        <div class="grid grid-cols-[96px_1fr] sm:grid-cols-[110px_1fr] md:grid-cols-4 gap-2">
+                            <select id="editTaskStartMode" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-300">
+                                <option value="manual">Manual</option>
+                                <option value="prev_end">Prev end</option>
+                            </select>
+                            <input id="editTaskStartRaw" type="text" placeholder="Start (e.g. 2026-02-13 09:30)" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+                            <select id="editTaskEndMode" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-300">
+                                <option value="manual">Manual</option>
+                                <option value="next_start">Next start</option>
+                            </select>
+                            <input id="editTaskEndRaw" type="text" placeholder="End (e.g. 2026-02-13 11:00)" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-300" />
+                        </div>
+                        <p id="editTaskTimeHint" class="mt-2 text-[11px] text-gray-500">
+                            Accepts formats like <span class="font-semibold">2026-02-13 09:30</span> or <span class="font-semibold">13/02/2026 9:30pm</span>.
+                        </p>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Tags</label>
@@ -883,7 +930,7 @@
                             Urgent
                         </label>
                     </div>
-                    <div class="flex items-center justify-end gap-2 md:col-span-2">
+                    <div class="flex items-center justify-end gap-2 md:col-span-4">
                         <button type="button" id="cancelEditTask" class="px-4 py-2 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 hover:bg-white">Cancel</button>
                         <button type="submit" id="saveTaskChanges" class="px-4 py-2 rounded-full bg-gray-900 text-amber-300 text-xs font-semibold shadow-lg">Save changes</button>
                     </div>
@@ -920,20 +967,100 @@
 
         // Define functions globally
         window.changePeriod = function(period) {
+            window.currentPeriod = period;
+            window.periodEnd = window.computePeriodEnd(window.currentDate, period);
+            window.updateTodayButtons();
             window.location.href = `/?date=${window.currentDate}&period=${period}`;
         };
 
         window.changeDate = function(date) {
+            window.currentDate = date;
+            window.periodEnd = window.computePeriodEnd(date, window.currentPeriod);
+            window.updateTodayButtons();
             window.location.href = `/?date=${date}&period=${window.currentPeriod}`;
         };
 
+        window.getLocalIsoDate = function() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        window.normalizeDateString = function(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (match) return match[0];
+            const parsed = new Date(raw);
+            if (Number.isNaN(parsed.getTime())) return '';
+            const y = parsed.getFullYear();
+            const m = String(parsed.getMonth() + 1).padStart(2, '0');
+            const d = String(parsed.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        window.toIsoDateString = function(dateObj) {
+            if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) return '';
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        };
+
+        window.computePeriodEnd = function(dateStr, period) {
+            const normalized = window.normalizeDateString(dateStr || window.currentDate || window.getLocalIsoDate());
+            if (!normalized) return '';
+            const [year, month, day] = normalized.split('-').map(Number);
+            const base = new Date(year, month - 1, day);
+            if (Number.isNaN(base.getTime())) return '';
+            const mode = period || window.currentPeriod || 'day';
+            if (mode === 'week') {
+                const idx = base.getDay();
+                const start = new Date(base);
+                start.setDate(base.getDate() - idx);
+                const end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                return window.toIsoDateString(end);
+            }
+            if (mode === 'month') {
+                const end = new Date(year, month, 0);
+                return window.toIsoDateString(end);
+            }
+            return normalized;
+        };
+
+        window.updateTodayButtons = function() {
+            const today = window.getLocalIsoDate();
+            const periodEnd = window.normalizeDateString(window.periodEnd) || window.computePeriodEnd(window.currentDate, window.currentPeriod);
+            const shouldShow = Boolean(periodEnd) && periodEnd < today;
+            const todayBtn = document.getElementById('todayBtn');
+            if (todayBtn) {
+                todayBtn.style.display = shouldShow ? 'inline-flex' : 'none';
+            }
+        };
+
+        window.goToToday = function() {
+            const today = window.getLocalIsoDate();
+            window.location.href = `/?date=${encodeURIComponent(today)}&period=${encodeURIComponent(window.currentPeriod || 'day')}`;
+        };
+
+        window.updateTodayButtons();
         window.addEventListener('load', () => {
+            window.updateTodayButtons();
             const scroller = document.getElementById('weekScroller');
             if (!scroller || window.innerWidth >= 640) return;
             const selected = scroller.querySelector('[data-selected-day="true"]');
             if (!selected) return;
             const targetLeft = selected.offsetLeft - (scroller.clientWidth / 2) + (selected.clientWidth / 2);
             scroller.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            window.updateTodayButtons();
+        });
+        window.addEventListener('resize', () => {
+            window.updateTodayButtons();
         });
 
         window.toggleDatePicker = function() {
@@ -1529,6 +1656,60 @@
             return (hours * 60) + mins;
         }
 
+        window.formatTaskDateTime = function(dateStr, timeStr) {
+            const date = String(dateStr || '').trim();
+            const minutes = window.timeStringToMinutes(timeStr);
+            const hhmm = minutes != null ? minutesToInputTime(minutes) : String(timeStr || '').trim();
+            return date && hhmm ? `${date} ${hhmm}` : '';
+        };
+
+        window.__dayTasksCache = window.__dayTasksCache || {};
+        window.fetchDayTasks = async function(dateValue) {
+            const key = String(dateValue || '').trim();
+            if (!key) return [];
+            if (Array.isArray(window.__dayTasksCache[key])) return window.__dayTasksCache[key];
+            const url = `/api/tasks?date=${encodeURIComponent(key)}&period=day&filter=all`;
+            const response = await fetch(url, { credentials: 'include' });
+            if (!response.ok) {
+                window.__dayTasksCache[key] = [];
+                return [];
+            }
+            const data = await response.json();
+            window.__dayTasksCache[key] = Array.isArray(data?.tasks) ? data.tasks : [];
+            return window.__dayTasksCache[key];
+        };
+
+        window.getTaskNeighborsForEdit = async function(task) {
+            if (!task) return { prev: null, next: null };
+            const date = String(task.date || '').trim();
+            const targetId = Number(task.sheety_id || task.id || 0);
+            const tasks = await window.fetchDayTasks(date);
+            const sorted = (tasks || []).slice().sort((a, b) => {
+                const aStart = window.timeStringToMinutes(a.start_time);
+                const bStart = window.timeStringToMinutes(b.start_time);
+                if (aStart == null && bStart == null) return 0;
+                if (aStart == null) return 1;
+                if (bStart == null) return -1;
+                if (aStart !== bStart) return aStart - bStart;
+                const aId = Number(a.sheety_id || a.id || 0);
+                const bId = Number(b.sheety_id || b.id || 0);
+                return aId - bId;
+            });
+            let idx = -1;
+            if (targetId) {
+                idx = sorted.findIndex(t => Number(t.sheety_id || t.id || 0) === targetId);
+            }
+            if (idx < 0) {
+                const startMin = window.timeStringToMinutes(task.start_time);
+                if (startMin != null) {
+                    idx = sorted.findIndex(t => window.timeStringToMinutes(t.start_time) === startMin);
+                }
+            }
+            const prev = idx > 0 ? sorted[idx - 1] : null;
+            const next = idx >= 0 && idx < sorted.length - 1 ? sorted[idx + 1] : null;
+            return { prev, next };
+        };
+
         window.closeCreateTaskPanel = function() {
             const panel = document.getElementById('taskCreatePanel');
             if (panel) panel.classList.add('hidden');
@@ -1623,7 +1804,10 @@
             window.closeDeleteTaskConfirm();
             window.closeCreateTaskPanel();
             const nameInput = document.getElementById('editTaskName');
-            const durationInput = document.getElementById('editTaskDuration');
+            const startMode = document.getElementById('editTaskStartMode');
+            const startRaw = document.getElementById('editTaskStartRaw');
+            const endMode = document.getElementById('editTaskEndMode');
+            const endRaw = document.getElementById('editTaskEndRaw');
             const tagInput = document.getElementById('editTaskTags');
             const importantInput = document.getElementById('editTaskImportant');
             const urgentInput = document.getElementById('editTaskUrgent');
@@ -1631,13 +1815,30 @@
             const resolvedTaskId = task.sheety_id ?? task.id ?? '';
             if (idInput) idInput.value = resolvedTaskId;
             if (nameInput) nameInput.value = String(task.task || '').trim();
-            if (durationInput) durationInput.value = Number(task.duration || task.duration_hours || 0) || '';
             if (tagInput) {
                 const displayTag = formatTagNames(task.tag);
                 tagInput.value = displayTag === 'Waste' ? '' : displayTag;
             }
             if (importantInput) importantInput.checked = Boolean(task.important);
             if (urgentInput) urgentInput.checked = Boolean(task.urgent);
+            window.__editingTask = task;
+            if (task?.date) {
+                try { window.fetchDayTasks(task.date); } catch (e) { /* ignore */ }
+            }
+            if (startMode) startMode.value = 'manual';
+            if (endMode) endMode.value = 'manual';
+            const normalizeTaskDateTime = (dateStr, timeStr) => {
+                const date = String(dateStr || '').trim();
+                const minutes = window.timeStringToMinutes(timeStr);
+                const hhmm = minutes != null ? minutesToInputTime(minutes) : String(timeStr || '').trim();
+                return date && hhmm ? `${date} ${hhmm}` : '';
+            };
+            if (startRaw) {
+                startRaw.value = normalizeTaskDateTime(task.date, task.start_time);
+            }
+            if (endRaw) {
+                endRaw.value = normalizeTaskDateTime(task.date, task.end_time);
+            }
             panel.classList.remove('hidden');
             try {
                 panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2337,62 +2538,150 @@
                 let labels = [];
                 let values = [];
                 let colors = [];
+                window.__modalBuildChartView = null;
+                let allEntries = [];
+                let colorByKey = {};
+                let chartKeyMap = {};
 
                 const chartMode = window.modalChartMode || 'auto';
                 const showTaskBreakdown = chartMode === 'tasks'
                     || (chartMode === 'auto' && window.modalFilterType === 'tag');
 
+                const modalFallbackLabel = window.modalFilterType === 'tag' ? 'Unspecified' : 'Waste';
+                const normalizeModalLabel = (value) => {
+                    const s = String(value ?? '').trim();
+                    if (!s || /^(undefined|null|none|nan)$/i.test(s)) return modalFallbackLabel;
+                    return s;
+                };
+                const palette = ['#111827', '#16A34A', '#A16207', '#7C3AED', '#0EA5A4', '#9F1239', '#9CA3AF', '#F59E0B'];
+
                 if (showTaskBreakdown) {
                     const taskGroups = {};
                     data.tasks.forEach(task => {
-                        let key = String(task.task || '').trim();
-                        if (!key || /^(undefined|null|none|nan)$/i.test(key)) key = 'Unspecified';
+                        const key = normalizeModalLabel(task.task);
                         taskGroups[key] = (taskGroups[key] || 0) + (task.duration || 0);
                     });
                     const entries = Object.entries(taskGroups).sort((a, b) => b[1] - a[1]);
-                    const top = entries.slice(0, 6);
-                    const rest = entries.slice(6);
-                    labels = top.map(e => e[0]);
-                    values = top.map(e => e[1]);
-                    if (rest.length) {
-                        labels.push('Other');
-                        values.push(rest.reduce((s, e) => s + e[1], 0));
-                    }
-                    const palette = ['#111827', '#16A34A', '#A16207', '#7C3AED', '#0EA5A4', '#9F1239', '#9CA3AF', '#F59E0B'];
-                    colors = labels.map((label, idx) => palette[idx % palette.length]);
+                    allEntries = entries.map(([key, value], idx) => ({
+                        key,
+                        label: key,
+                        value: Number(value || 0),
+                        color: palette[idx % palette.length]
+                    }));
                 } else {
                     const tagGroups = {};
                     data.tasks.forEach(task => {
-                        const key = normalizeTagName(task.tag) || 'Waste';
+                        const key = normalizeTagName(task.tag) || modalFallbackLabel;
                         tagGroups[key] = (tagGroups[key] || 0) + (task.duration || 0);
                     });
-                    labels = Object.keys(tagGroups);
-                    values = Object.values(tagGroups);
-                    const palette = ['#111827', '#16A34A', '#A16207', '#7C3AED', '#0EA5A4', '#9F1239', '#9CA3AF', '#F59E0B'];
-                    colors = labels.map((label, idx) => TAG_COLOR_MAP[label] || palette[idx % palette.length]);
+                    const entries = Object.entries(tagGroups).sort((a, b) => b[1] - a[1]);
+                    allEntries = entries.map(([key, value], idx) => ({
+                        key,
+                        label: key,
+                        value: Number(value || 0),
+                        color: TAG_COLOR_MAP[key] || palette[idx % palette.length]
+                    }));
                 }
 
-                const modalFallbackLabel = window.modalFilterType === 'tag' ? 'Unspecified' : 'Waste';
-                labels = labels.map(l => {
-                    const s = String(l ?? '').trim();
-                    if (!s || /^(undefined|null|none|nan)$/i.test(s)) return modalFallbackLabel;
-                    return s;
+                colorByKey = {};
+                allEntries.forEach(entry => {
+                    if (!colorByKey[entry.key]) colorByKey[entry.key] = entry.color;
                 });
+
+                const getMaxChartSlots = () => window.matchMedia('(max-width: 767px)').matches ? 4 : 6;
+                const getExpandedSlots = (entries) => {
+                    const total = entries.reduce((sum, entry) => sum + entry.value, 0);
+                    const baseSlots = getMaxChartSlots();
+                    if (!total) return baseSlots;
+                    const minOtherShare = 0.02;
+                    const aboveThreshold = entries.filter(entry => (entry.value / total) >= minOtherShare).length;
+                    return Math.max(baseSlots, aboveThreshold);
+                };
+                const buildChartView = () => {
+                    const hidden = window.hiddenTags || {};
+                    const visible = allEntries.filter(e => !hidden[e.key]);
+                    const maxSlots = getExpandedSlots(visible);
+                    const top = visible.slice(0, maxSlots);
+                    const rest = visible.slice(maxSlots);
+                    const nextLabels = top.map(e => e.label);
+                    const nextValues = top.map(e => e.value);
+                    let otherValue = 0;
+                    if (rest.length) {
+                        otherValue = rest.reduce((sum, e) => sum + e.value, 0);
+                        nextLabels.push('Other');
+                        nextValues.push(otherValue);
+                    }
+                    const nextColors = nextLabels.map(label => {
+                        if (label === 'Other') return '#9CA3AF';
+                        const key = top.find(e => e.label === label)?.key || label;
+                        return colorByKey[key] || '#111827';
+                    });
+                    const keyMap = {};
+                    top.forEach(entry => {
+                        keyMap[entry.label] = entry.key;
+                    });
+                    return { labels: nextLabels, values: nextValues, colors: nextColors, keyMap, otherValue };
+                };
+
+                const initialView = buildChartView();
+                labels = initialView.labels;
+                values = initialView.values;
+                colors = initialView.colors;
+                chartKeyMap = initialView.keyMap;
+                window.__modalBuildChartView = buildChartView;
                 const isModalMobile = window.matchMedia('(max-width: 767px)').matches;
                 const showPercentInChart = true;
                 const showMobileLegend = isModalMobile;
 
+                const buildLegendItems = () => {
+                    const hidden = window.hiddenTags || {};
+                    const view = buildChartView();
+                    const keyMap = view.keyMap || {};
+                    const visibleItems = view.labels.map(label => {
+                        if (label === 'Other') {
+                            return {
+                                key: '__other__',
+                                label: 'Other',
+                                color: '#9CA3AF',
+                                hidden: false,
+                                disabled: true
+                            };
+                        }
+                        const key = keyMap[label];
+                        if (!key) return null;
+                        return {
+                            key,
+                            label,
+                            color: colorByKey[key] || '#111827',
+                            hidden: false,
+                            disabled: false
+                        };
+                    }).filter(Boolean);
+                    const hiddenItems = allEntries
+                        .filter(entry => hidden[entry.key])
+                        .map(entry => ({
+                            key: entry.key,
+                            label: entry.label,
+                            color: entry.color,
+                            hidden: true,
+                            disabled: false
+                        }));
+                    return visibleItems.concat(hiddenItems);
+                };
+
                 const mobileLegendEl = document.getElementById('mobileModalLegend');
                 const updateMobileLegend = (chart) => {
                     if (mobileLegendEl && showMobileLegend) {
-                        mobileLegendEl.innerHTML = labels.map((label, idx) => {
-                            const color = colors[idx] || '#9CA3AF';
-                            const isHidden = chart ? !chart.getDataVisibility(idx) : false;
+                        const legendItems = buildLegendItems();
+                        mobileLegendEl.innerHTML = legendItems.map(item => {
+                            const color = item.color || '#9CA3AF';
+                            const isHidden = item.hidden;
                             const textDecoration = isHidden ? 'line-through' : 'none';
                             const opacity = isHidden ? '0.5' : '1';
-                            return `<span class="inline-flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity" data-legend-idx="${idx}" style="opacity:${opacity}">
+                            const cursor = item.disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-70';
+                            return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${item.key}" style="opacity:${opacity}">
                                 <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
-                                <span style="text-decoration:${textDecoration}">${label}</span>
+                                <span style="text-decoration:${textDecoration}">${item.label}</span>
                             </span>`;
                         }).join('');
                     } else if (mobileLegendEl) {
@@ -2408,16 +2697,33 @@
                         desktopLegendEl.innerHTML = '';
                         return;
                     }
-                    desktopLegendEl.innerHTML = labels.map((label, idx) => {
-                        const color = colors[idx] || '#9CA3AF';
-                        const isHidden = chart ? !chart.getDataVisibility(idx) : false;
+                    const legendItems = buildLegendItems();
+                    desktopLegendEl.innerHTML = legendItems.map(item => {
+                        const color = item.color || '#9CA3AF';
+                        const isHidden = item.hidden;
                         const textDecoration = isHidden ? 'line-through' : 'none';
                         const opacity = isHidden ? '0.5' : '1';
-                        return `<span class="inline-flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity" data-legend-idx="${idx}" style="opacity:${opacity}">
+                        const cursor = item.disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-70';
+                        return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${item.key}" style="opacity:${opacity}">
                             <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
-                            <span style="text-decoration:${textDecoration}" class="max-w-[160px] truncate">${label}</span>
+                            <span style="text-decoration:${textDecoration}" class="max-w-[160px] truncate">${item.label}</span>
                         </span>`;
                     }).join('');
+                };
+
+                const applyChartView = (chart) => {
+                    const view = buildChartView();
+                    labels = view.labels;
+                    values = view.values;
+                    colors = view.colors;
+                    chartKeyMap = view.keyMap;
+                    if (chart) {
+                        chart.data.labels = labels;
+                        chart.data.datasets[0].data = values;
+                        chart.data.datasets[0].backgroundColor = colors;
+                        chart.update();
+                    }
+                    return view;
                 };
 
                 const chart = new Chart(ctx, {
@@ -2485,15 +2791,12 @@
                             if (!elements || !elements.length) return;
                             const index = elements[0].index;
                             const label = chart.data.labels[index];
-                            const currentlyVisible = chart.getDataVisibility(index) !== false;
-                            chart.toggleDataVisibility(index);
-                            chart.update();
+                            const key = chartKeyMap[label];
+                            if (!key) return;
                             if (!window.hiddenTags) window.hiddenTags = {};
-                            if (currentlyVisible) {
-                                window.hiddenTags[label] = true;
-                            } else {
-                                delete window.hiddenTags[label];
-                            }
+                            if (window.hiddenTags[key]) delete window.hiddenTags[key];
+                            else window.hiddenTags[key] = true;
+                            applyChartView(chart);
                             updateMobileLegend(chart);
                             updateDesktopLegend(chart);
                             window.renderModalTasks();
@@ -2503,20 +2806,14 @@
                 updateMobileLegend(chart);
                 updateDesktopLegend(chart);
                 const legendClickHandler = (e) => {
-                    const legendItem = e.target.closest('[data-legend-idx]');
+                    const legendItem = e.target.closest('[data-legend-key]');
                     if (!legendItem) return;
-                    const index = parseInt(legendItem.dataset.legendIdx, 10);
-                    if (!Number.isFinite(index)) return;
-                    const label = chart.data.labels[index];
-                    const currentlyVisible = chart.getDataVisibility(index) !== false;
-                    chart.toggleDataVisibility(index);
-                    chart.update();
+                    const key = legendItem.dataset.legendKey;
+                    if (!key || key === '__other__') return;
                     if (!window.hiddenTags) window.hiddenTags = {};
-                    if (currentlyVisible) {
-                        window.hiddenTags[label] = true;
-                    } else {
-                        delete window.hiddenTags[label];
-                    }
+                    if (window.hiddenTags[key]) delete window.hiddenTags[key];
+                    else window.hiddenTags[key] = true;
+                    applyChartView(chart);
                     updateMobileLegend(chart);
                     updateDesktopLegend(chart);
                     window.renderModalTasks();
@@ -2734,13 +3031,25 @@
                     event.preventDefault();
                     const base = new Date(window.currentDate);
                     const delta = event.key === 'ArrowRight' ? 1 : -1;
-                    base.setDate(base.getDate() + delta);
+                    const period = window.currentPeriod || 'day';
+                    if (period === 'week') {
+                        base.setDate(base.getDate() + (7 * delta));
+                    } else if (period === 'month') {
+                        base.setMonth(base.getMonth() + delta);
+                    } else {
+                        base.setDate(base.getDate() + delta);
+                    }
                     const iso = base.toISOString().slice(0, 10);
                     window.changeDate(iso);
                     return;
                 }
                 if (event.metaKey || event.ctrlKey || event.altKey) return;
-                if (key === 'g') {
+                if (key === 't') {
+                    const todayBtn = document.getElementById('todayBtn');
+                    if (todayBtn && window.getComputedStyle(todayBtn).display !== 'none') {
+                        todayBtn.click();
+                    }
+                } else if (key === 'g') {
                     window.location.href = graphsUrl;
                 } else if (key === 's') {
                     window.location.href = settingsUrl;
@@ -2782,6 +3091,10 @@
                                     <div class="flex items-center gap-2">
                                         <kbd class="toast-kbd">D</kbd>
                                         <span class="toast-kbd-label">Dashboard</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">T</kbd>
+                                        <span class="toast-kbd-label">Today</span>
                                     </div>
                                     ${adminUrl ? `
                                     <div class="flex items-center gap-2">
@@ -2983,13 +3296,72 @@
                 createForm.__bound = true;
             }
             const editForm = document.getElementById('taskEditForm');
+            const editStartMode = document.getElementById('editTaskStartMode');
+            const editStartRaw = document.getElementById('editTaskStartRaw');
+            const editEndMode = document.getElementById('editTaskEndMode');
+            const editEndRaw = document.getElementById('editTaskEndRaw');
+
+            const fillEditStartFromPrevEnd = async () => {
+                const task = window.__editingTask;
+                if (!task) return;
+                const neighbors = await window.getTaskNeighborsForEdit(task);
+                if (!neighbors.prev) {
+                    if (window.showWarningToast) window.showWarningToast('No previous task found for this day.');
+                    if (editStartMode) editStartMode.value = 'manual';
+                    return;
+                }
+                if (editStartRaw) editStartRaw.value = window.formatTaskDateTime(neighbors.prev.date, neighbors.prev.end_time);
+            };
+
+            const fillEditEndFromNextStart = async () => {
+                const task = window.__editingTask;
+                if (!task) return;
+                const neighbors = await window.getTaskNeighborsForEdit(task);
+                if (!neighbors.next) {
+                    if (window.showWarningToast) window.showWarningToast('No next task found for this day.');
+                    if (editEndMode) editEndMode.value = 'manual';
+                    return;
+                }
+                if (editEndRaw) editEndRaw.value = window.formatTaskDateTime(neighbors.next.date, neighbors.next.start_time);
+            };
+
+            if (editStartMode && !editStartMode.__bound) {
+                editStartMode.addEventListener('change', async () => {
+                    if (editStartMode.value === 'prev_end') {
+                        await fillEditStartFromPrevEnd();
+                    }
+                });
+                editStartMode.__bound = true;
+            }
+            if (editEndMode && !editEndMode.__bound) {
+                editEndMode.addEventListener('change', async () => {
+                    if (editEndMode.value === 'next_start') {
+                        await fillEditEndFromNextStart();
+                    }
+                });
+                editEndMode.__bound = true;
+            }
+            if (editStartRaw && !editStartRaw.__bound) {
+                editStartRaw.addEventListener('input', () => {
+                    if (editStartMode) editStartMode.value = 'manual';
+                });
+                editStartRaw.__bound = true;
+            }
+            if (editEndRaw && !editEndRaw.__bound) {
+                editEndRaw.addEventListener('input', () => {
+                    if (editEndMode) editEndMode.value = 'manual';
+                });
+                editEndRaw.__bound = true;
+            }
+
             if (editForm && !editForm.__bound) {
                 editForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const taskId = parseInt(document.getElementById('editTaskId')?.value || '0', 10);
                     if (!taskId) return;
                     const name = String(document.getElementById('editTaskName')?.value || '').trim();
-                    const duration = parseFloat(document.getElementById('editTaskDuration')?.value || '0');
+                    const start = String(document.getElementById('editTaskStartRaw')?.value || '').trim();
+                    const end = String(document.getElementById('editTaskEndRaw')?.value || '').trim();
                     const tags = String(document.getElementById('editTaskTags')?.value || '').trim();
                     const important = Boolean(document.getElementById('editTaskImportant')?.checked);
                     const urgent = Boolean(document.getElementById('editTaskUrgent')?.checked);
@@ -2997,8 +3369,12 @@
                         setGlobalLoading(false, 'Task name is required');
                         return;
                     }
-                    if (!Number.isFinite(duration) || duration <= 0) {
-                        setGlobalLoading(false, 'Duration must be greater than 0');
+                    if (!start) {
+                        setGlobalLoading(false, 'Start time is required');
+                        return;
+                    }
+                    if (!end) {
+                        setGlobalLoading(false, 'End time is required');
                         return;
                     }
                     const saveBtn = document.getElementById('saveTaskChanges');
@@ -3012,7 +3388,7 @@
                         const response = await fetch(`/api/tasks/${taskId}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ task: name, duration: duration, tag: tags, urgent, important })
+                            body: JSON.stringify({ task: name, start, end, tag: tags, urgent, important })
                         });
                         const contentType = response.headers.get('content-type') || '';
                         const result = contentType.includes('application/json') ? await response.json() : null;
@@ -3276,38 +3652,46 @@
             const exportSummaryBtn = document.getElementById('exportSummaryBtn');
             if (exportSummaryBtn) {
                 exportSummaryBtn.addEventListener('click', () => {
-                    const categoryLabels = {{ (tags.labels or []) | tojson }};
-                    const categoryHours = {{ (tags.data or []) | tojson }};
+                    const parseJson = (value, fallback) => {
+                        if (value == null) return fallback;
+                        try {
+                            return JSON.parse(value);
+                        } catch (e) {
+                            return fallback;
+                        }
+                    };
+                    const categoryLabels = parseJson(exportSummaryBtn.dataset.categoryLabels, []);
+                    const categoryHours = parseJson(exportSummaryBtn.dataset.categoryHours, []);
                     const categories = {};
                     categoryLabels.forEach((label, idx) => {
                         categories[label] = Number(categoryHours[idx] || 0);
                     });
                     const summaryData = {
-                        period: {{ period | default('') | tojson }},
-                        date: {{ selected_date | default('') | tojson }},
-                        month: {{ current_month | default('') | tojson }},
-                        total_hours: {{ matrix.total_hours | default(0) | tojson }},
-                        total_tasks: {{ task_count | default(0) | tojson }},
+                        period: parseJson(exportSummaryBtn.dataset.period, ''),
+                        date: parseJson(exportSummaryBtn.dataset.date, ''),
+                        month: parseJson(exportSummaryBtn.dataset.month, ''),
+                        total_hours: Number(parseJson(exportSummaryBtn.dataset.totalHours, 0)),
+                        total_tasks: Number(parseJson(exportSummaryBtn.dataset.totalTasks, 0)),
                         top_category: {
-                            name: {{ top_tag_label | default('') | tojson }},
-                            hours: {{ top_tag_hours | default(0) | tojson }},
-                            percentage: {{ top_tag_pct | default(0) | tojson }}
+                            name: parseJson(exportSummaryBtn.dataset.topCategoryName, ''),
+                            hours: Number(parseJson(exportSummaryBtn.dataset.topCategoryHours, 0)),
+                            percentage: Number(parseJson(exportSummaryBtn.dataset.topCategoryPercentage, 0))
                         },
                         dominant_quadrant: {
-                            name: {{ top_quad_label | default('') | tojson }},
-                            hours: {{ top_quad_hours | default(0) | tojson }},
-                            percentage: {{ top_quad_pct | default(0) | tojson }},
-                            subtitle: {{ top_quad_sub | default('') | tojson }}
+                            name: parseJson(exportSummaryBtn.dataset.dominantQuadrantName, ''),
+                            hours: Number(parseJson(exportSummaryBtn.dataset.dominantQuadrantHours, 0)),
+                            percentage: Number(parseJson(exportSummaryBtn.dataset.dominantQuadrantPercentage, 0)),
+                            subtitle: parseJson(exportSummaryBtn.dataset.dominantQuadrantSubtitle, '')
                         },
                         quadrants: {
-                            important_urgent: {{ matrix.q1.hours | default(0) | tojson }},
-                            important_not_urgent: {{ matrix.q2.hours | default(0) | tojson }},
-                            not_important_urgent: {{ matrix.q3.hours | default(0) | tojson }},
-                            not_important_not_urgent: {{ matrix.q4.hours | default(0) | tojson }},
-                            important_total: {{ matrix.important.hours | default(0) | tojson }},
-                            not_important_total: {{ matrix.not_important.hours | default(0) | tojson }},
-                            urgent_total: {{ matrix.urgent.hours | default(0) | tojson }},
-                            not_urgent_total: {{ matrix.not_urgent.hours | default(0) | tojson }}
+                            important_urgent: Number(parseJson(exportSummaryBtn.dataset.quadrantImportantUrgent, 0)),
+                            important_not_urgent: Number(parseJson(exportSummaryBtn.dataset.quadrantImportantNotUrgent, 0)),
+                            not_important_urgent: Number(parseJson(exportSummaryBtn.dataset.quadrantNotImportantUrgent, 0)),
+                            not_important_not_urgent: Number(parseJson(exportSummaryBtn.dataset.quadrantNotImportantNotUrgent, 0)),
+                            important_total: Number(parseJson(exportSummaryBtn.dataset.quadrantImportantTotal, 0)),
+                            not_important_total: Number(parseJson(exportSummaryBtn.dataset.quadrantNotImportantTotal, 0)),
+                            urgent_total: Number(parseJson(exportSummaryBtn.dataset.quadrantUrgentTotal, 0)),
+                            not_urgent_total: Number(parseJson(exportSummaryBtn.dataset.quadrantNotUrgentTotal, 0))
                         },
                         categories: categories
                     };

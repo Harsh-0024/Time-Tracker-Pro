@@ -31,7 +31,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "a@|$q)x7wAie^MQ,Jhcd]$Mk-d&,Z)nE")
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
@@ -1187,6 +1186,21 @@ def sync_cloud_data(user_id: int, force: bool = False) -> None:
         if "id" in cloud_df.columns:
             cloud_df = cloud_df.sort_values("id")
 
+        logged_col = None
+        for candidate in ("loggedTime", "logged_time", "logged time"):
+            if candidate in cloud_df.columns:
+                logged_col = candidate
+                break
+        if logged_col:
+            try:
+                cloud_df["__logged_dt"] = pd.to_datetime(cloud_df[logged_col], errors="coerce")
+                sort_cols = ["__logged_dt"]
+                if "id" in cloud_df.columns:
+                    sort_cols.append("id")
+                cloud_df = cloud_df.sort_values(sort_cols)
+            except Exception:
+                pass
+
         def _row_text(row: pd.Series, keys: Iterable[str]) -> str:
             for key in keys:
                 value = row.get(key)
@@ -1196,6 +1210,12 @@ def sync_cloud_data(user_id: int, force: bool = False) -> None:
                 if text and text.lower() != "nan":
                     return text
             return ""
+
+        def _normalize_task_name(raw: Any) -> str:
+            s = re.sub(r"\s+", " ", str(raw or "").strip())
+            if not s:
+                return "Unspecified"
+            return s.title()
 
         parser = TimeLogParser()
         parsed_rows: List[Dict[str, Any]] = []
@@ -1227,15 +1247,71 @@ def sync_cloud_data(user_id: int, force: bool = False) -> None:
                 ),
             )
 
-            parsed = parser.parse_row(log_entry, client_now, previous_end)
+            try:
+                parsed = parser.parse_row(log_entry, client_now, previous_end)
+            except Exception as exc:
+                logger.warning(
+                    "Skipping invalid row during cloud sync user_id=%s logged_time=%s log_entry=%r error=%s",
+                    int(user_id),
+                    client_now,
+                    log_entry,
+                    exc,
+                )
+                continue
+
+            parsed["task"] = _normalize_task_name(parsed.get("task"))
+            parsed["tag"] = normalize_tag(parsed.get("tag")) or "Waste"
             parsed_rows.append(parsed)
             previous_end = parsed["end_dt"]
+
+        parsed_rows.sort(
+            key=lambda row: (
+                row["start_dt"],
+                row["end_dt"],
+                row.get("task") or "",
+                row.get("tag") or "",
+                bool(row.get("urg")),
+                bool(row.get("imp")),
+            )
+        )
+        deduped_rows: List[Dict[str, Any]] = []
+        seen_rows = set()
+        for row in parsed_rows:
+            key = (
+                row["start_dt"],
+                row["end_dt"],
+                row.get("task") or "",
+                row.get("tag") or "",
+                bool(row.get("urg")),
+                bool(row.get("imp")),
+            )
+            if key in seen_rows:
+                continue
+            seen_rows.add(key)
+            deduped_rows.append(row)
+        parsed_rows = deduped_rows
 
         for i in range(1, len(parsed_rows)):
             current = parsed_rows[i]
             prev = parsed_rows[i - 1]
             if current["start_dt"] < prev["end_dt"]:
                 parsed_rows[i - 1]["end_dt"] = current["start_dt"]
+
+        merged_rows: List[Dict[str, Any]] = []
+        for row in parsed_rows:
+            if (
+                merged_rows
+                and row.get("task") == merged_rows[-1].get("task")
+                and row.get("tag") == merged_rows[-1].get("tag")
+                and bool(row.get("urg")) == bool(merged_rows[-1].get("urg"))
+                and bool(row.get("imp")) == bool(merged_rows[-1].get("imp"))
+                and row["start_dt"] == merged_rows[-1]["end_dt"]
+            ):
+                if row["end_dt"] > merged_rows[-1]["end_dt"]:
+                    merged_rows[-1]["end_dt"] = row["end_dt"]
+                continue
+            merged_rows.append(row)
+        parsed_rows = merged_rows
 
         final_rows: List[Dict[str, Any]] = []
         for p in parsed_rows:
@@ -1252,6 +1328,15 @@ def sync_cloud_data(user_id: int, force: bool = False) -> None:
                 final_rows.append(part2)
             else:
                 final_rows.append(p)
+
+        final_rows.sort(
+            key=lambda row: (
+                row["start_dt"],
+                row["end_dt"],
+                row.get("task") or "",
+                row.get("tag") or "",
+            )
+        )
 
         conn = get_db_connection()
         conn.execute("DELETE FROM logs WHERE user_id = ?", (int(user_id),))

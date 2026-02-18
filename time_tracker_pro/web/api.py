@@ -14,13 +14,13 @@ from flask import Blueprint, current_app, g, jsonify, request, send_file
 
 from ..core.constants import GRAPH_TAG_MAP
 from ..core.dates import get_period_range, parse_date_param, parse_period_param
-from ..core.tags import filter_special_tags, primary_special_tag
+from ..core.tags import filter_special_tags, normalize_tag, primary_special_tag
 from ..db import get_db_connection
 from ..repositories.logs import fetch_local_data
 from ..repositories.users import get_user_count, get_user_by_id
 from ..core.rows import row_value
 from ..services.import_csv import import_csv_content
-from ..services.sync import sync_cloud_data, sync_status_payload
+from ..services.sync import sync_cloud_data, sync_status_payload, get_last_sync_stats
 from .decorators import api_or_login_required, resolve_request_user_id, token_is_valid
 from .utils import get_current_user_id
 
@@ -387,7 +387,7 @@ def update_task(task_id: int):
         conn.close()
         return jsonify({"error": "Task is not linked to a Sheety row"}), 400
 
-    task_name = (data.get("task") or row["task"] or "").strip()
+    task_name = re.sub(r"\s+", " ", (data.get("task") or row["task"] or "").strip()).title()
     if not task_name:
         conn.close()
         return jsonify({"error": "Task name is required"}), 400
@@ -404,7 +404,7 @@ def update_task(task_id: int):
         conn.close()
         return jsonify({"error": "Duration must be greater than 0"}), 400
 
-    tag_raw = (data.get("tag") or row["tags"] or "").strip()
+    tag_raw = normalize_tag((data.get("tag") or row["tags"] or "").strip())
     urgent = bool(data.get("urgent") if "urgent" in data else row["urg"])
     important = bool(data.get("important") if "important" in data else row["imp"])
 
@@ -419,15 +419,64 @@ def update_task(task_id: int):
                 continue
         return None
 
-    start_dt = parse_datetime(start_date, start_time)
-    if start_dt is None:
+    existing_start_dt = parse_datetime(start_date, start_time)
+    if existing_start_dt is None:
         conn.close()
         return jsonify({"error": "Invalid start time format"}), 400
 
-    end_dt = start_dt + timedelta(minutes=duration_minutes)
+    start_raw = (data.get("start") or data.get("start_raw") or "").strip()
+    end_raw = (data.get("end") or data.get("end_raw") or "").strip()
+
+    start_dt = existing_start_dt
+    end_dt: Optional[datetime] = None
+
+    if start_raw or end_raw:
+        from dateutil import parser as date_parser
+
+        def parse_flexible(value: str, default_dt: datetime) -> Optional[datetime]:
+            raw = (value or "").strip()
+            if not raw:
+                return None
+            try:
+                parsed = date_parser.parse(raw, default=default_dt, dayfirst=True, fuzzy=True)
+                return parsed.replace(microsecond=0)
+            except Exception:
+                return None
+
+        parsed_start = parse_flexible(start_raw, existing_start_dt) if start_raw else None
+        if parsed_start is not None:
+            start_dt = parsed_start
+
+        parsed_end = parse_flexible(end_raw, start_dt) if end_raw else None
+        if parsed_end is not None:
+            end_dt = parsed_end
+
+        if end_dt is not None and end_dt <= start_dt:
+            has_explicit_date = bool(
+                re.search(r"\d{4}-\d{1,2}-\d{1,2}", end_raw)
+                or re.search(r"\d{1,2}[./-]\d{1,2}", end_raw)
+                or re.search(r"[A-Za-z]{3,}", end_raw)
+            )
+            if not has_explicit_date:
+                end_dt = end_dt + timedelta(days=1)
+
+        if end_dt is None:
+            conn.close()
+            return jsonify({"error": "End time is required"}), 400
+
+        duration_minutes = int(round((end_dt - start_dt).total_seconds() / 60))
+        if duration_minutes <= 0:
+            conn.close()
+            return jsonify({"error": "End time must be after start time"}), 400
+    else:
+        end_dt = start_dt + timedelta(minutes=duration_minutes)
+
     if end_dt <= start_dt:
         conn.close()
         return jsonify({"error": "Duration must be greater than 0"}), 400
+
+    start_date = start_dt.strftime("%Y-%m-%d")
+    start_time = start_dt.strftime("%H:%M:%S")
     end_date = end_dt.strftime("%Y-%m-%d")
     end_time = end_dt.strftime("%H:%M:%S")
 
@@ -619,7 +668,7 @@ def update_task(task_id: int):
         conn.execute(
             """
             UPDATE logs
-            SET task = ?, duration = ?, tags = ?, urg = ?, imp = ?, end_date = ?, end_time = ?
+            SET task = ?, duration = ?, tags = ?, urg = ?, imp = ?, start_date = ?, start_time = ?, end_date = ?, end_time = ?
             WHERE id = ? AND user_id = ?
             """,
             (
@@ -628,6 +677,8 @@ def update_task(task_id: int):
                 tag_value,
                 1 if urgent else 0,
                 1 if important else 0,
+                start_date,
+                start_time,
                 end_date,
                 end_time,
                 row_id,
@@ -721,7 +772,7 @@ def create_task():
 
     data = request.get_json(silent=True) or {}
 
-    task_name = (data.get("task") or "").strip()
+    task_name = re.sub(r"\s+", " ", (data.get("task") or "").strip()).title()
     if not task_name:
         return jsonify({"error": "Task name is required"}), 400
 
@@ -741,7 +792,7 @@ def create_task():
     if duration_minutes is None or duration_minutes <= 0:
         return jsonify({"error": "Duration must be greater than 0"}), 400
 
-    tag_raw = (data.get("tag") or "").strip()
+    tag_raw = normalize_tag((data.get("tag") or "").strip())
     urgent = bool(data.get("urgent"))
     important = bool(data.get("important"))
 
@@ -1403,7 +1454,11 @@ def sync_now():
         db_name = current_app.config["DB_NAME"]
         user_id = int(getattr(g, "user_id", 0) or 0)
         failover = sync_cloud_data(db_name, user_id, force=True)
-        response = {"status": "success", "message": "Synced latest data from cloud"}
+        response = {
+            "status": "success",
+            "message": "Synced latest data from cloud",
+            "stats": get_last_sync_stats(user_id),
+        }
         if failover:
             response["failover"] = failover
         return jsonify(response)
@@ -1422,6 +1477,7 @@ def hard_reset():
             {
                 "status": "success",
                 "message": "Database has been completely wiped and rebuilt from Google Sheets.",
+                "stats": get_last_sync_stats(user_id),
             }
         )
     except Exception as exc:

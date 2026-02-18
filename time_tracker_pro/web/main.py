@@ -18,7 +18,7 @@ from ..core.dates import get_period_range, parse_date_param, parse_period_param
 from ..core.rows import display_name, row_value
 from ..core.tags import primary_special_tag
 from ..repositories.app_settings import get_app_setting, upsert_app_setting
-from ..repositories.logs import fetch_local_data
+from ..repositories.logs import fetch_local_data, get_first_log_date
 from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
 from ..services.matrix import get_matrix_stats
@@ -287,6 +287,7 @@ def graphs():
     db_name = current_app.config["DB_NAME"]
     user_id = int(get_current_user_id() or 0)
     user_row = get_user_by_id(db_name, user_id)
+    first_log_date = get_first_log_date(db_name, user_id)
     current_user = {
         "id": user_id,
         "display_name": display_name(user_row),
@@ -299,4 +300,9 @@ def graphs():
             or is_admin_email(row_value(user_row, "email"))
         )
     )
-    return render_template("graphs.html", current_user=current_user, is_admin=is_admin)
+    return render_template(
+        "graphs.html",
+        current_user=current_user,
+        is_admin=is_admin,
+        first_log_date=(first_log_date.strftime("%Y-%m-%d") if first_log_date else ""),
+    )

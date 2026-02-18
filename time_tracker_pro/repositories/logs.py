@@ -1,12 +1,35 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, date
 from typing import Any, Dict, List
 
 import pandas as pd
 
 from ..db import get_db_connection
 from ..core.tags import filter_special_tags
+
+
+def get_first_log_date(db_name: str, user_id: int) -> date | None:
+    conn = get_db_connection(db_name)
+    try:
+        row = conn.execute(
+            "SELECT MIN(start_date) AS min_date FROM logs WHERE user_id = ?",
+            (int(user_id),),
+        ).fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return None
+    try:
+        value = row["min_date"]
+    except Exception:
+        value = None
+    if not value:
+        return None
+    try:
+        return datetime.strptime(str(value), "%Y-%m-%d").date()
+    except Exception:
+        return None
 
 
 def fetch_local_data(db_name: str, user_id: int) -> pd.DataFrame:
