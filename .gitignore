@@ -12,3 +12,9 @@ Related Excel Files
 
 # 3. Mac System Files (Junk)
 .DS_Store
+
+# 1. Ignore ALL .md files
+*.md
+
+# 2. Whitelist the specific files you want to keep
+!README.md
