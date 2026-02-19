@@ -619,10 +619,12 @@ def update_task(task_id: int):
     payload = {sheet_name: log_payload}
 
     service = SheetyFailoverService(db_name, user_id)
-    success, _, error = service.make_request("PUT", str(sheety_id), payload)
+    queued = False
+    success, data, error = service.make_request("PUT", str(sheety_id), payload)
     if not success:
         conn.close()
         return jsonify({"error": error or "Failed to update task in Sheety"}), 502
+    queued = queued or bool(isinstance(data, dict) and data.get("__queued"))
 
     for update in overlap_updates:
         update_payload, _ = build_log_payload(
@@ -633,16 +635,18 @@ def update_task(task_id: int):
             update["start_dt"],
             update["end_dt"],
         )
-        success, _, error = service.make_request("PUT", str(update["sheety_id"]), {sheet_name: update_payload})
+        success, data, error = service.make_request("PUT", str(update["sheety_id"]), {sheet_name: update_payload})
         if not success:
             conn.close()
             return jsonify({"error": error or "Failed to update overlapping task in Sheety"}), 502
+        queued = queued or bool(isinstance(data, dict) and data.get("__queued"))
 
     for deleted in overlap_deletes:
-        success, _, error = service.make_request("DELETE", str(deleted["sheety_id"]), None)
+        success, data, error = service.make_request("DELETE", str(deleted["sheety_id"]), None)
         if not success:
             conn.close()
             return jsonify({"error": error or "Failed to delete overlapping task in Sheety"}), 502
+        queued = queued or bool(isinstance(data, dict) and data.get("__queued"))
 
     for insert in overlap_inserts:
         insert_payload, insert_tag_value = build_log_payload(
@@ -653,15 +657,28 @@ def update_task(task_id: int):
             insert["start_dt"],
             insert["end_dt"],
         )
-        success, data, error = service.make_request("POST", "", {sheet_name: insert_payload})
+        post_meta = {
+            "start_date": insert["start_dt"].strftime("%Y-%m-%d"),
+            "start_time": insert["start_dt"].strftime("%H:%M:%S"),
+            "end_date": insert["end_dt"].strftime("%Y-%m-%d"),
+            "end_time": insert["end_dt"].strftime("%H:%M:%S"),
+            "task": insert["task"],
+        }
+        success, data, error = service.make_request(
+            "POST",
+            "",
+            {"__ttpro_meta": post_meta, sheet_name: insert_payload},
+        )
         if not success:
             conn.close()
             return jsonify({"error": error or "Failed to create split task in Sheety"}), 502
+        queued_current = bool(isinstance(data, dict) and data.get("__queued"))
+        queued = queued or queued_current
         new_sheety_id = extract_sheety_id(data, sheet_name)
-        if new_sheety_id is None:
+        if new_sheety_id is None and not queued_current:
             conn.close()
             return jsonify({"error": "Sheety did not return a new row id."}), 502
-        insert["sheety_id"] = int(new_sheety_id)
+        insert["sheety_id"] = (int(new_sheety_id) if new_sheety_id is not None else None)
         insert["tag_value"] = insert_tag_value
 
     try:
@@ -742,9 +759,10 @@ def update_task(task_id: int):
 
     response_payload = {
         "success": True,
+        "queued": bool(queued),
         "task": {
             "id": row_id,
-            "sheety_id": int(sheety_id),
+            "sheety_id": (int(sheety_id) if sheety_id is not None else None),
             "task": task_name,
             "start_time": start_dt.strftime("%I:%M %p"),
             "end_time": end_dt.strftime("%I:%M %p"),
@@ -912,13 +930,25 @@ def create_task():
             sheet_name = path.split("/")[-1] or sheet_name
 
     service = SheetyFailoverService(db_name, user_id)
-    success, data, error = service.make_request("POST", "", {sheet_name: log_payload})
+    post_meta = {
+        "start_date": start_dt.strftime("%Y-%m-%d"),
+        "start_time": start_dt.strftime("%H:%M:%S"),
+        "end_date": end_dt.strftime("%Y-%m-%d"),
+        "end_time": end_dt.strftime("%H:%M:%S"),
+        "task": task_name,
+    }
+    success, data, error = service.make_request(
+        "POST",
+        "",
+        {"__ttpro_meta": post_meta, sheet_name: log_payload},
+    )
     if not success:
         conn.close()
         return jsonify({"error": error or "Failed to create task in Sheety"}), 502
 
+    queued = bool(isinstance(data, dict) and data.get("__queued"))
     sheety_id = extract_sheety_id(data, sheet_name)
-    if sheety_id is None:
+    if sheety_id is None and not queued:
         return jsonify({"error": "Sheety did not return a new row id."}), 502
 
     try:
@@ -931,7 +961,7 @@ def create_task():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                int(sheety_id),
+                (int(sheety_id) if sheety_id is not None else None),
                 start_dt.strftime("%Y-%m-%d"),
                 start_dt.strftime("%H:%M:%S"),
                 end_dt.strftime("%Y-%m-%d"),

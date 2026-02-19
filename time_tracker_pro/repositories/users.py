@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
-from typing import Optional
+from typing import List, Optional
 
 from ..db import get_db_connection
 
@@ -21,6 +21,19 @@ def get_user_by_id(db_name: str, user_id: int) -> Optional[sqlite3.Row]:
     ).fetchone()
     conn.close()
     return row
+
+
+def list_user_ids(db_name: str) -> List[int]:
+    conn = get_db_connection(db_name)
+    rows = conn.execute("SELECT id FROM users ORDER BY id ASC").fetchall()
+    conn.close()
+    ids: List[int] = []
+    for row in rows or []:
+        try:
+            ids.append(int(row["id"]))
+        except Exception:
+            continue
+    return ids
 
 
 def get_user_by_public_id(db_name: str, public_id: str) -> Optional[sqlite3.Row]:

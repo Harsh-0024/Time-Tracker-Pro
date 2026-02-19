@@ -148,6 +148,73 @@ def init_db(db_name: str) -> None:
 
     conn.execute(
         """
+        CREATE TABLE IF NOT EXISTS sheet_rewrite_state (
+            user_id INTEGER PRIMARY KEY,
+            in_progress INTEGER DEFAULT 0,
+            started_at TEXT,
+            finished_at TEXT,
+            last_weekly_run TEXT,
+            last_weekly_week TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sheety_outbox (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            method TEXT NOT NULL,
+            endpoint TEXT,
+            json_data TEXT,
+            sheet_key TEXT,
+            queued_during_rewrite INTEGER DEFAULT 0,
+            attempts INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'pending',
+            last_error TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sheety_outbox_user_status ON sheety_outbox(user_id, status, created_at)"
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sheety_sync_snapshots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            sheet_key TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sheety_sync_snapshots_user ON sheety_sync_snapshots(user_id, sheet_key, created_at)"
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sheety_sync_snapshot_rows (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_id INTEGER NOT NULL,
+            position INTEGER NOT NULL,
+            sheety_id INTEGER,
+            json_data TEXT NOT NULL,
+            FOREIGN KEY(snapshot_id) REFERENCES sheety_sync_snapshots(id)
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sheety_snapshot_rows_snapshot ON sheety_sync_snapshot_rows(snapshot_id, position)"
+    )
+
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS graph_bookmarks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,

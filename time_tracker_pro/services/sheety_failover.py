@@ -4,6 +4,7 @@ import logging
 import requests
 from typing import Optional, Tuple, Dict, Any
 
+from ..db import get_db_connection
 from ..repositories.sheety_accounts import (
     get_active_api_account,
     get_next_fallback_account,
@@ -66,44 +67,111 @@ class SheetyFailoverService:
             logger.error(f"API test error for account {account['id']}: {e}")
             return False, None, str(e)
     
-    def _try_request(self, account, method: str, endpoint: str = '', json_data: Optional[Dict] = None) -> Tuple[bool, Optional[Any]]:
-        """Try a request with a specific account. Returns (success, response_data)."""
+    def _try_request(
+        self,
+        account,
+        method: str,
+        endpoint: str = "",
+        json_data: Optional[Dict] = None,
+    ) -> Tuple[bool, Optional[Any], Optional[str]]:
+        """Try a request with a specific account. Returns (success, response_data, error_message)."""
         try:
             api_base_url = account['api_base_url']
             url = f"{api_base_url.rstrip('/')}/{endpoint.lstrip('/')}" if endpoint else api_base_url
             headers = self._build_headers(row_value(account, 'api_token'))
             
-            if method.upper() == 'GET':
+            method_upper = str(method or "").upper()
+            if method_upper == 'GET':
                 response = requests.get(url, headers=headers, timeout=15)
-            elif method.upper() == 'POST':
+            elif method_upper == 'POST':
                 response = requests.post(url, headers=headers, json=json_data, timeout=15)
-            elif method.upper() == 'PUT':
+            elif method_upper == 'PUT':
                 response = requests.put(url, headers=headers, json=json_data, timeout=15)
-            elif method.upper() == 'DELETE':
+            elif method_upper == 'DELETE':
                 response = requests.delete(url, headers=headers, timeout=15)
             else:
-                return False, None
+                return False, None, f"Unsupported method {method_upper}"
             
             if response.status_code in (200, 201, 204):
                 update_account_test_result(self.db_name, account['id'], True, self.user_id)
                 try:
-                    return True, response.json() if response.content else {}
-                except:
-                    return True, {}
+                    return True, response.json() if response.content else {}, None
+                except Exception:
+                    return True, {}, None
             else:
-                logger.warning(f"Request failed for account {account['id']}: HTTP {response.status_code}")
+                preview = (response.text or "").strip().replace("\n", " ")
+                if len(preview) > 200:
+                    preview = preview[:200] + "..."
+                detail = f"HTTP {response.status_code}"
+                if preview:
+                    detail = f"{detail} - {preview}"
+                logger.warning(f"Request failed for account {account['id']}: {detail}")
                 update_account_test_result(self.db_name, account['id'], False, self.user_id)
-                return False, None
+                return False, None, detail
         except Exception as e:
             logger.error(f"Request error for account {account['id']}: {e}")
             update_account_test_result(self.db_name, account['id'], False, self.user_id)
-            return False, None
-    
+            return False, None, str(e)
+
+    def _strip_internal_meta(self, json_data: Optional[Dict]) -> tuple[Optional[Dict], Optional[Dict[str, Any]]]:
+        if not isinstance(json_data, dict):
+            return json_data, None
+        meta = json_data.get("__ttpro_meta")
+        if meta is None and "__ttpro_bypass_outbox" not in json_data:
+            return json_data, None
+        cleaned: Dict[str, Any] = {}
+        for key, value in json_data.items():
+            if key in {"__ttpro_meta", "__ttpro_bypass_outbox"}:
+                continue
+            cleaned[key] = value
+        return cleaned, (meta if isinstance(meta, dict) else None)
+
+    def _infer_sheet_key(self, json_data: Optional[Dict]) -> Optional[str]:
+        if not isinstance(json_data, dict):
+            return None
+        for key in json_data.keys():
+            if key in {"__ttpro_meta", "__ttpro_bypass_outbox"}:
+                continue
+            return str(key)
+        return None
+
     def make_request(self, method: str, endpoint: str = '', json_data: Optional[Dict] = None) -> Tuple[bool, Optional[Any], Optional[str]]:
         """
         Make a Sheety API request with automatic failover.
         Returns (success, response_data, error_message).
         """
+        method_upper = str(method or "").upper()
+        cleaned_json, _ = self._strip_internal_meta(json_data)
+
+        if method_upper in {"POST", "PUT", "DELETE"}:
+            try:
+                from ..repositories.sheety_outbox import (
+                    enqueue_outbox_operation,
+                    is_rewrite_in_progress,
+                )
+
+                bypass_outbox = bool(
+                    isinstance(json_data, dict) and bool(json_data.get("__ttpro_bypass_outbox"))
+                )
+                if not bypass_outbox and is_rewrite_in_progress(self.db_name, int(self.user_id)):
+                    conn = get_db_connection(self.db_name)
+                    try:
+                        outbox_id = enqueue_outbox_operation(
+                            conn,
+                            int(self.user_id),
+                            method_upper,
+                            str(endpoint or ""),
+                            self._infer_sheet_key(json_data),
+                            (json_data if isinstance(json_data, dict) else {}),
+                            True,
+                        )
+                        conn.commit()
+                    finally:
+                        conn.close()
+                    return True, {"__queued": True, "outbox_id": int(outbox_id)}, None
+            except Exception as exc:
+                logger.warning("Failed to enqueue Sheety outbox operation: %s", exc)
+
         # Get active account
         active_account = get_active_api_account(self.db_name, self.user_id)
 
@@ -123,7 +191,7 @@ class SheetyFailoverService:
                 return False, None, "No working Sheety API account found"
         
         # Try the active account
-        success, data = self._try_request(active_account, method, endpoint, json_data)
+        success, data, last_error = self._try_request(active_account, method_upper, endpoint, cleaned_json)
         
         if success:
             return True, data, None
@@ -141,7 +209,7 @@ class SheetyFailoverService:
                 continue
             attempts += 1
             logger.info(f"Trying fallback account {account['id']} (attempt {attempts})")
-            success, data = self._try_request(account, method, endpoint, json_data)
+            success, data, error = self._try_request(account, method_upper, endpoint, cleaned_json)
             if success:
                 # Failover successful! Switch to this account
                 set_active_account(self.db_name, account["id"], self.user_id)
@@ -152,9 +220,20 @@ class SheetyFailoverService:
                 logger.info(f"Failover successful: switched from {self.switched_from} to {self.switched_to}")
 
                 return True, data, None
+            if error:
+                last_error = error
 
         # All accounts failed
-        return False, None, "All API accounts failed"
+        return False, None, last_error or "All API accounts failed"
+
+    def make_request_bypass_outbox(
+        self, method: str, endpoint: str = "", json_data: Optional[Dict] = None
+    ) -> Tuple[bool, Optional[Any], Optional[str]]:
+        payload = json_data if isinstance(json_data, dict) else ({} if json_data is None else None)
+        if isinstance(payload, dict):
+            payload = dict(payload)
+            payload["__ttpro_bypass_outbox"] = True
+        return self.make_request(method, endpoint, payload)
     
     def get_failover_notification(self) -> Optional[Dict[str, str]]:
         """Get notification data if account was switched."""

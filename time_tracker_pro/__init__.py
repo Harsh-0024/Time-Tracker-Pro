@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import timedelta
+import threading
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -87,5 +89,51 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
             "pwa_icon_url": url_for("main.app_icon", v=version),
             "pwa_icon_version": version,
         }
+
+    enable_weekly = (os.getenv("ENABLE_WEEKLY_MAINTENANCE_REWRITE") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+        "on",
+    }
+    if enable_weekly and not app.config.get("_WEEKLY_MAINTENANCE_THREAD_STARTED"):
+        should_start = (os.environ.get("WERKZEUG_RUN_MAIN") == "true") or not app.debug
+        if should_start:
+            from .repositories.sheety_outbox import claim_weekly_run, sunday_week_key
+            from .repositories.users import list_user_ids
+            from .services.sync import sync_cloud_data
+
+            poll_seconds = int(os.getenv("WEEKLY_MAINTENANCE_POLL_SECONDS", "3600"))
+
+            def _weekly_maintenance_loop() -> None:
+                while True:
+                    try:
+                        if os.getenv("DISABLE_CLOUD_SYNC"):
+                            time.sleep(max(60, poll_seconds))
+                            continue
+                        db_name = app.config.get("DB_NAME")
+                        if not db_name:
+                            time.sleep(max(60, poll_seconds))
+                            continue
+                        now = datetime.now(timezone.utc)
+                        week_key = sunday_week_key(now)
+                        for uid in list_user_ids(str(db_name)):
+                            try:
+                                if claim_weekly_run(str(db_name), int(uid), str(week_key)):
+                                    sync_cloud_data(str(db_name), int(uid), force=True)
+                            except Exception as exc:
+                                logging.getLogger(__name__).warning(
+                                    "Weekly maintenance sync failed user_id=%s error=%s",
+                                    int(uid),
+                                    exc,
+                                )
+                    except Exception as exc:
+                        logging.getLogger(__name__).warning("Weekly maintenance loop error=%s", exc)
+                    time.sleep(max(60, poll_seconds))
+
+            t = threading.Thread(target=_weekly_maintenance_loop, daemon=True, name="weekly-maintenance")
+            t.start()
+            app.config["_WEEKLY_MAINTENANCE_THREAD_STARTED"] = True
 
     return app

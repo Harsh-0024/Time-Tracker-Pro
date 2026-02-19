@@ -421,10 +421,15 @@ class TimeLogParser:
                     start_dt = start_dt - timedelta(days=1)
                 end_dt = client_now
             else:
-                end_dt = self._combine_dt(current_date, t1)
-                if end_dt > client_now:
-                    end_dt = end_dt - timedelta(days=1)
-                start_dt = fallback_start(end_dt)
+                candidate_dt = self._combine_dt(current_date, t1)
+                if candidate_dt > client_now:
+                    candidate_dt = candidate_dt - timedelta(days=1)
+                if previous_end_dt is None or (previous_end_dt is not None and candidate_dt < previous_end_dt):
+                    start_dt = candidate_dt
+                    end_dt = client_now
+                else:
+                    end_dt = candidate_dt
+                    start_dt = fallback_start(end_dt)
         elif len(elements) == 2:
             times = [val for kind, val in elements if kind == "time"]
             dates = [val for kind, val in elements if kind == "date"]
