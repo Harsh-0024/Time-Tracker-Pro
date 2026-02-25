@@ -225,13 +225,58 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
             if candidate in cloud_df.columns:
                 logged_col = candidate
                 break
+
+        def parse_logged_datetime(value: Any) -> Optional[datetime]:
+            if value is None:
+                return None
+            if isinstance(value, pd.Timestamp):
+                if pd.isna(value):
+                    return None
+                value = value.to_pydatetime()
+            if isinstance(value, datetime):
+                if value.tzinfo is not None:
+                    return value.replace(tzinfo=None)
+                return value
+
+            text = str(value).strip()
+            if not text or text.lower() == "nan":
+                return None
+
+            iso_text = text
+            if iso_text.endswith("Z"):
+                iso_text = f"{iso_text[:-1]}+00:00"
+            try:
+                parsed_iso = datetime.fromisoformat(iso_text)
+                if parsed_iso.tzinfo is not None:
+                    return parsed_iso.replace(tzinfo=None)
+                return parsed_iso
+            except Exception:
+                pass
+
+            parsed_default = pd.to_datetime(text, errors="coerce")
+            if not pd.isna(parsed_default):
+                if isinstance(parsed_default, pd.Timestamp):
+                    parsed_default = parsed_default.to_pydatetime()
+                if isinstance(parsed_default, datetime):
+                    if parsed_default.tzinfo is not None:
+                        return parsed_default.replace(tzinfo=None)
+                    return parsed_default
+
+            parsed_dayfirst = pd.to_datetime(text, errors="coerce", dayfirst=True)
+            if pd.isna(parsed_dayfirst):
+                return None
+            if isinstance(parsed_dayfirst, pd.Timestamp):
+                parsed_dayfirst = parsed_dayfirst.to_pydatetime()
+            if isinstance(parsed_dayfirst, datetime):
+                if parsed_dayfirst.tzinfo is not None:
+                    return parsed_dayfirst.replace(tzinfo=None)
+                return parsed_dayfirst
+            return None
+
         if logged_col:
             try:
-                cloud_df["__logged_dt"] = pd.to_datetime(
-                    cloud_df[logged_col],
-                    errors="coerce",
-                    dayfirst=True,
-                )
+                cloud_df["__logged_dt"] = cloud_df[logged_col].apply(parse_logged_datetime)
+                cloud_df["__logged_dt"] = pd.to_datetime(cloud_df["__logged_dt"], errors="coerce")
                 sort_cols = ["__logged_dt"]
                 ascending = [True]
                 if "id" in cloud_df.columns:
@@ -292,11 +337,9 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
                     if isinstance(logged_dt_value, pd.Timestamp):
                         logged_key = logged_dt_value.isoformat()
                     else:
-                        logged_key = pd.to_datetime(
-                            logged_dt_value,
-                            errors="coerce",
-                            dayfirst=True,
-                        ).isoformat()  # type: ignore[union-attr]
+                        parsed_logged_dt = parse_logged_datetime(logged_dt_value)
+                        if parsed_logged_dt is not None:
+                            logged_key = parsed_logged_dt.isoformat()
                 except Exception:
                     pass
             return logged_key
@@ -526,27 +569,13 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
                 return value
             return None
 
-        def _has_explicit_date_hint(log_entry_value: str) -> bool:
-            text = str(log_entry_value or "").strip()
-            if not text:
-                return False
-            if re.search(r"\b\d{4}[./-]\d{1,2}[./-]\d{1,2}\b", text):
-                return True
-            if re.search(r"\b\d{1,2}[./-]\d{1,2}(?:[./-]\d{2,4})?\b", text):
-                return True
-            if re.search(r"^\s*\d{1,2}\.\s", text):
-                return True
-            if re.search(
-                r"\b\d{1,2}\s+(?:jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)\b",
-                text,
-                re.IGNORECASE,
-            ):
-                return True
-            return False
-
         if parse_source_rows:
             max_sort_dt = datetime(9999, 12, 31, 23, 59, 59)
             row_order: List[Tuple[datetime, datetime, int]] = []
+
+            def _minute_floor(dt_value: datetime) -> datetime:
+                return dt_value.replace(second=0, microsecond=0)
+
             for idx, row_dict in enumerate(parse_source_rows):
                 log_entry = dict_text(
                     row_dict,
@@ -573,20 +602,23 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
                     ),
                 )
 
-                logged_dt_probe = _to_naive_datetime(pd.to_datetime(client_now, errors="coerce", dayfirst=True))
+                logged_dt_probe = parse_logged_datetime(client_now)
                 logged_sort_dt = logged_dt_probe or max_sort_dt
                 inferred_sort_dt = logged_sort_dt
+                client_now_probe = client_now
+                if logged_dt_probe is not None:
+                    client_now_probe = logged_dt_probe.strftime("%Y-%m-%d %H:%M:%S")
 
-                if _has_explicit_date_hint(log_entry) and client_now:
+                if client_now:
                     try:
-                        probe_parsed = parser.parse_row(log_entry, client_now, None)
+                        probe_parsed = parser.parse_row(log_entry, client_now_probe, None)
                         inferred_candidate = _to_naive_datetime(probe_parsed.get("start_dt"))
                         if inferred_candidate is not None:
                             inferred_sort_dt = inferred_candidate
                     except Exception:
                         pass
 
-                row_order.append((inferred_sort_dt, logged_sort_dt, idx))
+                row_order.append((_minute_floor(inferred_sort_dt), logged_sort_dt, idx))
 
             ordered_indices = [idx for _, _, idx in sorted(row_order, key=lambda item: (item[0], item[1], item[2]))]
             parse_source_rows = [parse_source_rows[idx] for idx in ordered_indices]
@@ -626,9 +658,13 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
                     "logged time",
                 ),
             )
+            logged_dt_current = parse_logged_datetime(client_now)
+            client_now_for_parse = client_now
+            if logged_dt_current is not None:
+                client_now_for_parse = logged_dt_current.strftime("%Y-%m-%d %H:%M:%S")
 
             try:
-                parsed = parser.parse_row(log_entry, client_now, previous_end)
+                parsed = parser.parse_row(log_entry, client_now_for_parse, previous_end)
             except Exception as exc:
                 logger.warning(
                     "Skipping invalid row during cloud sync user_id=%s logged_time=%s log_entry=%r error=%s",

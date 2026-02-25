@@ -2,6 +2,8 @@ import unittest
 from datetime import datetime
 from itertools import product
 
+import pandas as pd
+
 from time_tracker_pro.services.parser import TimeLogParser
 
 
@@ -17,6 +19,81 @@ class LogEntryParserRulesTests(unittest.TestCase):
     def parse_with_now(self, entry: str, now_str: str, previous_end: datetime | None = None) -> dict:
         return self.parser.parse_row(entry, now_str, previous_end)
 
+    def parse_rows_like_sync(self, rows: list[tuple[str, str]]) -> list[dict]:
+        parser = TimeLogParser()
+        max_sort_dt = datetime(9999, 12, 31, 23, 59, 59)
+
+        def to_naive(value: object) -> datetime | None:
+            if isinstance(value, pd.Timestamp):
+                if pd.isna(value):
+                    return None
+                value = value.to_pydatetime()
+            if isinstance(value, datetime):
+                if value.tzinfo is not None:
+                    return value.replace(tzinfo=None)
+                return value
+            return None
+
+        def parse_logged_datetime(value: object) -> datetime | None:
+            parsed_direct = to_naive(value)
+            if parsed_direct is not None:
+                return parsed_direct
+
+            text = str(value or "").strip()
+            if not text or text.lower() == "nan":
+                return None
+
+            iso_text = text
+            if iso_text.endswith("Z"):
+                iso_text = f"{iso_text[:-1]}+00:00"
+            try:
+                parsed_iso = datetime.fromisoformat(iso_text)
+                if parsed_iso.tzinfo is not None:
+                    return parsed_iso.replace(tzinfo=None)
+                return parsed_iso
+            except Exception:
+                pass
+
+            parsed_default = to_naive(pd.to_datetime(text, errors="coerce"))
+            if parsed_default is not None:
+                return parsed_default
+
+            return to_naive(pd.to_datetime(text, errors="coerce", dayfirst=True))
+
+        row_order: list[tuple[datetime, datetime, int]] = []
+        for idx, (client_now, log_entry) in enumerate(rows):
+            logged_dt_probe = parse_logged_datetime(client_now)
+            logged_sort_dt = logged_dt_probe or max_sort_dt
+            inferred_sort_dt = logged_sort_dt
+            client_now_probe = client_now
+            if logged_dt_probe is not None:
+                client_now_probe = logged_dt_probe.strftime("%Y-%m-%d %H:%M:%S")
+            try:
+                probe_parsed = parser.parse_row(log_entry, client_now_probe, None)
+                inferred_candidate = to_naive(probe_parsed.get("start_dt"))
+                if inferred_candidate is not None:
+                    inferred_sort_dt = inferred_candidate
+            except Exception:
+                pass
+            inferred_sort_key = inferred_sort_dt.replace(second=0, microsecond=0)
+            row_order.append((inferred_sort_key, logged_sort_dt, idx))
+
+        ordered_indices = [idx for _, _, idx in sorted(row_order, key=lambda item: (item[0], item[1], item[2]))]
+        ordered_rows = [rows[idx] for idx in ordered_indices]
+
+        parsed_rows: list[dict] = []
+        previous_end: datetime | None = None
+        for client_now, log_entry in ordered_rows:
+            logged_dt_current = parse_logged_datetime(client_now)
+            client_now_for_parse = client_now
+            if logged_dt_current is not None:
+                client_now_for_parse = logged_dt_current.strftime("%Y-%m-%d %H:%M:%S")
+            parsed = parser.parse_row(log_entry, client_now_for_parse, previous_end)
+            parsed_rows.append(parsed)
+            if previous_end is None or parsed["end_dt"] > previous_end:
+                previous_end = parsed["end_dt"]
+        return parsed_rows
+
     def test_zero_elements_uses_previous_end(self) -> None:
         previous_end = datetime(2026, 1, 21, 8, 0)
         parsed = self.parse("Task only", previous_end)
@@ -24,7 +101,7 @@ class LogEntryParserRulesTests(unittest.TestCase):
         self.assertEqual(parsed["end_dt"], self.now)
 
     def test_one_time_with_dot(self) -> None:
-        parsed = self.parse("9. Task")
+        parsed = self.parse("9:00. Task")
         self.assertEqual(parsed["start_dt"], datetime(2026, 1, 21, 9, 0))
         self.assertEqual(parsed["end_dt"], self.now)
 
@@ -35,36 +112,36 @@ class LogEntryParserRulesTests(unittest.TestCase):
 
     def test_one_time_without_dot_uses_previous_end(self) -> None:
         previous_end = datetime(2026, 1, 21, 8, 0)
-        parsed = self.parse("9 Task", previous_end)
+        parsed = self.parse("9:00 Task", previous_end)
         self.assertEqual(parsed["start_dt"], previous_end)
         self.assertEqual(parsed["end_dt"], datetime(2026, 1, 21, 9, 0))
 
     def test_first_row_without_previous_end_sets_start_date(self) -> None:
-        parsed = self.parse("9 Task")
+        parsed = self.parse("9:00 Task")
         self.assertEqual(parsed["start_dt"], datetime(2026, 1, 21, 9, 0))
         self.assertEqual(parsed["end_dt"], datetime(2026, 1, 21, 9, 0))
 
     def test_two_elements_time_date_with_dot(self) -> None:
         previous_end = datetime(2026, 1, 20, 8, 0)
-        parsed = self.parse("9 20/01. Task", previous_end)
+        parsed = self.parse("9:00 20/01. Task", previous_end)
         self.assertEqual(parsed["start_dt"], datetime(2026, 1, 20, 9, 0))
         self.assertEqual(parsed["end_dt"], self.now)
 
     def test_two_elements_time_date_without_dot(self) -> None:
         previous_end = datetime(2026, 1, 20, 7, 0)
-        parsed = self.parse("9 20/01 Task", previous_end)
+        parsed = self.parse("9:00 20/01 Task", previous_end)
         self.assertEqual(parsed["start_dt"], previous_end)
         self.assertEqual(parsed["end_dt"], datetime(2026, 1, 20, 9, 0))
 
     def test_two_elements_two_times_wraps_day(self) -> None:
-        parsed = self.parse("23 1 Task")
+        parsed = self.parse("23:00 1:00 Task")
         self.assertEqual(parsed["start_dt"], datetime(2026, 1, 20, 23, 0))
         self.assertEqual(parsed["end_dt"], datetime(2026, 1, 21, 1, 0))
 
     def test_two_elements_two_times_same_day(self) -> None:
-        parsed = self.parse("9 11 Task")
+        parsed = self.parse("9:00 10:00 Task")
         self.assertEqual(parsed["start_dt"], datetime(2026, 1, 21, 9, 0))
-        self.assertEqual(parsed["end_dt"], datetime(2026, 1, 21, 11, 0))
+        self.assertEqual(parsed["end_dt"], datetime(2026, 1, 21, 10, 0))
 
     def test_one_time_midnight_crossing_uses_previous_day(self) -> None:
         previous_end = datetime(2026, 1, 13, 21, 51)
@@ -77,17 +154,17 @@ class LogEntryParserRulesTests(unittest.TestCase):
         self.assertEqual(parsed["end_dt"], datetime(2026, 1, 13, 23, 30))
 
     def test_three_elements_date_times_with_dot_after_date(self) -> None:
-        parsed = self.parse("20/01. 9 11 Task")
+        parsed = self.parse("20/01. 9:00 10:00 Task")
         self.assertEqual(parsed["start_dt"], datetime(2026, 1, 20, 9, 0))
-        self.assertEqual(parsed["end_dt"], datetime(2026, 1, 21, 11, 0))
+        self.assertEqual(parsed["end_dt"], datetime(2026, 1, 21, 10, 0))
 
     def test_three_elements_date_times_wraps_day(self) -> None:
-        parsed = self.parse("20/01 23 1 Task")
+        parsed = self.parse("20/01 23:00 1:00 Task")
         self.assertEqual(parsed["start_dt"], datetime(2026, 1, 20, 23, 0))
         self.assertEqual(parsed["end_dt"], datetime(2026, 1, 21, 1, 0))
 
     def test_four_elements_dates_and_times(self) -> None:
-        parsed = self.parse("20/01 9 21/01 10 Task")
+        parsed = self.parse("20/01 9:00 21/01 10:00 Task")
         self.assertEqual(parsed["start_dt"], datetime(2026, 1, 20, 9, 0))
         self.assertEqual(parsed["end_dt"], datetime(2026, 1, 21, 10, 0))
 
@@ -151,11 +228,19 @@ class LogEntryParserRulesTests(unittest.TestCase):
         self.assertEqual(parsed["tag"], "Waste")
 
     def test_meta_parsed_only_after_dot(self) -> None:
-        parsed = self.parse("9 Project v2.0 . Work Urgent")
+        parsed = self.parse("9:00 Project v2.0 . Work Urgent")
         self.assertEqual(parsed["task"], "Project v2.0")
         self.assertTrue(parsed["urg"])
         self.assertFalse(parsed["imp"])
         self.assertEqual(parsed["tag"], "Work")
+
+    def test_bare_hour_time_tokens_are_rejected(self) -> None:
+        previous_end = datetime(2026, 1, 21, 8, 0)
+        for entry in ("11 Task", "23 Task", "3 Task"):
+            with self.subTest(entry=entry):
+                parsed = self.parse(entry, previous_end)
+                self.assertEqual(parsed["start_dt"], previous_end)
+                self.assertEqual(parsed["end_dt"], self.now)
 
     def test_leading_dotted_day_with_two_times_uses_date_then_cross_date_end(self) -> None:
         previous_end = datetime(2026, 2, 21, 13, 53)
@@ -197,6 +282,64 @@ class LogEntryParserRulesTests(unittest.TestCase):
         self.assertEqual(parsed["task"], "ujjain pooja")
         self.assertTrue(parsed["urg"])
         self.assertTrue(parsed["imp"])
+
+    def test_sync_order_keeps_plain_row_between_project_and_explicit_interval(self) -> None:
+        parsed_rows = self.parse_rows_like_sync(
+            [
+                ("2026-02-17 12:13:45", "sleep . necessity"),
+                ("2026-02-17 15:00:00", "Project time tracker . Work Important"),
+                ("2026-02-17 15:42:45", "prepared and ate food . necessity"),
+                (
+                    "2026-02-17 15:56:18",
+                    "17/02/2026 3:42pm 3:56pm After food walk and returned Priyanshi charger. waste urgent",
+                ),
+            ]
+        )
+        self.assertTrue(
+            any(
+                row["task"] == "prepared and ate food"
+                and row["start_dt"] == datetime(2026, 2, 17, 15, 0)
+                and row["end_dt"] == datetime(2026, 2, 17, 15, 42, 45)
+                for row in parsed_rows
+            )
+        )
+
+    def test_sync_order_keeps_bus_row_between_sleep_and_backfilled_travel(self) -> None:
+        parsed_rows = self.parse_rows_like_sync(
+            [
+                ("2026-02-21 01:21:59", "Review today’s day . Soul Important"),
+                ("2026-02-21 10:39:56", "10:30 sleep . Necessity Urgent"),
+                ("2026-02-21 13:53:44", "Got ready and Got in bus for Jaipur . Urgent"),
+                (
+                    "2026-02-22 01:50:49",
+                    "21. 1:53 pm 1:40 travelling for ujjain, Instagram, games and family time . Soul",
+                ),
+            ]
+        )
+        self.assertTrue(
+            any(
+                row["task"] == "Got ready and Got in bus for Jaipur"
+                and row["start_dt"] == datetime(2026, 2, 21, 10, 30)
+                and row["end_dt"] == datetime(2026, 2, 21, 13, 53, 44)
+                for row in parsed_rows
+            )
+        )
+
+    def test_sync_order_keeps_iso_logged_dates_in_same_month(self) -> None:
+        parsed_rows = self.parse_rows_like_sync(
+            [
+                ("2026-02-10 23:19:40", "After food walk and om singing . Soul Important"),
+                ("2026-02-11 00:31:37", "Project workout logger . Work Important"),
+            ]
+        )
+        self.assertTrue(
+            any(
+                row["task"] == "Project workout logger"
+                and row["start_dt"] == datetime(2026, 2, 10, 23, 19, 40)
+                and row["end_dt"] == datetime(2026, 2, 11, 0, 31, 37)
+                for row in parsed_rows
+            )
+        )
 
     def test_generated_permutations_do_not_crash(self) -> None:
         time_seqs = [

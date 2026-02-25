@@ -443,12 +443,6 @@
                     </svg>
                     <span class="text-[10px] font-medium">Tags</span>
                 </button>
-                <button id="navThemeToggle" class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-gray-600" onclick="(function(){const p=window.TTPTheme&&window.TTPTheme.get?window.TTPTheme.get():'light';const next=p==='light'?'dark':p==='dark'?'system':'light';window.TTPTheme&&window.TTPTheme.set(next);})()" title="Toggle theme">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
-                        <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                    </svg>
-                    <span class="text-[10px] font-medium">Theme</span>
-                </button>
                 <button id="navGraphs" class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-gray-900 bg-slate-100">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 18V6m0 12h16M8 14l3-3 3 2 4-5" />
@@ -668,17 +662,43 @@
             return daysBetween(first, last) + 1;
         }
 
-        function getDisplayedSpanDaysForRange(labels, rangeValue = currentRange) {
+        function getDisplayedSpanDaysForRange(labels, values = [], rangeValue = currentRange) {
             const arr = Array.isArray(labels) ? labels : [];
             if (!arr.length) return 0;
             const normalized = normalizeRangeValue(rangeValue);
             if (normalized === 'all') {
-                return getAllDaysDefault();
+                const rawValues = Array.isArray(values) ? values : [];
+                if (rawValues.length === arr.length) {
+                    const firstActiveIndex = rawValues.findIndex(v => Number(v || 0) > 0);
+                    if (firstActiveIndex > 0) {
+                        return labelsSpanDays(arr.slice(firstActiveIndex));
+                    }
+                }
+                return labelsSpanDays(arr);
             }
             const numeric = Number(normalized);
             if (!Number.isFinite(numeric) || numeric <= 0) return labelsSpanDays(arr);
             const startIndex = Math.max(0, arr.length - numeric);
             return labelsSpanDays(arr.slice(startIndex));
+        }
+
+        function trimLeadingInactiveForAllRange(labels, values, rangeValue = currentRange) {
+            const arrLabels = Array.isArray(labels) ? labels : [];
+            const arrValues = Array.isArray(values) ? values : [];
+            if (normalizeRangeValue(rangeValue) !== 'all') {
+                return { labels: arrLabels, values: arrValues };
+            }
+            if (!arrLabels.length || arrValues.length !== arrLabels.length) {
+                return { labels: arrLabels, values: arrValues };
+            }
+            const firstActiveIndex = arrValues.findIndex(v => Number(v || 0) > 0);
+            if (firstActiveIndex <= 0) {
+                return { labels: arrLabels, values: arrValues };
+            }
+            return {
+                labels: arrLabels.slice(firstActiveIndex),
+                values: arrValues.slice(firstActiveIndex),
+            };
         }
 
         function getRangeDaysFromSelection() {
@@ -2026,18 +2046,21 @@
 
         function updateChart({ labels, values, total_hours, avg_hours, max_hours }, metricKey, rangeDays = currentDays) {
             closeGraphPointDetail();
-            if (shouldAutoMAOnNextRender) {
-                const spanDays = getDisplayedSpanDaysForRange(labels, currentRange);
-                maWindow = pickDefaultMAWindowForDays(spanDays);
-                syncMAPills();
-                shouldAutoMAOnNextRender = false;
-            }
             if (graphSearchQuery && graphTasks.length) {
                 values = deriveValuesFromTasks(labels);
                 const totals = computeAverageHours(values);
                 total_hours = totals.total;
                 avg_hours = totals.avg;
                 max_hours = totals.max;
+            }
+            const trimmedSeries = trimLeadingInactiveForAllRange(labels, values, currentRange);
+            labels = trimmedSeries.labels;
+            values = trimmedSeries.values;
+            if (shouldAutoMAOnNextRender) {
+                const spanDays = getDisplayedSpanDaysForRange(labels, values, currentRange);
+                maWindow = pickDefaultMAWindowForDays(spanDays);
+                syncMAPills();
+                shouldAutoMAOnNextRender = false;
             }
             const ctx = document.getElementById('graphCanvas').getContext('2d');
             const colors = graphColorScheme || { primary: metricColors[metricKey] || '#111827', secondary: null };
@@ -2244,7 +2267,8 @@
             } else {
                 chartTitle.textContent = label;
             }
-            const subtitleParts = [`Last ${currentDays} days`, `${maWindow}-day avg`];
+            const displayedDays = getDisplayedSpanDaysForRange(labels, values, currentRange);
+            const subtitleParts = [`Last ${displayedDays} days`, `${maWindow}-day avg`];
             if (graphSearchQuery || graphExcludedIds.size) {
                 subtitleParts.push('Filtered');
             }
@@ -2490,7 +2514,9 @@
                 syncRangePills();
                 if (lastGraphPayload && lastGraphDays >= currentDays) {
                     if (shouldAutoMAOnNextRender) {
-                        maWindow = pickDefaultMAWindowForDays(getDisplayedSpanDaysForRange(lastGraphPayload.labels, currentRange));
+                        maWindow = pickDefaultMAWindowForDays(
+                            getDisplayedSpanDaysForRange(lastGraphPayload.labels, lastGraphPayload.values, currentRange)
+                        );
                         syncMAPills();
                         shouldAutoMAOnNextRender = false;
                     }

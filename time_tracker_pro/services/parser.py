@@ -140,10 +140,10 @@ class TimeLogParser:
                 return None
             return hour, minute
 
-        if re.fullmatch(r"\d{1,2}\.\d{2}([ap]m)?", raw, re.IGNORECASE):
+        if re.fullmatch(r"\d{1,2}\.\d{1,2}([ap]m)?", raw, re.IGNORECASE):
             raw = raw.replace(".", ":", 1)
 
-        m = re.fullmatch(r"(\d{1,2})(?::(\d{2}))?([ap]m)?", raw)
+        m = re.fullmatch(r"(\d{1,2})(?::(\d{1,2}))?([ap]m)?", raw)
         if not m:
             return None
 
@@ -163,11 +163,11 @@ class TimeLogParser:
                 hour = 0
             return hour, minute
 
-        if hour > 23:
+        if m.group(2) is None:
             return None
 
-        if m.group(2) is None:
-            return hour, minute
+        if hour > 23:
+            return None
 
         if hour >= 13:
             return hour, minute
