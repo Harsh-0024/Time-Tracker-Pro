@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +12,8 @@
     <link rel="icon" href="{{ pwa_icon_url }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ pwa_icon_url }}">
     <title>Login - Time Tracker Pro</title>
+    <script src="/static/js/theme.js"></script>
+    <link rel="stylesheet" href="/static/css/theme.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -27,6 +29,27 @@
             border: 1px solid rgba(148, 126, 86, 0.18);
             box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
         }
+        [data-theme="dark"] body { background: #050403 !important; color: #EDE6D3 !important; }
+        [data-theme="dark"] .luxury-card { background: #0C0A07 !important; border-color: rgba(212,175,55,0.12) !important; box-shadow: 0 2px 8px rgba(0,0,0,0.50), 0 12px 40px rgba(0,0,0,0.40), inset 0 1px 0 rgba(212,175,55,0.04) !important; }
+        [data-theme="dark"] .bg-gray-900 { background-color: #0C0A07 !important; }
+        [data-theme="dark"] input { background: #080604 !important; border-color: rgba(212,175,55,0.16) !important; color: #EDE6D3 !important; }
+        [data-theme="dark"] input::placeholder { color: #3A3222 !important; }
+        [data-theme="dark"] .text-gray-900 { color: #EDE6D3 !important; }
+        [data-theme="dark"] .text-gray-700 { color: #B8A878 !important; }
+        [data-theme="dark"] .text-gray-600 { color: #6B5D3E !important; }
+        [data-theme="dark"] .text-gray-500 { color: #6B5D3E !important; }
+        [data-theme="dark"] label { color: #B8A878 !important; }
+        [data-theme="dark"] a { color: #F4D03F !important; }
+        [data-theme="dark"] .bg-red-50 { background: rgba(127,29,29,0.38) !important; }
+        [data-theme="dark"] .border-red-200 { border-color: rgba(239,68,68,0.25) !important; }
+        [data-theme="dark"] .text-red-700 { color: #FCA5A5 !important; }
+        [data-theme="dark"] .bg-amber-50 { background: rgba(120,80,6,0.35) !important; }
+        [data-theme="dark"] .border-amber-200 { border-color: rgba(212,175,55,0.25) !important; }
+        [data-theme="dark"] .text-amber-800 { color: #F4D03F !important; }
+        [data-theme="dark"] .bg-blue-50 { background: rgba(29,58,130,0.38) !important; }
+        [data-theme="dark"] .border-blue-200 { border-color: rgba(96,165,250,0.25) !important; }
+        [data-theme="dark"] .text-blue-700 { color: #93C5FD !important; }
+        [data-theme="dark"] .bg-white\/80 { background: #0E0C08 !important; }
     </style>
 </head>
 <body class="antialiased">

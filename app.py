@@ -2497,7 +2497,7 @@ def import_csv():
             prev = parsed_rows[i - 1]
             if current["start_dt"] < prev["end_dt"]:
                 parsed_rows[i - 1]["end_dt"] = current["start_dt"]
-        
+            
         # Split midnight crossovers
         final_rows: List[Dict[str, Any]] = []
         for p in parsed_rows:

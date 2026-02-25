@@ -247,6 +247,20 @@ class TimeLogParser:
                 return "pm"
             return None
 
+        def _is_explicit_time_like(token: str) -> bool:
+            raw = (token or "").strip().lower().strip(".,")
+            if not raw:
+                return False
+            if _ampm_normalized(raw):
+                return True
+            if re.fullmatch(r"\d{1,2}([ap]m)", raw, re.IGNORECASE):
+                return True
+            if re.fullmatch(r"\d{1,2}[:.]\d{1,2}([ap]m)?", raw, re.IGNORECASE):
+                return True
+            if re.fullmatch(r"\d{3,4}", raw):
+                return True
+            return False
+
         leading_date_has_comma = False
         i = 0
         while i < len(tokens):
@@ -269,26 +283,68 @@ class TimeLogParser:
                     break
                 continue
 
-            time_val = self._parse_time_token(cleaned, client_now)
+            # Disambiguate leading numeric day tokens like:
+            # - "21. 1:53 pm 1:40 ..." (dot means date marker)
+            # - "22 11:59 ..." (day + explicit time)
+            if i == 0 and re.fullmatch(r"\d{1,2}", cleaned):
+                day_num = int(cleaned)
+                next_token = tokens[i + 1] if i + 1 < len(tokens) else ""
+                next_next_token = tokens[i + 2] if i + 2 < len(tokens) else ""
+                next_is_split_minute_ampm = (
+                    re.fullmatch(r"\d{2}", (next_token or "").strip().strip(".,"))
+                    is not None
+                    and _ampm_normalized(next_next_token) is not None
+                )
+                has_explicit_following_time = _is_explicit_time_like(next_token) or next_is_split_minute_ampm
+                should_prefer_date = (trailing_dot and has_explicit_following_time) or (
+                    day_num >= 13 and has_explicit_following_time
+                )
+                if should_prefer_date:
+                    forced_date = self._parse_date_token(cleaned, client_now)
+                    if forced_date is not None:
+                        elements.append(("date", forced_date))
+                        dot_positions.append(trailing_dot)
+                        consumed += 1
+                        i += 1
+                        if len(elements) >= 4:
+                            break
+                        continue
+
+            time_val = None
             consumed_extra = 0
-            ampm = None
-            if time_val is not None:
-                if i + 2 < len(tokens) and time_val[1] == 0 and re.fullmatch(r"\d{2}", tokens[i + 1].strip().strip(".,")):
-                    ampm2 = _ampm_normalized(tokens[i + 2])
-                    if ampm2:
-                        minute_token = tokens[i + 1].strip().strip(".,")
-                        merged = f"{cleaned}:{minute_token}{ampm2}"
-                        merged_time = self._parse_time_token(merged, client_now)
-                        if merged_time is not None:
-                            time_val = merged_time
-                            consumed_extra = 2
-                            trailing_dot = (
-                                trailing_dot
-                                or tokens[i + 1].endswith(".")
-                                or tokens[i + 2].endswith(".")
-                            )
-                if i + 1 < len(tokens):
-                    ampm = _ampm_normalized(tokens[i + 1])
+
+            # Support split 12-hour forms like "12 14 pm".
+            if i + 2 < len(tokens) and re.fullmatch(r"\d{1,2}", cleaned):
+                minute_token = tokens[i + 1].strip().strip(".,")
+                ampm2 = _ampm_normalized(tokens[i + 2])
+                if re.fullmatch(r"\d{2}", minute_token) and ampm2:
+                    merged = f"{cleaned}:{minute_token}{ampm2}"
+                    merged_time = self._parse_time_token(merged, client_now)
+                    if merged_time is not None:
+                        time_val = merged_time
+                        consumed_extra = 2
+                        trailing_dot = (
+                            trailing_dot
+                            or tokens[i + 1].endswith(".")
+                            or tokens[i + 2].endswith(".")
+                        )
+
+            # Support split 12-hour forms like "5 pm".
+            if time_val is None and i + 1 < len(tokens) and re.fullmatch(r"\d{1,2}", cleaned):
+                ampm = _ampm_normalized(tokens[i + 1])
+                if ampm:
+                    merged = f"{cleaned}{ampm}"
+                    merged_time = self._parse_time_token(merged, client_now)
+                    if merged_time is not None:
+                        time_val = merged_time
+                        consumed_extra = 1
+                        trailing_dot = trailing_dot or tokens[i + 1].endswith(".")
+
+            if time_val is None:
+                time_val = self._parse_time_token(cleaned, client_now)
+
+            if time_val is not None and i + 1 < len(tokens):
+                ampm = _ampm_normalized(tokens[i + 1])
                 if ampm and not re.search(r"[ap]m\.?$", cleaned, re.IGNORECASE):
                     merged = f"{cleaned}{ampm}"
                     merged_time = self._parse_time_token(merged, client_now)
@@ -424,7 +480,10 @@ class TimeLogParser:
                 candidate_dt = self._combine_dt(current_date, t1)
                 if candidate_dt > client_now:
                     candidate_dt = candidate_dt - timedelta(days=1)
-                if previous_end_dt is None or (previous_end_dt is not None and candidate_dt < previous_end_dt):
+                if previous_end_dt is None:
+                    start_dt = candidate_dt
+                    end_dt = candidate_dt
+                elif candidate_dt < previous_end_dt:
                     start_dt = candidate_dt
                     end_dt = client_now
                 else:

@@ -513,6 +513,84 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
             except Exception:
                 parse_source_rows = snapshot_rows
 
+        def _to_naive_datetime(value: Any) -> Optional[datetime]:
+            if value is None:
+                return None
+            if isinstance(value, pd.Timestamp):
+                if pd.isna(value):
+                    return None
+                value = value.to_pydatetime()
+            if isinstance(value, datetime):
+                if value.tzinfo is not None:
+                    return value.replace(tzinfo=None)
+                return value
+            return None
+
+        def _has_explicit_date_hint(log_entry_value: str) -> bool:
+            text = str(log_entry_value or "").strip()
+            if not text:
+                return False
+            if re.search(r"\b\d{4}[./-]\d{1,2}[./-]\d{1,2}\b", text):
+                return True
+            if re.search(r"\b\d{1,2}[./-]\d{1,2}(?:[./-]\d{2,4})?\b", text):
+                return True
+            if re.search(r"^\s*\d{1,2}\.\s", text):
+                return True
+            if re.search(
+                r"\b\d{1,2}\s+(?:jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)\b",
+                text,
+                re.IGNORECASE,
+            ):
+                return True
+            return False
+
+        if parse_source_rows:
+            max_sort_dt = datetime(9999, 12, 31, 23, 59, 59)
+            row_order: List[Tuple[datetime, datetime, int]] = []
+            for idx, row_dict in enumerate(parse_source_rows):
+                log_entry = dict_text(
+                    row_dict,
+                    (
+                        "logEntry",
+                        "log_entry",
+                        "log entry",
+                        "entry",
+                        "taskDetails",
+                        "task",
+                        "task_details",
+                        "task details",
+                        "rawTask",
+                        "raw_task",
+                        "colB",
+                    ),
+                )
+                client_now = dict_text(
+                    row_dict,
+                    (
+                        "loggedTime",
+                        "logged_time",
+                        "logged time",
+                    ),
+                )
+
+                logged_dt_probe = _to_naive_datetime(pd.to_datetime(client_now, errors="coerce", dayfirst=True))
+                logged_sort_dt = logged_dt_probe or max_sort_dt
+                inferred_sort_dt = logged_sort_dt
+
+                if _has_explicit_date_hint(log_entry) and client_now:
+                    try:
+                        probe_parsed = parser.parse_row(log_entry, client_now, None)
+                        inferred_candidate = _to_naive_datetime(probe_parsed.get("start_dt"))
+                        if inferred_candidate is not None:
+                            inferred_sort_dt = inferred_candidate
+                    except Exception:
+                        pass
+
+                row_order.append((inferred_sort_dt, logged_sort_dt, idx))
+
+            ordered_indices = [idx for _, _, idx in sorted(row_order, key=lambda item: (item[0], item[1], item[2]))]
+            parse_source_rows = [parse_source_rows[idx] for idx in ordered_indices]
+
         for row_dict in parse_source_rows:
             raw_sheety_id = row_dict.get("id")
             sheety_id = None

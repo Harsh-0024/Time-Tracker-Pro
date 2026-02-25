@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +12,8 @@
     <link rel="icon" href="{{ pwa_icon_url }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ pwa_icon_url }}">
     <title>Admin Users - Time Tracker Pro</title>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -22,11 +24,45 @@
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
         }
+        [data-theme="dark"] body {
+            background: #050403 !important;
+            color: #EDE6D3 !important;
+        }
         .luxury-card {
             background: linear-gradient(135deg, #FEFCF8, #F5EDE1);
             border: 1px solid rgba(148, 126, 86, 0.18);
             box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
         }
+        [data-theme="dark"] .luxury-card {
+            background: #0C0A07 !important;
+            border-color: rgba(212,175,55,0.12) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.50), 0 12px 40px rgba(0,0,0,0.40), inset 0 1px 0 rgba(212,175,55,0.04) !important;
+        }
+        /* Fix Tailwind bg-gray-900 blue tint on dark surface */
+        [data-theme="dark"] .bg-gray-900 {
+            background-color: #0C0A07 !important;
+        }
+        /* Inputs, textareas */
+        [data-theme="dark"] input, [data-theme="dark"] textarea, [data-theme="dark"] select {
+            background: #080604 !important;
+            border-color: rgba(212,175,55,0.16) !important;
+            color: #EDE6D3 !important;
+        }
+        [data-theme="dark"] input::placeholder, [data-theme="dark"] textarea::placeholder {
+            color: #3A3222 !important;
+        }
+        /* Light badges */
+        [data-theme="dark"] .bg-amber-50 { background: rgba(120,80,6,0.35) !important; }
+        [data-theme="dark"] .border-amber-200 { border-color: rgba(212,175,55,0.25) !important; }
+        [data-theme="dark"] .text-amber-700 { color: #F4D03F !important; }
+        [data-theme="dark"] .text-gray-700 { color: #B8A878 !important; }
+        [data-theme="dark"] .text-gray-600 { color: #6B5D3E !important; }
+        [data-theme="dark"] .text-gray-500 { color: #6B5D3E !important; }
+        [data-theme="dark"] .text-gray-900 { color: #EDE6D3 !important; }
+        [data-theme="dark"] .border-slate-200 { border-color: rgba(212,175,55,0.10) !important; }
+        [data-theme="dark"] .bg-white\/80, [data-theme="dark"] .bg-white { background: #0E0C08 !important; }
+        [data-theme="dark"] label { color: #B8A878 !important; }
+        [data-theme="dark"] .border-slate-300 { border-color: rgba(212,175,55,0.14) !important; }
     </style>
 </head>
 <body class="antialiased overflow-x-hidden">

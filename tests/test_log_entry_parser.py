@@ -157,6 +157,47 @@ class LogEntryParserRulesTests(unittest.TestCase):
         self.assertFalse(parsed["imp"])
         self.assertEqual(parsed["tag"], "Work")
 
+    def test_leading_dotted_day_with_two_times_uses_date_then_cross_date_end(self) -> None:
+        previous_end = datetime(2026, 2, 21, 13, 53)
+        parsed = self.parse_with_now(
+            "21. 1:53 pm 1:40 travelling for ujjain, Instagram, games and family time . Soul",
+            "2026-02-22 01:50:49",
+            previous_end=previous_end,
+        )
+        self.assertEqual(parsed["start_dt"], datetime(2026, 2, 21, 13, 53))
+        self.assertEqual(parsed["end_dt"], datetime(2026, 2, 22, 1, 40))
+
+    def test_leading_day_plus_explicit_time_prefers_date_not_hour(self) -> None:
+        previous_end = datetime(2026, 2, 22, 23, 59)
+        family = self.parse_with_now(
+            "22 11:59 In ujjain with family . Soul Urgent",
+            "2026-02-23 00:00:33",
+            previous_end=previous_end,
+        )
+        self.assertEqual(family["start_dt"], previous_end)
+        self.assertEqual(family["end_dt"], datetime(2026, 2, 22, 23, 59))
+
+        sleep = self.parse_with_now(
+            "9:30 am sleep . Necessity",
+            "2026-02-23 19:07:59",
+            previous_end=family["end_dt"],
+        )
+        self.assertEqual(sleep["start_dt"], datetime(2026, 2, 22, 23, 59))
+        self.assertEqual(sleep["end_dt"], datetime(2026, 2, 23, 9, 30))
+
+    def test_explicit_month_date_with_two_times_parses_absolute_range(self) -> None:
+        previous_end = datetime(2026, 2, 23, 0, 0)
+        parsed = self.parse_with_now(
+            "22 feb 9:30 am 12:30 pm ujjain pooja . Important Urgent",
+            "2026-02-25 19:01:25",
+            previous_end=previous_end,
+        )
+        self.assertEqual(parsed["start_dt"], datetime(2026, 2, 22, 9, 30))
+        self.assertEqual(parsed["end_dt"], datetime(2026, 2, 22, 12, 30))
+        self.assertEqual(parsed["task"], "ujjain pooja")
+        self.assertTrue(parsed["urg"])
+        self.assertTrue(parsed["imp"])
+
     def test_generated_permutations_do_not_crash(self) -> None:
         time_seqs = [
             ("9",),

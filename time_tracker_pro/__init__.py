@@ -34,7 +34,8 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
     )
 
-    app = Flask(__name__, template_folder=template_folder)
+    static_folder = str(root / "static")
+    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 
     secret = os.getenv("SECRET_KEY")
     if not secret or secret == "dev-secret-change-me":

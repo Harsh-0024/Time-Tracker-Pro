@@ -1390,6 +1390,35 @@ def export_csv():
     user_id = int(getattr(g, "user_id", 0) or 0)
 
     df = fetch_local_data(db_name, user_id)
+    mode = (request.args.get("mode") or "all").strip().lower()
+    start_raw = (request.args.get("start_date") or "").strip()
+    end_raw = (request.args.get("end_date") or "").strip()
+    filename_suffix = "all"
+
+    if mode == "range":
+        if not start_raw or not end_raw:
+            return jsonify({"error": "start_date and end_date are required for range export"}), 400
+        try:
+            start_date = datetime.strptime(start_raw, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_raw, "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+        if end_date < start_date:
+            return jsonify({"error": "end_date must be on or after start_date"}), 400
+
+        if not df.empty:
+            if "start_datetime" in df.columns:
+                start_series = pd.to_datetime(df["start_datetime"], errors="coerce")
+                mask = (start_series.dt.date >= start_date) & (start_series.dt.date <= end_date)
+                df = df[mask.fillna(False)]
+            elif "date" in df.columns:
+                date_series = pd.to_datetime(df["date"], errors="coerce")
+                mask = (date_series.dt.date >= start_date) & (date_series.dt.date <= end_date)
+                df = df[mask.fillna(False)]
+        filename_suffix = f"{start_date.isoformat()}_to_{end_date.isoformat()}"
+    elif mode != "all":
+        return jsonify({"error": "Invalid mode. Use mode=all or mode=range"}), 400
+
     headers = [
         "start date",
         "start time",
@@ -1436,7 +1465,7 @@ def export_csv():
         buffer,
         mimetype="text/csv",
         as_attachment=True,
-        download_name="time-tracker-export.csv",
+        download_name=f"time-tracker-export-{filename_suffix}.csv",
     )
 
 
