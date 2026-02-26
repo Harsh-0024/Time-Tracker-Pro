@@ -22,7 +22,7 @@ from ..repositories.logs import fetch_local_data, get_first_log_date
 from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
 from ..services.matrix import get_matrix_stats
-from ..services.sync import sync_cloud_data
+from ..services.sync import sync_cloud_data, get_last_sync_stats
 from .decorators import admin_required, login_required
 from .utils import get_current_user_id
 
@@ -127,6 +127,7 @@ def dashboard():
     user_id = int(get_current_user_id() or 0)
 
     sync_cloud_data(db_name, user_id)
+    sync_stats = get_last_sync_stats(user_id)
 
     date_str = request.args.get("date")
     raw_period = request.args.get("period", "day")
@@ -137,6 +138,7 @@ def dashboard():
     if df.empty:
         try:
             sync_cloud_data(db_name, user_id, force=True)
+            sync_stats = get_last_sync_stats(user_id)
             df = fetch_local_data(db_name, user_id)
         except Exception as exc:
             logger.warning(
@@ -240,6 +242,7 @@ def dashboard():
             is_admin=is_admin,
             avg_start_date=avg_start_date,
             avg_end_date=avg_end_date,
+            sync_stats=sync_stats or {},
         )
     )
     return resp

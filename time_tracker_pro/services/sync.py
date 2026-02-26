@@ -123,6 +123,8 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
         "duplicate_preview": [],
         "sheet_rewrite": "skipped",
         "skipped_reason": "",
+        "sheety_quota_exhausted": False,
+        "sheety_error": "",
     }
 
     if is_rewrite_in_progress(db_name, int(user_id)):
@@ -131,16 +133,39 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
         _LAST_SYNC_STATS_BY_USER[int(user_id)]["skipped_reason"] = "sheet_rewrite_in_progress"
         return None
 
+    def _is_sheety_quota_error(error: Optional[str]) -> bool:
+        if not error:
+            return False
+        lower = error.lower()
+        return "http 402" in lower or "quota" in lower or "payment required" in lower
+
+    def _record_sync_failure(reason: str, error: Optional[str] = None, quota: bool = False) -> None:
+        if quota:
+            _LAST_SYNC_FAIL_TS_BY_USER[int(user_id)] = now - timedelta(hours=23)
+            _LAST_SYNC_STATS_BY_USER[int(user_id)]["sheety_quota_exhausted"] = True
+        else:
+            _LAST_SYNC_FAIL_TS_BY_USER[int(user_id)] = now
+        _LAST_SYNC_STATS_BY_USER[int(user_id)]["status"] = "failed"
+        _LAST_SYNC_STATS_BY_USER[int(user_id)]["skipped_reason"] = reason
+        if error:
+            _LAST_SYNC_STATS_BY_USER[int(user_id)]["sheety_error"] = str(error)
+
     try:
         payload: Optional[Dict[str, Any]] = None
         cleanup_service = None
         cleanup_url: Optional[str] = None
         cleanup_headers: Dict[str, str] = {}
-        accounts = get_user_api_accounts(db_name, int(user_id))
-        if accounts:
+        service = None
+        try:
             from .sheety_failover import SheetyFailoverService
 
             service = SheetyFailoverService(db_name, int(user_id))
+            if not service.has_available_accounts():
+                service = None
+        except Exception:
+            service = None
+
+        if service is not None:
             success, data, error = service.make_request("GET")
             failover_notice = service.get_failover_notification()
             used_fallback = False
@@ -151,9 +176,11 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
                     try:
                         response = requests.get(fallback_url, headers=fallback_headers, timeout=15)
                         if response.status_code == 402:
-                            _LAST_SYNC_FAIL_TS_BY_USER[int(user_id)] = now - timedelta(hours=23)
-                            _LAST_SYNC_STATS_BY_USER[int(user_id)]["status"] = "failed"
-                            _LAST_SYNC_STATS_BY_USER[int(user_id)]["skipped_reason"] = "sheety_subscription_required"
+                            _record_sync_failure(
+                                "sheety_subscription_required",
+                                error="HTTP 402",
+                                quota=True,
+                            )
                             return failover_notice
                         response.raise_for_status()
                         payload = response.json()
@@ -161,14 +188,12 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
                         cleanup_headers = fallback_headers
                         used_fallback = True
                     except requests.RequestException as exc:
-                        _LAST_SYNC_FAIL_TS_BY_USER[int(user_id)] = now
-                        _LAST_SYNC_STATS_BY_USER[int(user_id)]["status"] = "failed"
-                        _LAST_SYNC_STATS_BY_USER[int(user_id)]["skipped_reason"] = error or str(exc)
+                        quota_error = _is_sheety_quota_error(error or str(exc))
+                        _record_sync_failure(error or str(exc), error=error or str(exc), quota=quota_error)
                         return failover_notice
                 else:
-                    _LAST_SYNC_FAIL_TS_BY_USER[int(user_id)] = now
-                    _LAST_SYNC_STATS_BY_USER[int(user_id)]["status"] = "failed"
-                    _LAST_SYNC_STATS_BY_USER[int(user_id)]["skipped_reason"] = error or "sheety_request_failed"
+                    quota_error = _is_sheety_quota_error(error)
+                    _record_sync_failure(error or "sheety_request_failed", error=error, quota=quota_error)
                     return failover_notice
             if isinstance(data, dict):
                 payload = data
@@ -185,9 +210,7 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
 
             response = requests.get(url, headers=headers, timeout=15)
             if response.status_code == 402:
-                _LAST_SYNC_FAIL_TS_BY_USER[int(user_id)] = now - timedelta(hours=23)
-                _LAST_SYNC_STATS_BY_USER[int(user_id)]["status"] = "failed"
-                _LAST_SYNC_STATS_BY_USER[int(user_id)]["skipped_reason"] = "sheety_subscription_required"
+                _record_sync_failure("sheety_subscription_required", error="HTTP 402", quota=True)
                 return failover_notice
             response.raise_for_status()
             payload = response.json()
@@ -802,13 +825,17 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
         _LAST_SYNC_TS_BY_USER[int(user_id)] = now
         return failover_notice
     except requests.RequestException as exc:
-        _LAST_SYNC_FAIL_TS_BY_USER[int(user_id)] = now
+        quota_error = False
         if hasattr(exc, "response") and exc.response is not None and exc.response.status_code == 402:
-            _LAST_SYNC_FAIL_TS_BY_USER[int(user_id)] = now - timedelta(hours=23)
-            return failover_notice
+            quota_error = True
+        _record_sync_failure(
+            "sheety_subscription_required" if quota_error else str(exc),
+            error=str(exc),
+            quota=quota_error,
+        )
         logger.error("Network error during cloud sync: %s", exc)
     except Exception as exc:
-        _LAST_SYNC_FAIL_TS_BY_USER[int(user_id)] = now
+        _record_sync_failure(str(exc), error=str(exc), quota=False)
         logger.exception("Unexpected sync error: %s", exc)
     return failover_notice
 

@@ -1227,6 +1227,7 @@
         window.periodEnd = '{{ end_date }}';
         window.avgStart = '{{ avg_start_date }}';
         window.avgEnd = '{{ avg_end_date }}';
+        window.syncStats = {{ (sync_stats or {}) | tojson }};
 
         // Define functions globally
         window.changePeriod = function(period) {
@@ -3276,6 +3277,33 @@
             const settingsUrl = "{{ url_for('main.settings') }}";
             const dashboardUrl = "{{ url_for('main.dashboard') }}";
             const adminUrl = "{{ url_for('admin.admin_users') if is_admin else '' }}";
+            const getSheetyNotice = (stats) => {
+                if (!stats || String(stats.status || '') !== 'failed') return null;
+                const reason = String(stats.skipped_reason || '').trim();
+                const error = String(stats.sheety_error || '').trim();
+                const quota = Boolean(stats.sheety_quota_exhausted);
+                if (quota || reason === 'sheety_subscription_required') {
+                    return {
+                        type: 'warning',
+                        message: `Sheety quota reached. Sync is paused — update your API keys in <a href="${settingsUrl}" class="underline">Settings</a> to restore cloud sync.`
+                    };
+                }
+                if (reason || error) {
+                    return {
+                        type: 'warning',
+                        message: `Sheety sync failed. Update your API keys in <a href="${settingsUrl}" class="underline">Settings</a> and try again.`
+                    };
+                }
+                return null;
+            };
+            const showSheetyNotice = (stats, { force = false } = {}) => {
+                if (!force && window.__sheetyNoticeShown) return;
+                const notice = getSheetyNotice(stats);
+                if (!notice || !window.showWarningToast) return;
+                window.__sheetyNoticeShown = true;
+                window.showWarningToast(notice.message, 9000);
+            };
+            showSheetyNotice(window.syncStats);
             let shortcutToast = null;
             document.addEventListener('keydown', (event) => {
                 const tag = event.target?.tagName;
@@ -3891,7 +3919,10 @@
                     if (result?.failover && window.showApiFailoverNotification) {
                         window.showApiFailoverNotification(result.failover.from, result.failover.to);
                     }
-                    if (showLoading && window.showSuccessToast) {
+                    const notice = getSheetyNotice(result?.stats || null);
+                    if (notice && window.showWarningToast) {
+                        window.showWarningToast(notice.message, 9000);
+                    } else if (showLoading && window.showSuccessToast) {
                         window.showSuccessToast('Synced latest data');
                     }
                     if (showLoading) {

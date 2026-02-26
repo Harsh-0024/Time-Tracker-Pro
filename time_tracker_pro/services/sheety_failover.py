@@ -1,21 +1,28 @@
 from __future__ import annotations
 
+import json
 import logging
+import os
 import requests
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, List
 
 from ..db import get_db_connection
 from ..repositories.sheety_accounts import (
     get_active_api_account,
-    get_next_fallback_account,
     set_active_account,
     update_account_test_result,
-    get_user_api_accounts
+    get_user_api_accounts,
 )
+from ..repositories.settings import get_user_settings
+from ..repositories.users import get_user_count
 from ..core.rows import row_value
 
 
 logger = logging.getLogger(__name__)
+
+SHEETY_ENV_ACCOUNTS_ENV = "SHEETY_API_ACCOUNTS"
+SHEETY_ENV_TOKENS_ENV = "SHEETY_API_TOKENS"
+SHEETY_ENDPOINT_ENV = "SHEETY_ENDPOINT"
 
 
 class SheetyFailoverService:
@@ -28,6 +35,150 @@ class SheetyFailoverService:
         self.switched_account = False
         self.switched_from = None
         self.switched_to = None
+
+    def _account_id(self, account) -> Optional[int]:
+        try:
+            value = account["id"] if hasattr(account, "keys") and "id" in account.keys() else None
+        except Exception:
+            value = None
+        if value is None:
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _account_label(self, account) -> str:
+        label = row_value(account, "account_email") or row_value(account, "email")
+        if label:
+            return str(label)
+        account_id = self._account_id(account)
+        if account_id is not None:
+            return f"Account {account_id}"
+        return "Env Token"
+
+    def _account_key(self, account) -> tuple:
+        account_id = self._account_id(account)
+        if account_id is not None:
+            return ("db", account_id)
+        return (
+            "env",
+            row_value(account, "api_token"),
+            row_value(account, "api_base_url"),
+        )
+
+    def _is_env_account(self, account) -> bool:
+        try:
+            if hasattr(account, "keys") and "is_env" in account.keys():
+                return bool(account["is_env"])
+        except Exception:
+            pass
+        return False
+
+    def _allow_env_fallback(self) -> bool:
+        try:
+            return get_user_count(self.db_name) <= 1
+        except Exception:
+            return False
+
+    def _resolve_env_base_url(self, active_account=None) -> str:
+        settings = get_user_settings(self.db_name, int(self.user_id))
+        base_url = (settings.get("sheety_endpoint") or "").strip() if settings else ""
+        if not base_url:
+            base_url = (os.getenv(SHEETY_ENDPOINT_ENV) or "").strip()
+        if not base_url and active_account is not None:
+            base_url = (row_value(active_account, "api_base_url") or "").strip()
+        return base_url
+
+    def _parse_env_accounts(self, base_url: Optional[str] = None) -> List[Dict[str, Any]]:
+        if not self._allow_env_fallback():
+            return []
+        resolved_base_url = (base_url or "").strip() or self._resolve_env_base_url()
+        if not resolved_base_url:
+            return []
+
+        accounts: List[Dict[str, Any]] = []
+        seen_tokens = set()
+
+        raw_accounts = (os.getenv(SHEETY_ENV_ACCOUNTS_ENV) or "").strip()
+        if raw_accounts:
+            try:
+                payload = json.loads(raw_accounts)
+            except Exception as exc:
+                logger.warning("Failed to parse %s: %s", SHEETY_ENV_ACCOUNTS_ENV, exc)
+                payload = []
+            if isinstance(payload, dict):
+                payload = [payload]
+            if isinstance(payload, list):
+                for item in payload:
+                    token = ""
+                    account_url = ""
+                    account_email = ""
+                    if isinstance(item, str):
+                        token = item.strip()
+                    elif isinstance(item, dict):
+                        token = (item.get("api_token") or item.get("token") or "").strip()
+                        account_url = (
+                            item.get("api_base_url")
+                            or item.get("api_url")
+                            or item.get("endpoint")
+                            or ""
+                        ).strip()
+                        account_email = (
+                            item.get("account_email") or item.get("email") or ""
+                        ).strip()
+                    if not token:
+                        continue
+                    if token in seen_tokens:
+                        continue
+                    seen_tokens.add(token)
+                    accounts.append(
+                        {
+                            "id": None,
+                            "user_id": int(self.user_id),
+                            "account_email": account_email or f"Env Token {len(accounts) + 1}",
+                            "api_base_url": account_url or resolved_base_url,
+                            "api_token": token,
+                            "priority": 1000 + len(accounts),
+                            "is_active": 0,
+                            "is_env": True,
+                        }
+                    )
+
+        raw_tokens = (os.getenv(SHEETY_ENV_TOKENS_ENV) or "").strip()
+        if raw_tokens:
+            for raw_token in raw_tokens.replace(";", ",").replace("\n", ",").split(","):
+                token = raw_token.strip()
+                if not token:
+                    continue
+                if token in seen_tokens:
+                    continue
+                seen_tokens.add(token)
+                accounts.append(
+                    {
+                        "id": None,
+                        "user_id": int(self.user_id),
+                        "account_email": f"Env Token {len(accounts) + 1}",
+                        "api_base_url": resolved_base_url,
+                        "api_token": token,
+                        "priority": 1000 + len(accounts),
+                        "is_active": 0,
+                        "is_env": True,
+                    }
+                )
+
+        return accounts
+
+    def _get_all_accounts(self, active_account=None) -> List[Any]:
+        accounts = list(get_user_api_accounts(self.db_name, self.user_id) or [])
+        accounts.extend(self._parse_env_accounts(self._resolve_env_base_url(active_account)))
+        return accounts
+
+    def has_available_accounts(self) -> bool:
+        return bool(self._get_all_accounts())
+
+    def get_env_accounts(self) -> List[Dict[str, Any]]:
+        return self._parse_env_accounts()
     
     def _build_headers(self, api_token: Optional[str]) -> Dict[str, str]:
         """Build request headers with optional auth token."""
@@ -41,6 +192,7 @@ class SheetyFailoverService:
         try:
             api_base_url = account['api_base_url']
             headers = self._build_headers(row_value(account, 'api_token'))
+            account_label = self._account_label(account)
             
             response = requests.get(api_base_url, headers=headers, timeout=10)
             
@@ -58,13 +210,17 @@ class SheetyFailoverService:
                 preview = (response.text or "").strip().replace("\n", " ")
                 if len(preview) > 200:
                     preview = preview[:200] + "..."
-                logger.warning(f"API test failed for account {account['id']}: HTTP {response.status_code}")
+                logger.warning(
+                    "API test failed for account %s: HTTP %s",
+                    account_label,
+                    response.status_code,
+                )
                 detail = f"HTTP {response.status_code}"
                 if preview:
                     detail = f"{detail} - {preview}"
                 return False, None, detail
         except Exception as e:
-            logger.error(f"API test error for account {account['id']}: {e}")
+            logger.error("API test error for account %s: %s", self._account_label(account), e)
             return False, None, str(e)
     
     def _try_request(
@@ -79,6 +235,8 @@ class SheetyFailoverService:
             api_base_url = account['api_base_url']
             url = f"{api_base_url.rstrip('/')}/{endpoint.lstrip('/')}" if endpoint else api_base_url
             headers = self._build_headers(row_value(account, 'api_token'))
+            account_id = self._account_id(account)
+            account_label = self._account_label(account)
             
             method_upper = str(method or "").upper()
             if method_upper == 'GET':
@@ -93,7 +251,8 @@ class SheetyFailoverService:
                 return False, None, f"Unsupported method {method_upper}"
             
             if response.status_code in (200, 201, 204):
-                update_account_test_result(self.db_name, account['id'], True, self.user_id)
+                if account_id is not None:
+                    update_account_test_result(self.db_name, account_id, True, self.user_id)
                 try:
                     return True, response.json() if response.content else {}, None
                 except Exception:
@@ -105,12 +264,15 @@ class SheetyFailoverService:
                 detail = f"HTTP {response.status_code}"
                 if preview:
                     detail = f"{detail} - {preview}"
-                logger.warning(f"Request failed for account {account['id']}: {detail}")
-                update_account_test_result(self.db_name, account['id'], False, self.user_id)
+                logger.warning("Request failed for account %s: %s", account_label, detail)
+                if account_id is not None:
+                    update_account_test_result(self.db_name, account_id, False, self.user_id)
                 return False, None, detail
         except Exception as e:
-            logger.error(f"Request error for account {account['id']}: {e}")
-            update_account_test_result(self.db_name, account['id'], False, self.user_id)
+            logger.error("Request error for account %s: %s", self._account_label(account), e)
+            account_id = self._account_id(account)
+            if account_id is not None:
+                update_account_test_result(self.db_name, account_id, False, self.user_id)
             return False, None, str(e)
 
     def _strip_internal_meta(self, json_data: Optional[Dict]) -> tuple[Optional[Dict], Optional[Dict[str, Any]]]:
@@ -174,17 +336,20 @@ class SheetyFailoverService:
 
         # Get active account
         active_account = get_active_api_account(self.db_name, self.user_id)
+        accounts = self._get_all_accounts(active_account)
 
         if not active_account:
-            accounts = get_user_api_accounts(self.db_name, self.user_id)
             if not accounts:
                 # No accounts configured
                 return False, None, "No Sheety API accounts configured"
             for account in accounts:
                 success, _, _ = self._test_api_account(account)
-                update_account_test_result(self.db_name, account["id"], success, self.user_id)
+                account_id = self._account_id(account)
+                if account_id is not None:
+                    update_account_test_result(self.db_name, account_id, success, self.user_id)
                 if success:
-                    set_active_account(self.db_name, account["id"], self.user_id)
+                    if account_id is not None:
+                        set_active_account(self.db_name, account_id, self.user_id)
                     active_account = account
                     break
             if not active_account:
@@ -197,27 +362,34 @@ class SheetyFailoverService:
             return True, data, None
         
         # Active account failed, try every fallback account
-        logger.info(f"Active account {active_account['id']} failed, trying failover...")
+        logger.info("Active account %s failed, trying failover...", self._account_label(active_account))
 
-        accounts = get_user_api_accounts(self.db_name, self.user_id)
+        accounts = self._get_all_accounts(active_account)
         if not accounts:
             return False, None, "No Sheety API accounts configured"
+        active_key = self._account_key(active_account)
 
         attempts = 0
         for account in accounts:
-            if account["id"] == active_account["id"]:
+            if self._account_key(account) == active_key:
                 continue
             attempts += 1
-            logger.info(f"Trying fallback account {account['id']} (attempt {attempts})")
+            logger.info("Trying fallback account %s (attempt %s)", self._account_label(account), attempts)
             success, data, error = self._try_request(account, method_upper, endpoint, cleaned_json)
             if success:
                 # Failover successful! Switch to this account
-                set_active_account(self.db_name, account["id"], self.user_id)
+                account_id = self._account_id(account)
+                if account_id is not None:
+                    set_active_account(self.db_name, account_id, self.user_id)
                 self.switched_account = True
-                self.switched_from = active_account["account_email"]
-                self.switched_to = account["account_email"]
+                self.switched_from = self._account_label(active_account)
+                self.switched_to = self._account_label(account)
 
-                logger.info(f"Failover successful: switched from {self.switched_from} to {self.switched_to}")
+                logger.info(
+                    "Failover successful: switched from %s to %s",
+                    self.switched_from,
+                    self.switched_to,
+                )
 
                 return True, data, None
             if error:
@@ -259,7 +431,9 @@ class SheetyFailoverService:
             return False, None, "Account not found"
         
         success, row_count, error = self._test_api_account(account)
-        update_account_test_result(self.db_name, account['id'], success, self.user_id)
+        account_pk = self._account_id(account)
+        if account_pk is not None:
+            update_account_test_result(self.db_name, account_pk, success, self.user_id)
         
         if success:
             return True, row_count, None
