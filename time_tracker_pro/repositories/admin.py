@@ -23,6 +23,7 @@ def list_users(db_name: str) -> List[sqlite3.Row]:
 def delete_user_cascade(db_name: str, target_id: int) -> None:
     conn = get_db_connection(db_name)
     conn.execute("DELETE FROM logs WHERE user_id = ?", (int(target_id),))
+    conn.execute("DELETE FROM graph_search_history WHERE user_id = ?", (int(target_id),))
     conn.execute("DELETE FROM user_settings WHERE user_id = ?", (int(target_id),))
     conn.execute("DELETE FROM email_verifications WHERE user_id = ?", (int(target_id),))
     conn.execute("DELETE FROM users WHERE id = ?", (int(target_id),))

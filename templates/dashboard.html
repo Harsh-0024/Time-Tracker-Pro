@@ -582,12 +582,27 @@
         }
     </style>
 </head>
-<body class="antialiased overflow-x-hidden">
+<body class="antialiased overflow-x-hidden" data-sync-stats="{{ (sync_stats or {}) | tojson | e }}">
 
     <div id="globalLoading" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/30 backdrop-blur-sm md:inset-auto md:bottom-4 md:right-4 md:items-start md:justify-start md:bg-transparent md:backdrop-blur-0">
         <div class="px-5 py-3 rounded-2xl bg-white/95 text-sm md:text-xs text-gray-700 shadow-2xl ring-1 ring-white/60 flex items-center gap-3 md:bg-gray-900/90 md:text-gray-100 md:ring-0">
             <span class="h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse"></span>
             <span>Loading insights…</span>
+        </div>
+    </div>
+
+    <div id="exportFormatModal" class="fixed inset-0 z-[1300] hidden">
+        <div class="absolute inset-0 bg-slate-900/35 backdrop-blur-sm" data-close-export-format="true"></div>
+        <div class="relative min-h-full flex items-center justify-center px-4 py-8">
+            <div class="luxury-card w-full max-w-sm rounded-3xl p-6">
+                <h3 class="text-lg font-semibold text-gray-900">Choose export format</h3>
+                <p class="text-xs text-gray-600 mt-1">Download data in your preferred format.</p>
+                <div class="mt-5 grid grid-cols-2 gap-3">
+                    <button type="button" data-export-format="csv" class="px-4 py-2.5 rounded-full bg-white border border-[rgba(148,126,86,0.35)] text-sm font-semibold text-gray-700 hover:bg-[#F7F1E6]">CSV</button>
+                    <button type="button" data-export-format="json" class="px-4 py-2.5 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold">JSON</button>
+                </div>
+                <button type="button" data-close-export-format="true" class="mt-3 w-full px-4 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-sm text-gray-700 font-semibold hover:bg-[#F7F1E6]">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -689,8 +704,8 @@
                     </button>
                 </div>
             </div>
-            <div class="flex flex-col gap-4 mb-6 md:mb-8 md:flex-row md:items-end md:justify-between">
-                <div class="min-w-0 flex items-start justify-between gap-4 md:block md:pr-4">
+            <div class="flex flex-col gap-4 mb-6 md:mb-8 md:flex-row md:items-center md:justify-between">
+                <div class="min-w-0 flex items-start justify-between gap-4 md:block md:w-[240px] md:flex-none">
                     <div>
                         <h2 class="text-3xl md:text-4xl font-light text-gray-900 mb-1 md:mb-2 tracking-tight">{{ current_month }}</h2>
                         <p class="text-gray-700 md:text-gray-500 text-sm">Where did your day go?</p>
@@ -701,7 +716,7 @@
                 </div>
 
                 {% if period == 'day' %}
-                <div class="md:flex-1 md:flex md:justify-center">
+                <div class="md:flex-1 md:min-w-0 md:flex md:justify-center">
                     <div id="weekScroller" class="flex justify-start gap-6 overflow-x-auto pb-4 scroll-smooth scroll-px-6 md:justify-center md:gap-4 md:pb-2 md:max-w-[560px]">
                         {% for day in week_days %}
                         <a href="/?date={{ day.full_str }}&period={{ period }}" class="flex flex-col items-center min-w-[56px] group" {% if day.is_selected %}data-selected-day="true"{% endif %}>
@@ -723,7 +738,7 @@
                 </div>
                 {% endif %}
 
-                <div class="hidden md:flex items-center gap-2 md:gap-4 shrink-0">
+                <div class="hidden md:flex items-center gap-2 md:gap-4 shrink-0 md:w-[240px] md:justify-end">
                     <button id="viewFullBtn" onclick="viewFullDay()" class="primary-cta hidden md:inline-flex">
                         View Full Day
                     </button>
@@ -1227,7 +1242,12 @@
         window.periodEnd = '{{ end_date }}';
         window.avgStart = '{{ avg_start_date }}';
         window.avgEnd = '{{ avg_end_date }}';
-        window.syncStats = {{ (sync_stats or {}) | tojson }};
+        const rawSyncStats = document.body?.dataset?.syncStats || '{}';
+        try {
+            window.syncStats = JSON.parse(rawSyncStats);
+        } catch (e) {
+            window.syncStats = {};
+        }
 
         // Define functions globally
         window.changePeriod = function(period) {
@@ -1243,6 +1263,8 @@
             window.updateTodayButtons();
             window.location.href = `/?date=${date}&period=${window.currentPeriod}`;
         };
+
+        const exportFormatModal = document.getElementById('exportFormatModal');
 
         window.getLocalIsoDate = function() {
             const now = new Date();
@@ -2366,26 +2388,14 @@
             return evaluateModalQuery(expr, task);
         }
 
-        window.renderModalTasks = function() {
-            const container = document.getElementById('modalTasks');
-            if (!container || !window.modalData) return;
+        window.getVisibleModalTasks = function() {
+            if (!window.modalData) return [];
             const hidden = window.hiddenTags || {};
             const tasks = window.modalData.tasks || [];
             const filterType = window.modalFilterType || 'all';
             const sortKey = window.modalSort || 'time_desc';
             const query = String(window.modalQuery || '').trim();
             const searchExpr = parseModalQuery(query);
-            const timeToMinutes = (value) => {
-                if (!value) return 0;
-                const parts = String(value).trim().match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?/i);
-                if (!parts) return 0;
-                let hour = Number(parts[1] || 0);
-                const minute = Number(parts[2] || 0);
-                const meridian = (parts[3] || '').toUpperCase();
-                if (meridian === 'PM' && hour < 12) hour += 12;
-                if (meridian === 'AM' && hour === 12) hour = 0;
-                return (hour * 60) + minute;
-            };
             const getTaskTimestamp = (task) => {
                 const date = String(task.date || '').trim();
                 if (!date) return 0;
@@ -2430,6 +2440,105 @@
                 urg_desc: (a, b) => Number(b.urgent) - Number(a.urgent)
             };
             searched.sort(sorters[sortKey] || sorters.time_desc);
+            return searched;
+        };
+
+        window.unifiedExportHeaders = ['start date', 'start time', 'end date', 'end time', 'task', 'duration', 'special tags', 'urgent', 'important'];
+
+        window.rowsToExportCsv = function(rows, headers) {
+            const escape = (value) => {
+                const raw = String(value == null ? '' : value);
+                const escaped = raw.replace(/"/g, '""');
+                return /[",\n]/.test(escaped) ? `"${escaped}"` : escaped;
+            };
+            const lines = [headers.join(',')];
+            rows.forEach((row) => {
+                lines.push(headers.map((header) => escape(row[header])).join(','));
+            });
+            return lines.join('\n');
+        };
+
+        window.showExportFormatPicker = function() {
+            return new Promise((resolve) => {
+                if (!exportFormatModal) {
+                    resolve('csv');
+                    return;
+                }
+                exportFormatModal.classList.remove('hidden');
+                const close = () => {
+                    exportFormatModal.classList.add('hidden');
+                    exportFormatModal.querySelectorAll('[data-export-format]').forEach(btn => {
+                        btn.onclick = null;
+                    });
+                    exportFormatModal.querySelectorAll('[data-close-export-format="true"]').forEach(btn => {
+                        btn.onclick = null;
+                    });
+                };
+                exportFormatModal.querySelectorAll('[data-export-format]').forEach(btn => {
+                    btn.onclick = () => {
+                        const format = btn.getAttribute('data-export-format') || 'csv';
+                        close();
+                        resolve(format);
+                    };
+                });
+                exportFormatModal.querySelectorAll('[data-close-export-format="true"]').forEach(btn => {
+                    btn.onclick = () => {
+                        close();
+                        resolve(null);
+                    };
+                });
+            });
+        };
+
+        window.normalizeTaskForUnifiedExport = function(task) {
+            return {
+                'start date': String(task?.date || ''),
+                'start time': String(task?.start_time || ''),
+                'end date': String(task?.end_date || task?.date || ''),
+                'end time': String(task?.end_time || ''),
+                'task': String(task?.task || ''),
+                'duration': Number(task?.duration || 0),
+                'special tags': String(task?.tag || task?.tags || ''),
+                'urgent': task?.urgent ? 'Yes' : 'No',
+                'important': task?.important ? 'Yes' : 'No',
+            };
+        };
+
+        window.downloadUnifiedRows = async function(rows, filePrefix = 'time-tracker-export') {
+            const format = await window.showExportFormatPicker();
+            if (!format) return;
+            const headers = window.unifiedExportHeaders || [];
+            const payload = format === 'json'
+                ? JSON.stringify({ columns: headers, rows }, null, 2)
+                : window.rowsToExportCsv(rows, headers);
+            const mimeType = format === 'json' ? 'application/json' : 'text/csv';
+            const extension = format === 'json' ? 'json' : 'csv';
+            const blob = new Blob([payload], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filePrefix}-${new Date().toISOString().slice(0, 10)}.${extension}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        window.exportModalTasks = async function() {
+            const searched = window.getVisibleModalTasks();
+            if (!searched.length) {
+                if (window.showWarningToast) window.showWarningToast('No visible tasks to export');
+                return;
+            }
+            const rows = searched.map(task => window.normalizeTaskForUnifiedExport(task));
+            await window.downloadUnifiedRows(rows, 'time-tracker-review');
+            if (window.showSuccessToast) window.showSuccessToast('Review exported successfully');
+        };
+
+        window.renderModalTasks = function() {
+            const container = document.getElementById('modalTasks');
+            if (!container || !window.modalData) return;
+            const searched = window.getVisibleModalTasks();
             if (searched.length === 0) {
                 container.innerHTML = '<div class="text-center py-8 text-gray-400">No tasks found</div>';
                 if (window.renderModalStats) window.renderModalStats();
@@ -2746,6 +2855,7 @@
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <button id="openCreateTask" class="px-3 py-1.5 rounded-full bg-gray-900 text-emerald-200 text-xs font-semibold shadow-sm active:scale-[0.98] transition">Add task</button>
+                            <button id="modalExportBtn" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs text-gray-700 shadow-sm active:scale-[0.98] transition">Export</button>
                             <div class="relative">
                                 <button id="modalSortBtn" class="px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs text-gray-700 shadow-sm active:scale-[0.98] transition">
                                     Sort: <span id="modalSortLabel">${sortLabels[window.modalSort] || window.modalSortLabel || 'Time ↓'}</span>
@@ -2766,6 +2876,7 @@
                 const menu = document.getElementById('modalSortMenu');
                 const label = document.getElementById('modalSortLabel');
                 const search = document.getElementById('modalSearch');
+                const exportBtn = document.getElementById('modalExportBtn');
                 if (search) {
                     search.value = String(window.modalQuery || '');
                     search.oninput = () => {
@@ -2776,6 +2887,9 @@
                 const addBtn = document.getElementById('openCreateTask');
                 if (addBtn) {
                     addBtn.onclick = () => window.openCreateTaskPanel && window.openCreateTaskPanel();
+                }
+                if (exportBtn) {
+                    exportBtn.onclick = () => window.exportModalTasks && window.exportModalTasks();
                 }
                 if (btn && menu && label) {
                     btn.onclick = () => menu.classList.toggle('hidden');
@@ -3945,61 +4059,32 @@
 
             const exportSummaryBtn = document.getElementById('exportSummaryBtn');
             if (exportSummaryBtn) {
-                exportSummaryBtn.addEventListener('click', () => {
-                    const parseJson = (value, fallback) => {
-                        if (value == null) return fallback;
-                        try {
-                            return JSON.parse(value);
-                        } catch (e) {
-                            return fallback;
+                exportSummaryBtn.addEventListener('click', async () => {
+                    try {
+                        const query = new URLSearchParams({
+                            date: String(window.currentDate || ''),
+                            period: String(window.currentPeriod || 'day'),
+                            filter: 'all'
+                        });
+                        const response = await fetch(`/api/tasks?${query.toString()}`, { credentials: 'include' });
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
                         }
-                    };
-                    const categoryLabels = parseJson(exportSummaryBtn.dataset.categoryLabels, []);
-                    const categoryHours = parseJson(exportSummaryBtn.dataset.categoryHours, []);
-                    const categories = {};
-                    categoryLabels.forEach((label, idx) => {
-                        categories[label] = Number(categoryHours[idx] || 0);
-                    });
-                    const summaryData = {
-                        period: parseJson(exportSummaryBtn.dataset.period, ''),
-                        date: parseJson(exportSummaryBtn.dataset.date, ''),
-                        month: parseJson(exportSummaryBtn.dataset.month, ''),
-                        total_hours: Number(parseJson(exportSummaryBtn.dataset.totalHours, 0)),
-                        total_tasks: Number(parseJson(exportSummaryBtn.dataset.totalTasks, 0)),
-                        top_category: {
-                            name: parseJson(exportSummaryBtn.dataset.topCategoryName, ''),
-                            hours: Number(parseJson(exportSummaryBtn.dataset.topCategoryHours, 0)),
-                            percentage: Number(parseJson(exportSummaryBtn.dataset.topCategoryPercentage, 0))
-                        },
-                        dominant_quadrant: {
-                            name: parseJson(exportSummaryBtn.dataset.dominantQuadrantName, ''),
-                            hours: Number(parseJson(exportSummaryBtn.dataset.dominantQuadrantHours, 0)),
-                            percentage: Number(parseJson(exportSummaryBtn.dataset.dominantQuadrantPercentage, 0)),
-                            subtitle: parseJson(exportSummaryBtn.dataset.dominantQuadrantSubtitle, '')
-                        },
-                        quadrants: {
-                            important_urgent: Number(parseJson(exportSummaryBtn.dataset.quadrantImportantUrgent, 0)),
-                            important_not_urgent: Number(parseJson(exportSummaryBtn.dataset.quadrantImportantNotUrgent, 0)),
-                            not_important_urgent: Number(parseJson(exportSummaryBtn.dataset.quadrantNotImportantUrgent, 0)),
-                            not_important_not_urgent: Number(parseJson(exportSummaryBtn.dataset.quadrantNotImportantNotUrgent, 0)),
-                            important_total: Number(parseJson(exportSummaryBtn.dataset.quadrantImportantTotal, 0)),
-                            not_important_total: Number(parseJson(exportSummaryBtn.dataset.quadrantNotImportantTotal, 0)),
-                            urgent_total: Number(parseJson(exportSummaryBtn.dataset.quadrantUrgentTotal, 0)),
-                            not_urgent_total: Number(parseJson(exportSummaryBtn.dataset.quadrantNotUrgentTotal, 0))
-                        },
-                        categories: categories
-                    };
-                    const blob = new Blob([JSON.stringify(summaryData, null, 2)], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `time-tracker-summary-${summaryData.date}.json`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    if (window.showSuccessToast) {
-                        window.showSuccessToast('Summary exported successfully');
+                        const data = await response.json();
+                        const tasks = Array.isArray(data?.tasks) ? data.tasks : [];
+                        if (!tasks.length) {
+                            if (window.showWarningToast) window.showWarningToast('No tasks available to export for this period');
+                            return;
+                        }
+                        const rows = tasks.map(task => window.normalizeTaskForUnifiedExport(task));
+                        await window.downloadUnifiedRows(rows, `time-tracker-${window.currentPeriod || 'period'}`);
+                        if (window.showSuccessToast) {
+                            window.showSuccessToast('Summary exported successfully');
+                        }
+                    } catch (error) {
+                        if (window.showErrorToast) {
+                            window.showErrorToast('Failed to export summary');
+                        }
                     }
                 });
             }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import logging
 import os
 import re
@@ -16,6 +17,10 @@ from ..core.constants import GRAPH_TAG_MAP
 from ..core.dates import get_period_range, parse_date_param, parse_period_param
 from ..core.tags import filter_special_tags, normalize_tag, primary_special_tag
 from ..db import get_db_connection
+from ..repositories.graph_search_history import (
+    list_top_graph_search_combos,
+    record_graph_search_combo,
+)
 from ..repositories.logs import fetch_local_data
 from ..repositories.users import get_user_count, get_user_by_id
 from ..core.rows import row_value
@@ -248,6 +253,9 @@ def graph_data():
         days = 30
 
     end_date = parse_date_param(request.args.get("end"))
+    today = datetime.now().date()
+    if end_date >= today:
+        end_date = today - timedelta(days=1)
     start_date = end_date - timedelta(days=days - 1)
 
     df = fetch_local_data(db_name, user_id)
@@ -257,12 +265,6 @@ def graph_data():
 
     if "primary_tag" not in df.columns:
         df["primary_tag"] = df["tag"].apply(primary_special_tag)
-
-    min_complete_minutes = 10 * 60
-    latest_total = df.loc[df["date"] == end_date, "duration"].sum()
-    if latest_total < min_complete_minutes:
-        end_date = end_date - timedelta(days=1)
-        start_date = end_date - timedelta(days=days - 1)
 
     df = df[(df["date"] >= start_date) & (df["date"] <= end_date)]
     if df.empty:
@@ -354,6 +356,44 @@ def graph_data():
             "tasks": tasks,
         }
     )
+
+
+@bp.route("/api/graph-search-suggestions", endpoint="graph_search_suggestions")
+@api_or_login_required
+def graph_search_suggestions():
+    db_name = current_app.config["DB_NAME"]
+    user_id = int(getattr(g, "user_id", 0) or 0)
+    raw_limit = request.args.get("limit") or "7"
+    try:
+        limit = max(1, min(int(raw_limit), 20))
+    except Exception:
+        limit = 7
+
+    suggestions = list_top_graph_search_combos(db_name, user_id, limit=limit)
+    return jsonify({"suggestions": suggestions})
+
+
+@bp.route("/api/graph-search-suggestions/use", methods=["POST"], endpoint="graph_search_suggestions_use")
+@api_or_login_required
+def graph_search_suggestions_use():
+    db_name = current_app.config["DB_NAME"]
+    user_id = int(getattr(g, "user_id", 0) or 0)
+    payload = request.get_json(silent=True) or {}
+    focus = str(payload.get("focus") or "").strip().lower()
+    search = str(payload.get("search") or "").strip()
+    if not search:
+        return jsonify({"ok": True})
+
+    try:
+        record_graph_search_combo(db_name, user_id, focus, search)
+    except Exception as exc:
+        logger.warning(
+            "Failed to record graph search combo user_id=%s focus=%s error=%s",
+            int(user_id),
+            focus,
+            exc,
+        )
+    return jsonify({"ok": True})
 
 
 @bp.route("/api/tasks/<int:task_id>", methods=["PUT"], endpoint="update_task")
@@ -1391,6 +1431,7 @@ def export_csv():
 
     df = fetch_local_data(db_name, user_id)
     mode = (request.args.get("mode") or "all").strip().lower()
+    export_format = (request.args.get("format") or "csv").strip().lower()
     start_raw = (request.args.get("start_date") or "").strip()
     end_raw = (request.args.get("end_date") or "").strip()
     filename_suffix = "all"
@@ -1419,6 +1460,9 @@ def export_csv():
     elif mode != "all":
         return jsonify({"error": "Invalid mode. Use mode=all or mode=range"}), 400
 
+    if export_format not in {"csv", "json"}:
+        return jsonify({"error": "Invalid format. Use format=csv or format=json"}), 400
+
     headers = [
         "start date",
         "start time",
@@ -1430,9 +1474,7 @@ def export_csv():
         "urgent",
         "important",
     ]
-    output = StringIO()
-    writer = csv.writer(output)
-    writer.writerow(headers)
+    export_rows: List[Dict[str, Any]] = []
 
     if not df.empty:
         for _, row in df.iterrows():
@@ -1446,19 +1488,38 @@ def export_csv():
                 tags_value = ", ".join([t for t in special_tags if t])
             else:
                 tags_value = ""
-            writer.writerow(
-                [
-                    start_dt.strftime("%Y-%m-%d"),
-                    start_dt.strftime("%I:%M %p"),
-                    end_dt.strftime("%Y-%m-%d"),
-                    end_dt.strftime("%I:%M %p"),
-                    row.get("task", ""),
-                    duration_hours,
-                    tags_value,
-                    "Yes" if row.get("urgent") else "No",
-                    "Yes" if row.get("important") else "No",
-                ]
+            export_rows.append(
+                {
+                    "start date": start_dt.strftime("%Y-%m-%d"),
+                    "start time": start_dt.strftime("%I:%M %p"),
+                    "end date": end_dt.strftime("%Y-%m-%d"),
+                    "end time": end_dt.strftime("%I:%M %p"),
+                    "task": row.get("task", ""),
+                    "duration": duration_hours,
+                    "special tags": tags_value,
+                    "urgent": "Yes" if row.get("urgent") else "No",
+                    "important": "Yes" if row.get("important") else "No",
+                }
             )
+
+    if export_format == "json":
+        payload = {
+            "columns": headers,
+            "rows": export_rows,
+        }
+        buffer = BytesIO(json.dumps(payload, ensure_ascii=True, indent=2).encode("utf-8"))
+        return send_file(
+            buffer,
+            mimetype="application/json",
+            as_attachment=True,
+            download_name=f"time-tracker-export-{filename_suffix}.json",
+        )
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(headers)
+    for row in export_rows:
+        writer.writerow([row.get(header, "") for header in headers])
 
     buffer = BytesIO(output.getvalue().encode("utf-8"))
     return send_file(

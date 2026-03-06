@@ -231,5 +231,21 @@ def init_db(db_name: str) -> None:
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_graph_bookmarks_user ON graph_bookmarks(user_id, created_at)")
 
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS graph_search_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            focus TEXT NOT NULL,
+            search_query TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_graph_search_history_user ON graph_search_history(user_id, focus, created_at)"
+    )
+
     conn.commit()
     conn.close()
