@@ -594,7 +594,7 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
 
         if parse_source_rows:
             max_sort_dt = datetime(9999, 12, 31, 23, 59, 59)
-            row_order: List[Tuple[datetime, datetime, int]] = []
+            row_order: List[Tuple[datetime, int, datetime, int]] = []
 
             def _minute_floor(dt_value: datetime) -> datetime:
                 return dt_value.replace(second=0, microsecond=0)
@@ -628,6 +628,7 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
                 logged_dt_probe = parse_logged_datetime(client_now)
                 logged_sort_dt = logged_dt_probe or max_sort_dt
                 inferred_sort_dt = logged_sort_dt
+                inferred_is_range = 0
                 client_now_probe = client_now
                 if logged_dt_probe is not None:
                     client_now_probe = logged_dt_probe.strftime("%Y-%m-%d %H:%M:%S")
@@ -636,14 +637,21 @@ def sync_cloud_data(db_name: str, user_id: int, force: bool = False) -> Optional
                     try:
                         probe_parsed = parser.parse_row(log_entry, client_now_probe, None)
                         inferred_candidate = _to_naive_datetime(probe_parsed.get("start_dt"))
+                        inferred_end = _to_naive_datetime(probe_parsed.get("end_dt"))
                         if inferred_candidate is not None:
                             inferred_sort_dt = inferred_candidate
+                        if (
+                            inferred_candidate is not None
+                            and inferred_end is not None
+                            and inferred_end != inferred_candidate
+                        ):
+                            inferred_is_range = 1
                     except Exception:
                         pass
 
-                row_order.append((_minute_floor(inferred_sort_dt), logged_sort_dt, idx))
+                row_order.append((_minute_floor(inferred_sort_dt), inferred_is_range, logged_sort_dt, idx))
 
-            ordered_indices = [idx for _, _, idx in sorted(row_order, key=lambda item: (item[0], item[1], item[2]))]
+            ordered_indices = [idx for _, _, _, idx in sorted(row_order, key=lambda item: (item[0], item[1], item[2], item[3]))]
             parse_source_rows = [parse_source_rows[idx] for idx in ordered_indices]
 
         for row_dict in parse_source_rows:
