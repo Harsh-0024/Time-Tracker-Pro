@@ -477,6 +477,36 @@ def update_task(task_id: int):
             raw = (value or "").strip()
             if not raw:
                 return None
+            iso_candidate = raw
+            if iso_candidate.endswith("Z"):
+                iso_candidate = f"{iso_candidate[:-1]}+00:00"
+            try:
+                parsed_iso = datetime.fromisoformat(iso_candidate)
+                if parsed_iso.tzinfo is not None:
+                    parsed_iso = parsed_iso.replace(tzinfo=None)
+                return parsed_iso.replace(microsecond=0)
+            except Exception:
+                pass
+
+            for fmt in (
+                "%Y-%m-%d %H:%M:%S",
+                "%Y-%m-%d %H:%M",
+                "%Y/%m/%d %H:%M:%S",
+                "%Y/%m/%d %H:%M",
+                "%Y-%m-%d",
+                "%Y/%m/%d",
+            ):
+                try:
+                    parsed = datetime.strptime(raw, fmt)
+                    if fmt in {"%Y-%m-%d", "%Y/%m/%d"}:
+                        parsed = parsed.replace(
+                            hour=default_dt.hour,
+                            minute=default_dt.minute,
+                            second=default_dt.second,
+                        )
+                    return parsed.replace(microsecond=0)
+                except Exception:
+                    continue
             try:
                 parsed = date_parser.parse(raw, default=default_dt, dayfirst=True, fuzzy=True)
                 return parsed.replace(microsecond=0)
@@ -547,7 +577,10 @@ def update_task(task_id: int):
         if meta_tokens:
             log_entry = f"{log_entry}. {' '.join(meta_tokens)}"
 
-        logged_time = end_value.strftime("%Y-%m-%d %H:%M:%S")
+        logged_time = (
+            f"{end_value.year:04d}-{end_value.month:02d}-{end_value.day:02d} "
+            f"{end_value.hour}:{end_value.minute:02d}:{end_value.second:02d}"
+        )
         tag_value = ", ".join(tags_list) if tags_list else "Waste"
         return {"logEntry": log_entry, "loggedTime": logged_time}, tag_value
 
@@ -932,7 +965,10 @@ def create_task():
         if meta_tokens:
             log_entry = f"{log_entry}. {' '.join(meta_tokens)}"
 
-        logged_time = end_value.strftime("%Y-%m-%d %H:%M:%S")
+        logged_time = (
+            f"{end_value.year:04d}-{end_value.month:02d}-{end_value.day:02d} "
+            f"{end_value.hour}:{end_value.minute:02d}:{end_value.second:02d}"
+        )
         tag_value = ", ".join(tags_list) if tags_list else "Waste"
         return {"logEntry": log_entry, "loggedTime": logged_time}, tag_value
 
@@ -1150,7 +1186,10 @@ def delete_task(task_id: int):
         if meta_tokens:
             log_entry = f"{log_entry}. {' '.join(meta_tokens)}"
 
-        logged_time = end_value.strftime("%Y-%m-%d %H:%M:%S")
+        logged_time = (
+            f"{end_value.year:04d}-{end_value.month:02d}-{end_value.day:02d} "
+            f"{end_value.hour}:{end_value.minute:02d}:{end_value.second:02d}"
+        )
         tag_value = ", ".join(tags_list) if tags_list else "Waste"
         return {"logEntry": log_entry, "loggedTime": logged_time}, tag_value
 
