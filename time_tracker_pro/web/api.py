@@ -252,24 +252,25 @@ def graph_data():
     except Exception:
         days = 30
 
-    end_date = parse_date_param(request.args.get("end"))
+    requested_end_date = parse_date_param(request.args.get("end"))
     today = datetime.now().date()
-    if end_date >= today:
-        end_date = today - timedelta(days=1)
-    start_date = end_date - timedelta(days=days - 1)
+    include_today_candidate = requested_end_date >= today
+
+    # We'll decide the final end_date (today vs yesterday) after applying
+    # metric/search/exclude filters so that "today" is shown only when it has
+    # relevant data for the selected graph.
+    end_date_to_use = requested_end_date
 
     df = fetch_local_data(db_name, user_id)
     if df.empty:
+        if include_today_candidate:
+            end_date_to_use = today - timedelta(days=1)
+        start_date = end_date_to_use - timedelta(days=days - 1)
         labels = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
         return jsonify({"labels": labels, "values": [0 for _ in labels], "total_hours": 0, "avg_hours": 0, "max_hours": 0})
 
     if "primary_tag" not in df.columns:
         df["primary_tag"] = df["tag"].apply(primary_special_tag)
-
-    df = df[(df["date"] >= start_date) & (df["date"] <= end_date)]
-    if df.empty:
-        labels = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
-        return jsonify({"labels": labels, "values": [0 for _ in labels], "total_hours": 0, "avg_hours": 0, "max_hours": 0})
 
     if metric in GRAPH_TAG_MAP:
         df = df[df["primary_tag"] == GRAPH_TAG_MAP[metric]]
@@ -302,6 +303,18 @@ def graph_data():
             excluded_ids = set()
         if excluded_ids:
             df = df[~df["id"].isin(excluded_ids)]
+
+    # Decide whether to include "today" based on whether there is any data
+    # today for the selected graph filters (metric/search/exclude).
+    if include_today_candidate:
+        has_today_data = not df.empty and (df["date"] == today).any()
+        end_date_to_use = today if has_today_data else today - timedelta(days=1)
+
+    start_date = end_date_to_use - timedelta(days=days - 1)
+    df = df[(df["date"] >= start_date) & (df["date"] <= end_date_to_use)]
+    if df.empty:
+        labels = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
+        return jsonify({"labels": labels, "values": [0 for _ in labels], "total_hours": 0, "avg_hours": 0, "max_hours": 0})
 
     daily = df.groupby("date")["duration"].sum() if not df.empty else {}
     labels: List[str] = []

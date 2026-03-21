@@ -2856,11 +2856,11 @@
                             </span>
                             <input id="modalSearch" type="search" placeholder="Search tasks..." class="w-full pl-10 pr-4 py-2.5 rounded-full bg-white border border-slate-200 text-sm text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
                         </div>
-                        <div class="grid grid-cols-2 sm:flex sm:items-center gap-2">
-                            <button id="openCreateTask" class="px-3 py-2.5 rounded-full bg-gray-900 text-emerald-200 text-xs font-semibold shadow-sm active:scale-[0.98] transition text-center">Add task</button>
-                            <button id="modalExportBtn" class="px-3 py-2.5 rounded-full bg-white border border-slate-200 text-xs text-gray-700 font-medium shadow-sm active:scale-[0.98] transition text-center">Export</button>
-                            <div class="relative col-span-2 sm:col-span-1 sm:min-w-[190px]">
-                                <button id="modalSortBtn" class="w-full px-3 py-2.5 rounded-full bg-white border border-slate-200 text-xs text-gray-700 shadow-sm active:scale-[0.98] transition inline-flex items-center justify-between gap-2">
+                        <div class="flex flex-nowrap items-center gap-2 w-full overflow-x-auto sm:overflow-visible">
+                            <button id="openCreateTask" class="px-3 py-2.5 rounded-full bg-gray-900 text-emerald-200 text-xs font-semibold shadow-sm active:scale-[0.98] transition text-center shrink-0 whitespace-nowrap">Add task</button>
+                            <button id="modalExportBtn" class="px-3 py-2.5 rounded-full bg-white border border-slate-200 text-xs text-gray-700 font-medium shadow-sm active:scale-[0.98] transition text-center shrink-0 whitespace-nowrap">Export</button>
+                            <div class="relative sm:min-w-[190px] shrink-0">
+                                <button id="modalSortBtn" class="w-auto px-3 py-2.5 rounded-full bg-white border border-slate-200 text-xs text-gray-700 shadow-sm active:scale-[0.98] transition inline-flex items-center justify-between gap-2 whitespace-nowrap">
                                     <span>Sort: <span id="modalSortLabel">${sortLabels[window.modalSort] || window.modalSortLabel || 'Time ↓'}</span></span>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </button>
