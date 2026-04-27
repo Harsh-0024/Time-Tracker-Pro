@@ -1000,6 +1000,81 @@
             }
         };
 
+        const currentProjectionPlugin = {
+            id: 'currentProjectionPlugin',
+            afterDatasetsDraw(chart) {
+                const projection = chart && chart.$currentProjection;
+                if (!projection || !Number.isFinite(Number(projection.value))) return;
+                const yScale = chart.scales && chart.scales.y;
+                const area = chart.chartArea;
+                if (!yScale || !area) return;
+                const y = yScale.getPixelForValue(Number(projection.value));
+                if (!Number.isFinite(y) || y < area.top - 2 || y > area.bottom + 2) return;
+
+                const datasetIndex = Number.isInteger(projection.datasetIndex) ? projection.datasetIndex : 0;
+                const pointIndex = Number.isInteger(projection.pointIndex) ? projection.pointIndex : null;
+                let xTo = area.right;
+                const meta = typeof chart.getDatasetMeta === 'function' ? chart.getDatasetMeta(datasetIndex) : null;
+                const point = (meta && Array.isArray(meta.data) && pointIndex !== null) ? meta.data[pointIndex] : null;
+                if (point && Number.isFinite(point.x)) {
+                    xTo = point.x;
+                }
+                xTo = Math.max(area.left + 2, Math.min(area.right, xTo));
+
+                const ctx = chart.ctx;
+                ctx.save();
+                ctx.strokeStyle = projection.lineColor || 'rgba(148,126,86,0.45)';
+                ctx.lineWidth = Number(projection.lineWidth) || 1.3;
+                ctx.setLineDash(Array.isArray(projection.dash) ? projection.dash : [4, 5]);
+                ctx.beginPath();
+                ctx.moveTo(area.left, y);
+                ctx.lineTo(xTo, y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                const labelText = String(projection.label || '').trim();
+                if (labelText) {
+                    const tickPadding = Number(yScale.options && yScale.options.ticks && yScale.options.ticks.padding) || 10;
+                    ctx.font = projection.font || '600 11px Inter, sans-serif';
+                    const boxPaddingX = 7;
+                    const boxHeight = 18;
+                    const boxWidth = ctx.measureText(labelText).width + (boxPaddingX * 2);
+                    const boxRight = area.left - tickPadding - 8;
+                    const boxX = Math.max(4, boxRight - boxWidth);
+                    const boxY = Math.min(area.bottom - boxHeight, Math.max(area.top, y - (boxHeight / 2)));
+
+                    if (typeof ctx.roundRect === 'function') {
+                        ctx.beginPath();
+                        ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 9);
+                    } else {
+                        ctx.beginPath();
+                        ctx.moveTo(boxX + 9, boxY);
+                        ctx.lineTo(boxX + boxWidth - 9, boxY);
+                        ctx.quadraticCurveTo(boxX + boxWidth, boxY, boxX + boxWidth, boxY + 9);
+                        ctx.lineTo(boxX + boxWidth, boxY + boxHeight - 9);
+                        ctx.quadraticCurveTo(boxX + boxWidth, boxY + boxHeight, boxX + boxWidth - 9, boxY + boxHeight);
+                        ctx.lineTo(boxX + 9, boxY + boxHeight);
+                        ctx.quadraticCurveTo(boxX, boxY + boxHeight, boxX, boxY + boxHeight - 9);
+                        ctx.lineTo(boxX, boxY + 9);
+                        ctx.quadraticCurveTo(boxX, boxY, boxX + 9, boxY);
+                    }
+                    ctx.fillStyle = projection.labelBackground || 'rgba(255, 253, 248, 0.95)';
+                    ctx.fill();
+                    if (projection.labelBorder) {
+                        ctx.strokeStyle = projection.labelBorder;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+
+                    ctx.fillStyle = projection.labelColor || '#5A4A2D';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(labelText, boxX + boxPaddingX, boxY + (boxHeight / 2));
+                }
+                ctx.restore();
+            }
+        };
+
         function hoursToHuman(h) {
             const total = Math.max(0, Math.round(Number(h || 0) * 60));
             const hrs = Math.floor(total / 60);
@@ -2294,6 +2369,15 @@
             return { startIndex, endIndex: total - 1 };
         }
 
+        function getLastFinitePoint(values) {
+            if (!Array.isArray(values) || !values.length) return { index: null, value: null };
+            for (let i = values.length - 1; i >= 0; i--) {
+                const num = Number(values[i]);
+                if (Number.isFinite(num)) return { index: i, value: num };
+            }
+            return { index: null, value: null };
+        }
+
         function updateChart({ labels, values, total_hours, avg_hours, max_hours }, metricKey, rangeDays = currentDays) {
             closeGraphPointDetail();
             if (graphSearchQuery && graphTasks.length) {
@@ -2321,6 +2405,43 @@
             const avgValues = movingAverage(values, maWindow);
             const valueScale = getValueScale(values, avgValues);
             const avgColor = color.startsWith('#') && color.length === 7 ? `${color}99` : 'rgba(17,24,39,0.55)';
+            const isDark = isDarkTheme();
+            const projectionPoint = getLastFinitePoint(avgValues);
+            const projectionValue = Number.isFinite(Number(projectionPoint.value)) ? Number(projectionPoint.value) : null;
+            const projectionLabel = Number.isFinite(projectionValue)
+                ? formatGraphValue(projectionValue, valueScale, 1)
+                : '';
+            const yTickCallback = function(value) {
+                const num = Number(value);
+                if (Number.isFinite(num) && Number.isFinite(projectionValue)) {
+                    const scale = this;
+                    const min = Number(scale && scale.min);
+                    const max = Number(scale && scale.max);
+                    const height = Number(scale && scale.height);
+                    if (Number.isFinite(min) && Number.isFinite(max) && Number.isFinite(height) && height > 0) {
+                        const unitsPerPixel = Math.abs(max - min) / height;
+                        const hideThreshold = Math.max(unitsPerPixel * 14, unitsPerPixel || 0.0001);
+                        if (Math.abs(num - projectionValue) <= hideThreshold) {
+                            return '';
+                        }
+                    }
+                }
+                return formatGraphValue(value, valueScale, 1);
+            };
+            const projectionConfig = Number.isFinite(projectionValue)
+                ? {
+                    value: projectionValue,
+                    label: projectionLabel,
+                    datasetIndex: 0,
+                    pointIndex: projectionPoint.index,
+                    lineColor: hexToRgba(color, isDark ? 0.58 : 0.44),
+                    lineWidth: 1.3,
+                    dash: [4, 5],
+                    labelColor: isDark ? '#E9D8A6' : '#5A4A2D',
+                    labelBackground: isDark ? 'rgba(24, 18, 11, 0.92)' : 'rgba(255, 253, 248, 0.97)',
+                    labelBorder: isDark ? 'rgba(184, 168, 120, 0.55)' : 'rgba(148, 126, 86, 0.45)',
+                }
+                : null;
             graphRawDates = Array.isArray(labels) ? labels.slice() : [];
             graphRawValues = Array.isArray(values) ? values.slice() : [];
             graphMaValues = Array.isArray(avgValues) ? avgValues.slice() : [];
@@ -2376,7 +2497,7 @@
                 chartInstance.options.scales.x.min = xMinLabel;
                 chartInstance.options.scales.x.max = xMaxLabel;
                 if (chartInstance.options?.scales?.y?.ticks) {
-                    chartInstance.options.scales.y.ticks.callback = (value) => formatGraphValue(value, valueScale, 1);
+                    chartInstance.options.scales.y.ticks.callback = yTickCallback;
                 }
                 if (chartInstance.options?.plugins?.tooltip) {
                     chartInstance.options.plugins.tooltip.enabled = !mobile;
@@ -2394,6 +2515,7 @@
                         }
                     };
                 }
+                chartInstance.$currentProjection = projectionConfig;
                 chartInstance.options.animation = { duration: 650, easing: 'easeOutQuart' };
                 chartInstance.options.onHover = (evt) => {
                     if (mobile) return;
@@ -2424,6 +2546,7 @@
                 chartInstance.update();
             } else {
                 chartInstance = new Chart(ctx, {
+                    plugins: [currentProjectionPlugin],
                     type: 'line',
                     data: {
                         labels: shortLabels,
@@ -2497,12 +2620,14 @@
                                 grid: { color: isDarkTheme() ? 'rgba(180,148,72,0.07)' : 'rgba(148,163,184,0.25)' },
                                 ticks: {
                                     color: isDarkTheme() ? '#635848' : '#6B7280',
-                                    callback: (value) => formatGraphValue(value, valueScale, 1)
+                                    callback: yTickCallback
                                 }
                             }
                         }
                     }
                 });
+                chartInstance.$currentProjection = projectionConfig;
+                chartInstance.update('none');
             }
 
             totalHoursEl.textContent = formatGraphValue(total_hours, valueScale, 1);
