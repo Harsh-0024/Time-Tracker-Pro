@@ -9,6 +9,8 @@ __pycache__/
 *.pyc
 venv/
 Related Excel Files
+SIP
+changes.txt
 
 # 3. Mac System Files (Junk)
 .DS_Store
