@@ -207,6 +207,9 @@
 [data-theme="dark"] header.bg-white\/90 { background: rgba(5,4,3,0.95) !important; }
 
 /* ── Nav / header pill buttons ── */
+[data-theme="dark"] .bg-white\/65,
+[data-theme="dark"] .bg-white\/70,
+[data-theme="dark"] .bg-white\/75,
 [data-theme="dark"] .bg-white\/80,
 [data-theme="dark"] .bg-white\/90,
 [data-theme="dark"] .bg-white\/85 {
