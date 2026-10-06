@@ -4414,6 +4414,8 @@
             if (tagCtx && tagLabels.length) {
                 const tagColors = tagLabels.map((label, idx) => TAG_COLOR_MAP[label] || tagPalette[idx % tagPalette.length]);
                 const tagTotal = tagData.reduce((sum, v) => sum + Number(v || 0), 0);
+                const tagChartDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                const tagHoursLabel = (idx) => `${Number(tagData[idx] || 0).toFixed(1)}h`;
                 try {
                     const tagChart = new Chart(tagCtx, {
                         type: 'doughnut',
@@ -4423,7 +4425,7 @@
                                 data: tagData,
                                 backgroundColor: tagColors,
                                 borderWidth: 2,
-                                borderColor: '#FFFFFF',
+                                borderColor: tagChartDark ? '#0E0C08' : '#FFFFFF',
                                 hoverOffset: 12,
                                 hoverBorderWidth: 3
                             }]
@@ -4455,9 +4457,13 @@
                                         pointStyle: 'circle',
                                         font: { family: 'Inter', size: 11, weight: '500' },
                                         padding: 14,
-                                        color: '#374151',
+                                        color: tagChartDark ? '#B8A878' : '#374151',
                                         boxWidth: 10,
-                                        boxHeight: 10
+                                        boxHeight: 10,
+                                        // "Necessity 11.1h" instead of just the name.
+                                        generateLabels: (chart) => Chart.overrides.doughnut.plugins.legend.labels
+                                            .generateLabels(chart)
+                                            .map(item => ({ ...item, text: `${item.text} ${tagHoursLabel(item.index)}` }))
                                     }
                                 },
                                 tooltip: {
@@ -4502,7 +4508,7 @@
                         mobileLegend.innerHTML = tagLabels.map((label, idx) => {
                             return `<span class="inline-flex items-center gap-1">
                                 <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${tagColors[idx]}"></span>
-                                ${label}
+                                ${escapeHtml(label)} <span class="text-gray-400">${tagHoursLabel(idx)}</span>
                             </span>`;
                         }).join('');
                     }
