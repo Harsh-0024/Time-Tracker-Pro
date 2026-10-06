@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 04:30 IST: goals + timeline shipped; next: more UX polish / bug sweep.
+- 2026-10-07 04:35 IST: onboarding/streaks done; full suite green on py3.12 + 3.14.
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -28,12 +28,17 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - 24h day timeline strip; Period Total badge/bar show real logged coverage
 - Daily goals (Settings > Daily Goals; user_goals table; dashboard progress)
 - Settings: 'AI Keys' -> 'API Keys'; shortcuts 3/4
+- deleted-user sessions now dropped (login_required/admin_required)
+- first-run welcome card, 'None yet' empty quadrant, register email-failure warning
+- auth page labels linked to inputs (a11y)
+- goal streaks on day view
 
 ## Ideas / TODO queue
 - UX polish: keyboard shortcuts, empty states, a11y labels
 - Feature ideas: streaks / goals, weekly summary insights
 
 ## Dev notes
+- Prod runtime is python 3.12 (runtime.txt): also test with ~/.local/bin/python3.12 venv.
 - Test venv: python3 -m venv <scratch>/venv && pip install -r requirements.txt pytest (project venv/ is broken: points at old path)
 - Run dev server safely: copy productivity_demo_data.db, blank sheety creds in the copy, set DISABLE_CLOUD_SYNC=1,
   SMTP/BREVO empty, HTTP(S)_PROXY=http://127.0.0.1:9, LOCAL_AUTH_BYPASS=1 LOCAL_AUTH_USER_ID=3 (user with most data)
