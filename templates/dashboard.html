@@ -1419,11 +1419,18 @@
             dropdown.classList.toggle('hidden');
         };
 
+        // Parse 'YYYY-MM-DD' as a *local* calendar date. new Date('YYYY-MM-DD') is UTC
+        // midnight, which is the previous day anywhere west of UTC.
+        window.parseLocalDate = function(iso) {
+            const [y, m, d] = String(iso || '').split('-').map(Number);
+            if (!y || !m || !d) return new Date();
+            return new Date(y, m - 1, d);
+        };
+
         window.navigateMonth = function(offset) {
-            if (!window.dateCursor) {
-                window.dateCursor = new Date(window.currentDate);
-            }
-            window.dateCursor.setMonth(window.dateCursor.getMonth() + offset);
+            const cursor = window.dateCursor || window.parseLocalDate(window.currentDate);
+            // Anchor on the 1st so moving from the 29th-31st never skips a month.
+            window.dateCursor = new Date(cursor.getFullYear(), cursor.getMonth() + offset, 1);
             window.renderDateGrid();
         };
 
@@ -1432,7 +1439,7 @@
             const label = document.getElementById('dateDropdownLabel');
             if (!grid || !label) return;
 
-            const base = window.dateCursor ? new Date(window.dateCursor) : new Date(window.currentDate);
+            const base = window.dateCursor ? new Date(window.dateCursor) : window.parseLocalDate(window.currentDate);
             const year = base.getFullYear();
             const month = base.getMonth();
 
@@ -1450,20 +1457,26 @@
                 grid.appendChild(empty);
             }
 
-            const selected = new Date(window.currentDate);
+            const selected = window.parseLocalDate(window.currentDate);
+            const todayIso = window.getLocalIsoDate();
             for (let day = 1; day <= totalDays; day++) {
                 const d = new Date(year, month, day);
                 const btn = document.createElement('button');
                 const isSelected = d.toDateString() === selected.toDateString();
+                const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = iso === todayIso;
+                btn.type = 'button';
                 btn.textContent = day;
+                btn.setAttribute('aria-label', d.toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + (isToday ? ' (today)' : ''));
+                if (isSelected) btn.setAttribute('aria-current', 'date');
                 btn.className = [
                     'h-8 w-8 flex items-center justify-center rounded-full text-xs',
                     isSelected
                         ? 'bg-[#111827] text-[#F8D574] shadow'
-                        : 'text-gray-700 hover:bg-[#F5EDE1]'
+                        : 'text-gray-700 hover:bg-[#F5EDE1]',
+                    (isToday && !isSelected) ? 'ring-1 ring-amber-400 font-semibold' : ''
                 ].join(' ');
                 btn.onclick = function() {
-                    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     window.changeDate(iso);
                 };
                 grid.appendChild(btn);
@@ -2100,7 +2113,7 @@
             if (urgentInput) urgentInput.checked = false;
             if (endInput) endInput.value = '';
             if (dateInput) {
-                const selected = window.currentDate || now.toISOString().slice(0, 10);
+                const selected = window.currentDate || window.getLocalIsoDate();
                 dateInput.value = selected;
             }
             if (timeInput) {
@@ -2581,7 +2594,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${filePrefix}-${new Date().toISOString().slice(0, 10)}.${extension}`;
+            a.download = `${filePrefix}-${window.getLocalIsoDate()}.${extension}`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -3516,17 +3529,18 @@
                 }
                 if (!event.metaKey && !event.ctrlKey && !event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
                     event.preventDefault();
-                    const base = new Date(window.currentDate);
+                    // Work on local calendar parts: new Date('YYYY-MM-DD') is UTC midnight,
+                    // and setMonth() on the 29th-31st overflows into the following month.
+                    const [y, m, d] = String(window.currentDate || window.getLocalIsoDate()).split('-').map(Number);
                     const delta = event.key === 'ArrowRight' ? 1 : -1;
                     const period = window.currentPeriod || 'day';
-                    if (period === 'week') {
-                        base.setDate(base.getDate() + (7 * delta));
-                    } else if (period === 'month') {
-                        base.setMonth(base.getMonth() + delta);
+                    let base;
+                    if (period === 'month') {
+                        base = new Date(y, m - 1 + delta, 1);
                     } else {
-                        base.setDate(base.getDate() + delta);
+                        base = new Date(y, m - 1, d + (period === 'week' ? 7 * delta : delta));
                     }
-                    const iso = base.toISOString().slice(0, 10);
+                    const iso = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
                     window.changeDate(iso);
                     return;
                 }
@@ -3956,7 +3970,7 @@
             if (viewFullBtn) viewFullBtn.textContent = 'View Full ' + periodLabel;
             if (viewFullBtnMobile) viewFullBtnMobile.textContent = 'View Full ' + periodLabel;
 
-            window.dateCursor = new Date(window.currentDate);
+            window.dateCursor = window.parseLocalDate(window.currentDate);
             window.renderDateGrid();
 
             const isMultiDayPeriod = period === 'week' || period === 'month';
