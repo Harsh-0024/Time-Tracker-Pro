@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 04:46 IST: saved graph views shipped; 103 tests green.
+- 2026-10-07 04:48 IST: empty states + dark-mode fixes; 105 tests green.
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -39,6 +39,8 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - category legend shows hours; doughnut dark mode; admin join dates/count
 - non-numeric durations -> 400 (create/update)
 - Saved graph views (graph_bookmarks table, /api/graph-views)
+- prefers-reduced-motion; empty-period card (sync / jump to nearest logged day)
+- dark: bg-white/65-75 surfaces; period-aware subtitle copy
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
