@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 ~05:15 IST: UX/dark-mode/date fixes done; building Insights card next.
+- 2026-10-07 ~05:45 IST: Insights feature shipped; continuing UX/bug sweep.
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -22,6 +22,9 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - dark mode contrast + water-fill wash fix + dividers
 - date navigation month overflow + UTC/local fixes (dashboard + graphs)
 - real default app icon + /favicon.ico
+- Insights section (top activities, vs-7-day avg, best/worst day, completeness)
+- 'Log in via OTP' + 'Resend code' buttons were broken (disabled submitter) -> fixed
+- graphs: a11y pressed states; All range no longer capped at 365 days
 
 ## Ideas / TODO queue
 - UX polish: keyboard shortcuts, empty states, a11y labels
