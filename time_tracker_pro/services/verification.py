@@ -184,7 +184,10 @@ def verify_email_code(
     code: str,
     purpose: str = "verify_email",
     mark_verified: bool = False,
+    consume: bool = True,
 ) -> Tuple[bool, str]:
+    """Check a code. Codes are single-use: a successful check consumes it unless
+    ``consume=False`` (use :func:`consume_verification` once every check has passed)."""
     conn = get_db_connection(db_name)
     row = conn.execute(
         """
@@ -197,6 +200,10 @@ def verify_email_code(
     if not row:
         conn.close()
         return False, "No verification request found. Please resend the code."
+
+    if row["verified_at"]:
+        conn.close()
+        return False, "This code has already been used. Please request a new one."
 
     attempts = int(row["attempts"] or 0)
     if attempts >= VERIFICATION_MAX_ATTEMPTS:
@@ -223,12 +230,33 @@ def verify_email_code(
     verified_at = datetime.now(timezone.utc).isoformat()
     if mark_verified:
         conn.execute("UPDATE users SET is_verified = 1 WHERE id = ?", (int(user_id),))
-    conn.execute(
-        "UPDATE email_verifications SET verified_at = ? WHERE id = ?",
-        (verified_at, int(row["id"])),
-    )
+    if consume:
+        conn.execute(
+            "UPDATE email_verifications SET verified_at = ? WHERE id = ?",
+            (verified_at, int(row["id"])),
+        )
     conn.commit()
     conn.close()
     if mark_verified or purpose == "verify_email":
         return True, "Your account is now verified."
     return True, "Verification successful."
+
+
+def consume_verification(db_name: str, user_id: int, purpose: str) -> None:
+    """Mark the latest code for ``purpose`` as used."""
+    conn = get_db_connection(db_name)
+    try:
+        conn.execute(
+            """
+            UPDATE email_verifications SET verified_at = ?
+            WHERE id = (
+                SELECT id FROM email_verifications
+                WHERE user_id = ? AND purpose = ?
+                ORDER BY id DESC LIMIT 1
+            )
+            """,
+            (datetime.now(timezone.utc).isoformat(), int(user_id), purpose),
+        )
+        conn.commit()
+    finally:
+        conn.close()

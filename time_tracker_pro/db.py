@@ -247,5 +247,16 @@ def init_db(db_name: str) -> None:
         "CREATE INDEX IF NOT EXISTS idx_graph_search_history_user ON graph_search_history(user_id, focus, created_at)"
     )
 
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS login_failures (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            identifier TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_login_failures_identifier ON login_failures(identifier, created_at)")
+
     conn.commit()
     conn.close()

@@ -14,6 +14,7 @@ from ..core.rows import display_name, row_value
 from ..db import get_db_connection
 from ..repositories.auth import create_user
 from ..repositories.bootstrap import adopt_orphan_logs
+from ..repositories.login_throttle import clear_failures, is_locked_out, record_failure
 from ..repositories.users import (
     get_user_by_email,
     get_user_by_id,
@@ -22,7 +23,12 @@ from ..repositories.users import (
     get_user_count,
 )
 from ..repositories.settings import get_user_settings
-from ..services.verification import has_active_verification, send_verification_email, verify_email_code
+from ..services.verification import (
+    consume_verification,
+    has_active_verification,
+    send_verification_email,
+    verify_email_code,
+)
 from ..services.welcome_email import send_welcome_email
 from .decorators import login_required
 from .utils import safe_next_url
@@ -81,13 +87,17 @@ def login():
                     return redirect(url_for("auth.verify_email", next=next_url or ""))
         elif not identifier or not password:
             error = "Username, email, or user ID and password are required."
+        elif is_locked_out(db_name, identifier):
+            error = "Too many failed attempts. Try again in a few minutes, or log in with an email code."
         else:
             user = get_user_by_username_or_id_or_email(db_name, identifier)
             if not user:
+                record_failure(db_name, identifier)
                 error = "Invalid credentials."
             else:
                 pw_hash = row_value(user, "password_hash") or ""
                 if not check_password_hash(pw_hash, password):
+                    record_failure(db_name, identifier)
                     error = "Invalid credentials."
                 elif not int(row_value(user, "is_verified") or 0):
                     session.clear()
@@ -101,6 +111,7 @@ def login():
 
                     return redirect(url_for("auth.verify_email", next=next_url or ""))
                 else:
+                    clear_failures(db_name, identifier)
                     session.clear()
                     session["user_id"] = int(row_value(user, "id"))
                     session.permanent = remember
@@ -513,6 +524,7 @@ def update_profile():
             int(user["id"]),
             old_code,
             purpose="change_email_old",
+            consume=False,
         )
         if not ok_old:
             session["profile_error"] = message_old
@@ -522,10 +534,13 @@ def update_profile():
             int(user["id"]),
             new_code,
             purpose="change_email_new",
+            consume=False,
         )
         if not ok_new:
             session["profile_error"] = message_new
             return redirect(url_for("main.settings"))
+        consume_verification(db_name, int(user["id"]), "change_email_old")
+        consume_verification(db_name, int(user["id"]), "change_email_new")
 
         conn = get_db_connection(db_name)
         conn.execute(
