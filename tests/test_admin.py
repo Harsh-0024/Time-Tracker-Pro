@@ -41,3 +41,19 @@ def test_non_admin_cannot_open_admin_page(db_path, login):
     uid = make_user(db_path)
     resp = login(uid).get("/admin/users")
     assert resp.status_code == 403
+
+
+def test_session_of_deleted_user_is_dropped(db_path, login):
+    keep = make_user(db_path, username="keeper", email="keeper@example.com")
+    gone = make_user(db_path, username="bob", email="bob@example.com")
+    client = login(gone)
+    assert client.get("/settings").status_code == 200
+
+    delete_user_cascade(db_path, gone)
+
+    resp = client.get("/settings")
+    assert resp.status_code == 302
+    assert "/login" in resp.headers["Location"]
+    with client.session_transaction() as sess:
+        assert "user_id" not in sess
+    assert keep  # other accounts unaffected

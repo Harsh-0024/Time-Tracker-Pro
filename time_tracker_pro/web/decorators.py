@@ -112,6 +112,11 @@ def login_required(fn: Callable[..., Any]) -> Callable[..., Any]:
                 bypass_active = True
         if uid is not None:
             user = get_user_by_id(db_name, int(uid))
+            if not user:
+                # The account no longer exists (e.g. removed by an admin): drop the session.
+                session.clear()
+                uid = None
+        if uid is not None:
             if user and not int(row_value(user, "is_verified") or 0) and not bypass_active:
                 session.clear()
                 session["pending_user_id"] = int(uid)
@@ -136,7 +141,10 @@ def admin_required(fn: Callable[..., Any]) -> Callable[..., Any]:
             return redirect(url_for("auth.login"))
         db_name = current_app.config["DB_NAME"]
         user = get_user_by_id(db_name, int(uid))
-        if not user or not int(row_value(user, "is_verified") or 0):
+        if not user:
+            session.clear()
+            return redirect(url_for("auth.login"))
+        if not int(row_value(user, "is_verified") or 0):
             session.clear()
             session["pending_user_id"] = int(uid)
             return redirect(url_for("auth.verify_email"))
