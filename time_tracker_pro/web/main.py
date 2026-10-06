@@ -120,6 +120,34 @@ def update_app_icon():
     return redirect(url_for("admin.admin_users", success="App icon updated. Re-add the app to refresh."))
 
 
+_MATRIX_KEYS = ("q1", "q2", "q3", "q4", "important", "not_important", "urgent", "not_urgent")
+_DELTA_LABELS = {"day": "vs prev day", "week": "vs prev week", "month": "vs prev month"}
+
+
+def _previous_period_range(selected_date, period: str):
+    if period == "week":
+        return get_period_range(selected_date - timedelta(days=7), "week")
+    if period == "month":
+        return get_period_range(selected_date.replace(day=1) - timedelta(days=1), "month")
+    return get_period_range(selected_date - timedelta(days=1), "day")
+
+
+def _matrix_share_deltas(df: pd.DataFrame, matrix: Dict[str, Any], selected_date, period: str) -> Dict[str, float]:
+    """Change in each quadrant's share of logged time (percentage points) vs the
+    previous period. Shares, not hours, so a half-logged today compares fairly
+    with a complete yesterday. Empty when either period has no data."""
+    if df.empty or not matrix.get("total_hours"):
+        return {}
+    prev_start, prev_end = _previous_period_range(selected_date, period)
+    prev_df = df[(df["date"] >= prev_start) & (df["date"] <= prev_end)]
+    if prev_df.empty:
+        return {}
+    prev = get_matrix_stats(prev_df)
+    if not prev.get("total_hours"):
+        return {}
+    return {key: round(float(matrix[key]["pct"]) - float(prev[key]["pct"]), 1) for key in _MATRIX_KEYS}
+
+
 @bp.route("/", endpoint="dashboard")
 @login_required
 def dashboard():
@@ -171,6 +199,7 @@ def dashboard():
         avg_end_date = avg_start_date
 
     matrix = get_matrix_stats(period_df)
+    matrix_deltas = _matrix_share_deltas(df, matrix, selected_date, period)
     task_count = int(len(period_df)) if not period_df.empty else 0
 
     idx = (selected_date.weekday() + 1) % 7
@@ -243,6 +272,8 @@ def dashboard():
             avg_start_date=avg_start_date,
             avg_end_date=avg_end_date,
             sync_stats=sync_stats or {},
+            matrix_deltas=matrix_deltas,
+            delta_label=_DELTA_LABELS.get(period, "vs previous"),
         )
     )
     return resp
