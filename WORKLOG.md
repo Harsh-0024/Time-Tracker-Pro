@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 ~04:45 IST: bug/security pass mostly done; moving to UX/features.
+- 2026-10-07 ~05:15 IST: UX/dark-mode/date fixes done; building Insights card next.
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -18,6 +18,10 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - week strip clipping fixed, per-day logged bars, tablet header no overflow
 - perf: vectorised fetch_local_data (1s -> 35ms), verified identical output
 - login throttling (login_failures table) + single-use verification codes
+- matrix cards: share delta vs previous period
+- dark mode contrast + water-fill wash fix + dividers
+- date navigation month overflow + UTC/local fixes (dashboard + graphs)
+- real default app icon + /favicon.ico
 
 ## Ideas / TODO queue
 - UX polish: keyboard shortcuts, empty states, a11y labels
