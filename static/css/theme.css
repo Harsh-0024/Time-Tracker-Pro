@@ -607,3 +607,11 @@
     color: #D4AF37 !important;
 }
 
+
+/* Tailwind's divide-* utilities default to light greys that glare on dark surfaces. */
+[data-theme="dark"] .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+[data-theme="dark"] .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+[data-theme="dark"] .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+[data-theme="dark"] .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgba(212,175,55,0.10) !important;
+}
