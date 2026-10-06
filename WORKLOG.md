@@ -35,6 +35,14 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - 'Day by day' stacked columns (week/month); compact week label
 - graphs pill layout; security headers; README + .env.example
 
+## Questions for owner (not changed, need your call)
+- dashboard.html (end of main script): every dashboard load fires a *forced* background sync
+  (`runManualSync({reload:false})` -> /sync-now, force=True) 2s after load. That bypasses the
+  server-side SYNC_INTERVAL throttle, so each page view costs a Sheety request (quota!), and the
+  result isn't shown until the next navigation. Consider dropping it or making it non-forced.
+- instance/pwa/app-icon.png (the uploaded icon) is actually a JPEG (394x394); manifest claims 512x512 PNG.
+  It now gets served with the right content type, but a real 512x512 PNG would be better for PWA installs.
+
 ## Ideas / TODO queue
 - UX polish: keyboard shortcuts, empty states, a11y labels
 - Feature ideas: streaks / goals, weekly summary insights
