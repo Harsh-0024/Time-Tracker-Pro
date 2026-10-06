@@ -307,12 +307,34 @@ def manifest():
     )
 
 
+def _sniff_image_mimetype(path: Path) -> str:
+    try:
+        with path.open("rb") as fh:
+            head = fh.read(12)
+    except OSError:
+        return "image/png"
+    if head.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return "image/webp"
+    return "image/png"
+
+
 @bp.route("/app-icon.png", endpoint="app_icon")
 def app_icon():
     icon_path = _icon_storage_path()
     if icon_path.exists():
-        return send_file(icon_path, mimetype="image/png")
+        return send_file(icon_path, mimetype=_sniff_image_mimetype(icon_path))
+    default_icon = Path(current_app.static_folder or "") / "img" / "app-icon-default.png"
+    if default_icon.exists():
+        return send_file(default_icon, mimetype="image/png")
     return send_file(BytesIO(_DEFAULT_ICON_BYTES), mimetype="image/png")
+
+
+@bp.route("/favicon.ico", endpoint="favicon")
+def favicon():
+    # Browsers request this regardless of <link rel="icon">; avoid a 404 on every page.
+    return redirect(url_for("main.app_icon", v=get_app_setting(current_app.config["DB_NAME"], "app_icon_version") or "1"))
 
 
 @bp.route("/graphs", endpoint="graphs")

@@ -1,4 +1,5 @@
 import os
+import shutil
 import sqlite3
 import tempfile
 
@@ -23,8 +24,11 @@ def app():
     fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
     application = create_app({"DB_NAME": path, "TESTING": True, "LOCAL_AUTH_BYPASS": False})
+    instance_dir = tempfile.mkdtemp()
+    application.instance_path = instance_dir  # never read/write the real instance/ folder
     yield application
     os.remove(path)
+    shutil.rmtree(instance_dir, ignore_errors=True)
 
 
 @pytest.fixture()
