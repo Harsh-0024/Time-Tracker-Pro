@@ -66,6 +66,18 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
 
     app.jinja_env.filters["human_hours"] = human_hours
 
+    def _short_date(value: Any) -> str:
+        """ISO timestamp -> 'Jan 18, 2026' (blank if missing/unparseable)."""
+        if not value:
+            return ""
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return str(value)[:10]
+        return f"{parsed.strftime('%b')} {parsed.day}, {parsed.year}"
+
+    app.jinja_env.filters["short_date"] = _short_date
+
     from .web.admin import bp as admin_bp
     from .web.api import bp as api_bp
     from .web.auth import bp as auth_bp
