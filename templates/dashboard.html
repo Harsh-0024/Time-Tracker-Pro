@@ -3976,6 +3976,12 @@
                     window.location.href = dashboardUrl;
                 } else if (key === 'a' && adminUrl) {
                     window.location.href = adminUrl;
+                } else if (key === 'f') {
+                    const modal = document.getElementById('taskModal');
+                    if (!modal || !modal.classList.contains('active')) {
+                        event.preventDefault();
+                        window.viewFullDay();
+                    }
                 } else if (key === '?') {
                     event.preventDefault();
                     if (shortcutToast && !document.body.contains(shortcutToast)) {
@@ -3998,6 +4004,10 @@
                                     <div class="flex items-center gap-2">
                                         <kbd class="toast-kbd">⌥</kbd><kbd class="toast-kbd">←</kbd><kbd class="toast-kbd">→</kbd>
                                         <span class="toast-kbd-label">Change period</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">F</kbd>
+                                        <span class="toast-kbd-label">Full log for this period</span>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <kbd class="toast-kbd">G</kbd>
