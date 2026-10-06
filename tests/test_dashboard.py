@@ -71,3 +71,17 @@ def test_logged_coverage():
     # Future period compares against its full length.
     assert _logged_coverage(0.0, date(2026, 10, 1), date(2026, 10, 31), today=date(2026, 9, 15)) == 0.0
     assert _logged_coverage(30.0, d, d, today=d) == 100.0
+
+
+def test_new_user_sees_onboarding(db_path, login):
+    uid = make_user(db_path)
+    html = login(uid).get("/").get_data(as_text=True)
+    assert "welcomeTitle" in html
+    assert "Connect sheet" in html
+
+
+def test_onboarding_hidden_once_logs_exist(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "08:00:00", "2026-09-20", "09:00:00")
+    html = login(uid).get("/?date=2026-09-20").get_data(as_text=True)
+    assert "welcomeTitle" not in html

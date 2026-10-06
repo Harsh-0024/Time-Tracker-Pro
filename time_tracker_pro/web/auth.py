@@ -216,12 +216,13 @@ def register():
                 adopt_orphan_logs(db_name, new_user_id)
 
             user = get_user_by_id(db_name, new_user_id)
-            if user:
-                send_verification_email(db_name, user)
+            sent = bool(user) and send_verification_email(db_name, user)
 
             session.clear()
             session["pending_user_id"] = new_user_id
             session["pending_remember"] = remember
+            if not sent:
+                session["verification_error"] = "Your account was created, but we couldn't send the code. Tap Resend code to try again."
             return redirect(url_for("auth.verify_email"))
 
     return render_template("register.html", error=error)

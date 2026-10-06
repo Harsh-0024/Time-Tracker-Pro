@@ -24,7 +24,7 @@ from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
 from ..services.insights import build_day_timeline, build_goal_progress, build_insights
 from ..services.matrix import get_matrix_stats
-from ..services.sync import sync_cloud_data, get_last_sync_stats
+from ..services.sync import get_last_sync_stats, sync_cloud_data, sync_status_payload
 from .decorators import admin_required, login_required
 from .utils import get_current_user_id
 
@@ -237,6 +237,13 @@ def dashboard():
     day_timeline = build_day_timeline(df, selected_date) if period == "day" else None
     logged_coverage = _logged_coverage(float(matrix.get("total_hours") or 0.0), start_date, end_date)
     goals = get_user_goals(db_name, user_id)
+    onboarding = None
+    if df.empty:
+        try:
+            sheet_connected = bool(sync_status_payload(db_name, user_id).get("sheety_configured"))
+        except Exception:
+            sheet_connected = False
+        onboarding = {"sheet_connected": sheet_connected}
     goal_progress = build_goal_progress(period_df, period, start_date, end_date, goals)
     task_count = int(len(period_df)) if not period_df.empty else 0
 
@@ -315,6 +322,7 @@ def dashboard():
             day_timeline=day_timeline,
             logged_coverage=logged_coverage,
             goal_progress=goal_progress,
+            onboarding=onboarding,
             delta_label=_DELTA_LABELS.get(period, "vs previous"),
         )
     )
