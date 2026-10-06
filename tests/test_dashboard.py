@@ -101,3 +101,19 @@ def test_security_headers(app):
     assert resp.headers["X-Content-Type-Options"] == "nosniff"
     assert resp.headers["X-Frame-Options"] == "SAMEORIGIN"
     assert resp.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
+
+
+def test_empty_period_offers_nearest_logged_days(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-10", "08:00:00", "2026-09-10", "09:00:00")
+    add_log(db_path, uid, "2026-09-25", "08:00:00", "2026-09-25", "09:00:00")
+    html = login(uid).get("/?date=2026-09-20").get_data(as_text=True)
+    assert "Nothing logged on Sun, Sep 20 yet" in html
+    assert "/?date=2026-09-10&amp;period=day" in html or "/?date=2026-09-10&period=day" in html
+    assert "Sep 25 →" in html
+
+
+def test_no_empty_period_card_when_period_has_logs(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "08:00:00", "2026-09-20", "09:00:00")
+    assert "Nothing logged" not in login(uid).get("/?date=2026-09-20").get_data(as_text=True)

@@ -1017,6 +1017,25 @@
         </section>
         {% endif %}
 
+        {% if empty_period %}
+        <!-- The user has logs, just none in this period -->
+        <section class="luxury-card rounded-2xl px-5 py-5 md:px-6 mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center gap-4" aria-live="polite">
+            <div class="flex-1 min-w-0">
+                <h3 class="text-base font-semibold text-gray-900">Nothing logged {{ 'on ' + selected_date.strftime('%a, %b %-d') if period == 'day' else 'this ' + period }} yet</h3>
+                <p class="text-sm text-gray-500 mt-0.5">If you've added rows to your sheet, sync to pull them in.</p>
+            </div>
+            <div class="flex flex-wrap gap-2 shrink-0">
+                {% if empty_period.previous %}
+                <a href="/?date={{ empty_period.previous }}&period={{ period }}" class="px-4 py-2 rounded-full bg-white border border-[rgba(148,126,86,0.35)] text-sm font-medium text-gray-700 hover:bg-[#F7F1E6] transition">← {{ empty_period.previous.strftime('%b %-d') }}</a>
+                {% endif %}
+                {% if empty_period.next %}
+                <a href="/?date={{ empty_period.next }}&period={{ period }}" class="px-4 py-2 rounded-full bg-white border border-[rgba(148,126,86,0.35)] text-sm font-medium text-gray-700 hover:bg-[#F7F1E6] transition">{{ empty_period.next.strftime('%b %-d') }} →</a>
+                {% endif %}
+                <button type="button" onclick="window.runManualSync && window.runManualSync()" class="px-4 py-2 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-md active:scale-[0.98] transition-transform">Sync now</button>
+            </div>
+        </section>
+        {% endif %}
+
         {% if daily_breakdown %}
         <!-- Week/Month: one stacked column per day -->
         <section class="luxury-card rounded-2xl px-4 py-4 md:px-6 md:py-5 mb-6 md:mb-8" aria-labelledby="dailyBreakdownTitle">

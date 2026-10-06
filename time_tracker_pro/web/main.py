@@ -251,6 +251,14 @@ def dashboard():
         except Exception:
             sheet_connected = False
         onboarding = {"sheet_connected": sheet_connected}
+    empty_period = None
+    if not df.empty and period_df.empty:
+        earlier = df[df["date"] < start_date]["date"]
+        later = df[df["date"] > end_date]["date"]
+        empty_period = {
+            "previous": earlier.max() if not earlier.empty else None,
+            "next": later.min() if not later.empty else None,
+        }
     goal_progress = build_goal_progress(period_df, period, start_date, end_date, goals)
     if goal_progress is not None and period == "day":
         goal_progress["streaks"] = goal_streaks(df, selected_date, goals)
@@ -339,6 +347,7 @@ def dashboard():
             logged_coverage=logged_coverage,
             goal_progress=goal_progress,
             onboarding=onboarding,
+            empty_period=empty_period,
             delta_label=_DELTA_LABELS.get(period, "vs previous"),
         )
     )
