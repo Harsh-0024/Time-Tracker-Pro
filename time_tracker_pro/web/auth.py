@@ -33,6 +33,7 @@ bp = Blueprint("auth", __name__)
 logger = logging.getLogger(__name__)
 
 _PROFILE_OTP_PURPOSES = {"change_password", "change_username"}
+MIN_PASSWORD_LENGTH = 8
 
 
 def _ua_hash(value: str) -> str:
@@ -174,8 +175,8 @@ def register():
             error = "Name, email, user ID, and password are required."
         elif password != confirm_password:
             error = "Passwords do not match."
-        elif len(password) < 8:
-            error = "Password must be at least 8 characters."
+        elif len(password) < MIN_PASSWORD_LENGTH:
+            error = f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
         elif "@" not in email or "." not in email:
             error = "Please provide a valid email address."
         elif get_user_by_public_id(db_name, public_user_id) or get_user_by_username_or_id_or_email(db_name, public_user_id):
@@ -325,8 +326,8 @@ def reset_password():
     if request.method == "POST":
         new_password = request.form.get("password") or ""
         confirm_password = request.form.get("confirm_password") or ""
-        if not new_password or len(new_password) < 6:
-            error = "Password must be at least 6 characters."
+        if not new_password or len(new_password) < MIN_PASSWORD_LENGTH:
+            error = f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
         elif new_password != confirm_password:
             error = "Passwords do not match."
         else:
@@ -341,6 +342,7 @@ def reset_password():
             session.pop("otp_authenticated", None)
             session["user_id"] = int(user["id"])
             session.permanent = True
+            session["ua_hash"] = _ua_hash(request.headers.get("User-Agent") or "")
             success = "Password updated."
             return redirect(url_for("main.dashboard"))
 
@@ -425,7 +427,11 @@ def update_profile():
         if not new_user_id and not new_name:
             session["profile_error"] = "Please enter a new user ID or name."
             return redirect(url_for("main.settings"))
-        existing = get_user_by_public_id(db_name, new_user_id) if new_user_id else None
+        existing = (
+            get_user_by_public_id(db_name, new_user_id) or get_user_by_username_or_id_or_email(db_name, new_user_id)
+            if new_user_id
+            else None
+        )
         if new_user_id and existing and int(existing["id"]) != int(user["id"]):
             session["profile_error"] = "That user ID is already taken."
             return redirect(url_for("main.settings"))
@@ -457,8 +463,8 @@ def update_profile():
     if action == "update_password":
         new_password = request.form.get("new_password") or ""
         confirm_password = request.form.get("confirm_password") or ""
-        if not new_password or len(new_password) < 6:
-            session["profile_error"] = "Password must be at least 6 characters."
+        if not new_password or len(new_password) < MIN_PASSWORD_LENGTH:
+            session["profile_error"] = f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
             return redirect(url_for("main.settings"))
         if new_password != confirm_password:
             session["profile_error"] = "Passwords do not match."
