@@ -85,3 +85,12 @@ def test_onboarding_hidden_once_logs_exist(db_path, login):
     add_log(db_path, uid, "2026-09-20", "08:00:00", "2026-09-20", "09:00:00")
     html = login(uid).get("/?date=2026-09-20").get_data(as_text=True)
     assert "welcomeTitle" not in html
+
+
+def test_week_label(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-16", "08:00:00", "2026-09-16", "09:00:00")
+    client = login(uid)
+    assert "Sep 13 – 19, 2026" in client.get("/?date=2026-09-16&period=week").get_data(as_text=True)
+    assert "Sep 27 – Oct 3, 2026" in client.get("/?date=2026-09-30&period=week").get_data(as_text=True)
+    assert "Dec 27, 2026 – Jan 2, 2027" in client.get("/?date=2026-12-30&period=week").get_data(as_text=True)

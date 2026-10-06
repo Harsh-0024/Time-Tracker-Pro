@@ -289,7 +289,13 @@ def dashboard():
     if period == "day":
         period_label = selected_date.strftime("%B %Y")
     elif period == "week":
-        period_label = f"{start_of_week.strftime('%b %d')} - {(start_of_week + timedelta(days=6)).strftime('%b %d, %Y')}"
+        week_end = start_of_week + timedelta(days=6)
+        if start_of_week.year != week_end.year:
+            period_label = f"{start_of_week.strftime('%b')} {start_of_week.day}, {start_of_week.year} – {week_end.strftime('%b')} {week_end.day}, {week_end.year}"
+        elif start_of_week.month == week_end.month:
+            period_label = f"{start_of_week.strftime('%b')} {start_of_week.day} – {week_end.day}, {week_end.year}"
+        else:
+            period_label = f"{start_of_week.strftime('%b')} {start_of_week.day} – {week_end.strftime('%b')} {week_end.day}, {week_end.year}"
     else:
         period_label = selected_date.strftime("%B %Y")
 
