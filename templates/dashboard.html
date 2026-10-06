@@ -444,6 +444,7 @@
         [data-theme="dark"] .insight-note.is-good { color: #6EE7B7; }
         [data-theme="dark"] .insight-note.is-bad { color: #FDA4AF; }
         [data-theme="dark"] .insight-link:hover { background: rgba(212, 175, 55, 0.08); }
+        .matrix-card:focus-visible { outline: 2px solid #F5B826; outline-offset: 3px; }
         .share-delta {
             display: inline-flex;
             align-items: center;
@@ -3896,6 +3897,23 @@
                     if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         triggerCard();
+                    }
+                });
+            });
+
+            // Matrix cards use inline onclick; make them reachable and operable from the keyboard.
+            document.querySelectorAll('.matrix-card[data-quadrant]').forEach(card => {
+                if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '0');
+                card.setAttribute('role', 'button');
+                const heading = card.querySelector('h4');
+                if (heading && !card.hasAttribute('aria-label')) {
+                    const hours = card.querySelector('.matrix-hours');
+                    card.setAttribute('aria-label', `${heading.textContent.trim()}${hours ? ', ' + hours.textContent.trim() : ''}`);
+                }
+                card.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        card.click();
                     }
                 });
             });
