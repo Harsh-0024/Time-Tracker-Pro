@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 ~04:20 IST: bug-fix pass in progress (see Done).
+- 2026-10-07 ~04:45 IST: bug/security pass mostly done; moving to UX/features.
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -15,10 +15,11 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - password reset logged user out (missing ua_hash); min password length 8 everywhere
 - admin delete-user now cascades to all user-owned tables
 - edit/delete send ?by=sheety to avoid local/sheety id ambiguity
+- week strip clipping fixed, per-day logged bars, tablet header no overflow
+- perf: vectorised fetch_local_data (1s -> 35ms), verified identical output
+- login throttling (login_failures table) + single-use verification codes
 
 ## Ideas / TODO queue
-- Week strip on dashboard clips the selected day at narrow widths
-- Login brute-force throttling
 - UX polish: keyboard shortcuts, empty states, a11y labels
 - Feature ideas: streaks / goals, weekly summary insights
 
