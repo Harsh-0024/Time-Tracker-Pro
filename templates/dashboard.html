@@ -1568,6 +1568,14 @@
                     </svg>
                     <span class="text-[10px] font-medium">Tags</span>
                 </button>
+                {% if insights and insights.top_activities %}
+                <button id="navInsights" class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 18h6M10 21h4M12 3a6 6 0 00-3.6 10.8c.6.45 1 1.15 1 1.9V16h5.2v-.3c0-.75.4-1.45 1-1.9A6 6 0 0012 3z" />
+                    </svg>
+                    <span class="text-[10px] font-medium">Insights</span>
+                </button>
+                {% endif %}
                 <button id="navGraphs" class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-gray-600">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 18V6m0 12h16M8 14l3-3 3 2 4-5" />
@@ -3776,7 +3784,7 @@
                 }
             });
             function setActiveNav(id) {
-                ['navHome','navMatrix','navTags','navGraphs','navFilter'].forEach(k => {
+                ['navHome','navMatrix','navTags','navInsights','navGraphs','navFilter'].forEach(k => {
                     const el = document.getElementById(k);
                     if (!el) return;
                     if (k === id) {
@@ -3801,6 +3809,8 @@
             if (homeBtn) homeBtn.onclick = () => { smoothScrollTo('top'); setActiveNav('navHome'); };
             if (matrixBtn) matrixBtn.onclick = () => { smoothScrollTo('matrix'); setActiveNav('navMatrix'); };
             if (tagsBtn) tagsBtn.onclick = () => { smoothScrollTo('tags'); setActiveNav('navTags'); };
+            const insightsBtn = document.getElementById('navInsights');
+            if (insightsBtn) insightsBtn.onclick = () => { smoothScrollTo('insights'); setActiveNav('navInsights'); };
             if (graphsBtn) graphsBtn.onclick = () => {
                 setActiveNav('navGraphs');
                 window.location.href = "{{ url_for('main.graphs') }}";
@@ -3852,7 +3862,8 @@
             const observerTargets = [
                 { id: 'top', btn: 'navHome' },
                 { id: 'matrix', btn: 'navMatrix' },
-                { id: 'tags', btn: 'navTags' }
+                { id: 'tags', btn: 'navTags' },
+                { id: 'insights', btn: 'navInsights' }
             ].map(({ id, btn }) => ({ el: document.getElementById(id), btn }));
 
             const io = new IntersectionObserver((entries) => {
