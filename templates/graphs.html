@@ -445,7 +445,7 @@
             </div>
         </div>
 
-        <div class="grid gap-3 md:gap-4 grid-cols-3">
+        <div class="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-4">
             <div class="luxury-card rounded-xl md:rounded-2xl p-3 md:p-5 text-center">
                 <p class="text-[10px] md:text-xs uppercase tracking-wider text-gray-500">Total Hours</p>
                 <div class="text-xl md:text-2xl font-light text-gray-900 mt-1 md:mt-2" id="totalHours">0h</div>
@@ -457,6 +457,11 @@
             <div class="luxury-card rounded-xl md:rounded-2xl p-3 md:p-5 text-center">
                 <p class="text-[10px] md:text-xs uppercase tracking-wider text-gray-500">Best Day</p>
                 <div class="text-xl md:text-2xl font-light text-gray-900 mt-1 md:mt-2" id="maxHours">0h</div>
+            </div>
+            <div class="luxury-card rounded-xl md:rounded-2xl p-3 md:p-5 text-center" title="Average per day over the last 7 days of the chart, compared with the average for the whole range">
+                <p class="text-[10px] md:text-xs uppercase tracking-wider text-gray-500">Last 7 days</p>
+                <div class="text-xl md:text-2xl font-light text-gray-900 mt-1 md:mt-2" id="recentAvgHours">0h</div>
+                <div class="text-[11px] mt-0.5 text-gray-500" id="recentAvgDelta">&nbsp;</div>
             </div>
         </div>
     </main>
@@ -843,6 +848,33 @@
             if (Array.isArray(totals)) allValues.push(...totals);
             const maxValue = allValues.length ? Math.max(...allValues.map(v => Number(v) || 0), 0) : 0;
             return maxValue > 0 && maxValue < 1 ? 'minutes' : 'hours';
+        }
+
+        function updateRecentAverage(values, rangeAvg, scale) {
+            const avgEl = document.getElementById('recentAvgHours');
+            const deltaEl = document.getElementById('recentAvgDelta');
+            if (!avgEl || !deltaEl) return;
+            const series = Array.isArray(values) ? values.map(v => Number(v) || 0) : [];
+            const recent = series.slice(-7);
+            if (!recent.length) {
+                avgEl.textContent = formatGraphValue(0, scale, 1);
+                deltaEl.innerHTML = '&nbsp;';
+                return;
+            }
+            const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+            avgEl.textContent = `${formatGraphValue(recentAvg, scale, 1)}/day`;
+            const delta = recentAvg - (Number(rangeAvg) || 0);
+            if (series.length <= 7 || Math.abs(delta) < 0.05) {
+                deltaEl.textContent = series.length <= 7 ? 'whole range' : 'same as average';
+                deltaEl.className = 'text-[11px] mt-0.5 text-gray-500';
+                return;
+            }
+            deltaEl.textContent = `${delta > 0 ? '▲' : '▼'} ${formatGraphValue(Math.abs(delta), scale, 1)} vs avg`;
+            // Colour by whether the move is good for this focus (more Work is good, more Waste isn't).
+            const lowerIsBetter = ['waste', 'q3', 'q4', 'urgent'].includes(currentMetric);
+            const neutral = ['total', 'necessity', 'rest', 'q1'].includes(currentMetric) || graphFocusValue === 'search_only';
+            const good = lowerIsBetter ? delta < 0 : delta > 0;
+            deltaEl.className = 'text-[11px] mt-0.5 font-medium ' + (neutral ? 'text-gray-600' : (good ? 'text-emerald-700' : 'text-rose-700'));
         }
 
         function formatGraphValue(value, scale, decimals = 1) {
@@ -2638,6 +2670,7 @@
             totalHoursEl.textContent = formatGraphValue(total_hours, valueScale, 1);
             avgHoursEl.textContent = formatGraphValue(avg_hours, valueScale, 1);
             maxHoursEl.textContent = formatGraphValue(max_hours, valueScale, 1);
+            updateRecentAverage(values, avg_hours, valueScale);
 
             const label = metricLabels[metricKey] || 'Total time';
             if (graphFocusValue === 'search_only' && graphSearchQuery) {
