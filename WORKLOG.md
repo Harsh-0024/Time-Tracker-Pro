@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 04:35 IST: onboarding/streaks done; full suite green on py3.12 + 3.14.
+- 2026-10-07 04:39 IST: day-by-day chart, security headers, README done.
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -32,6 +32,8 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - first-run welcome card, 'None yet' empty quadrant, register email-failure warning
 - auth page labels linked to inputs (a11y)
 - goal streaks on day view
+- 'Day by day' stacked columns (week/month); compact week label
+- graphs pill layout; security headers; README + .env.example
 
 ## Ideas / TODO queue
 - UX polish: keyboard shortcuts, empty states, a11y labels
