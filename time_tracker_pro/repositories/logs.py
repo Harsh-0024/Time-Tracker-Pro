@@ -32,6 +32,34 @@ def get_first_log_date(db_name: str, user_id: int) -> date | None:
         return None
 
 
+def _combine_datetimes(dates: pd.Series, times: pd.Series) -> pd.Series:
+    """Parse ``"<date> <time>"`` strings exactly like a per-row ``pd.to_datetime`` call.
+
+    The canonical stored format is parsed in one vectorised pass; anything else falls
+    back to the scalar parser so unusual values behave (and fail) as they always have.
+    """
+    combined = dates.astype(str) + " " + times.astype(str)
+    parsed = pd.to_datetime(combined, format="%Y-%m-%d %H:%M:%S", errors="coerce")
+    unparsed = parsed.isna()
+    if unparsed.any():
+        parsed = parsed.astype(object)
+        for idx in parsed.index[unparsed]:
+            parsed.at[idx] = pd.to_datetime(f"{dates.at[idx]} {times.at[idx]}")
+        parsed = pd.to_datetime(parsed)
+    return parsed
+
+
+def _clean_sheety_id(value: Any):
+    if isinstance(value, float) and pd.isna(value):
+        return None
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def fetch_local_data(db_name: str, user_id: int) -> pd.DataFrame:
     conn = get_db_connection(db_name)
     df = pd.read_sql_query(
@@ -43,41 +71,30 @@ def fetch_local_data(db_name: str, user_id: int) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame()
 
-    final_rows: List[Dict[str, Any]] = []
-    for _, row in df.iterrows():
-        start = pd.to_datetime(f"{row['start_date']} {row['start_time']}")
-        end = pd.to_datetime(f"{row['end_date']} {row['end_time']}")
-        duration_minutes = max(0.0, (end - start).total_seconds() / 60.0)
-        sheety_id = row.get("sheety_id")
-        if isinstance(sheety_id, float) and pd.isna(sheety_id):
-            sheety_id = None
-        elif sheety_id is not None:
-            try:
-                sheety_id = int(sheety_id)
-            except (TypeError, ValueError):
-                sheety_id = None
-        special_tags = filter_special_tags(row["tags"])
-        tag_value = ", ".join(special_tags) if special_tags else "Waste"
-        primary_tag = special_tags[0] if special_tags else "Waste"
-        final_rows.append(
-            {
-                "id": row["id"],
-                "sheety_id": sheety_id,
-                "date": start.date(),
-                "start_time": start.strftime("%I:%M %p"),
-                "end_time": end.strftime("%I:%M %p"),
-                "start_datetime": start,
-                "end_datetime": end,
-                "task": row["task"],
-                "duration": duration_minutes,
-                "tag": tag_value,
-                "raw_tag": row["tags"],
-                "primary_tag": primary_tag,
-                "special_tags": special_tags,
-                "urgent": bool(row["urg"]),
-                "important": bool(row["imp"]),
-            }
-        )
+    # Vectorised (this used to iterate with iterrows, ~1s per request for a few
+    # thousand logs). Output columns, values and dtypes are unchanged.
+    start = _combine_datetimes(df["start_date"], df["start_time"])
+    end = _combine_datetimes(df["end_date"], df["end_time"])
+    duration_minutes = ((end - start).dt.total_seconds() / 60.0).clip(lower=0.0)
+    special_tags = [filter_special_tags(raw) for raw in df["tags"]]
+
+    final_rows: Dict[str, List[Any]] = {
+        "id": list(df["id"]),
+        "sheety_id": [_clean_sheety_id(v) for v in df["sheety_id"]] if "sheety_id" in df.columns else [None] * len(df),
+        "date": list(start.dt.date),
+        "start_time": list(start.dt.strftime("%I:%M %p")),
+        "end_time": list(end.dt.strftime("%I:%M %p")),
+        "start_datetime": list(start),
+        "end_datetime": list(end),
+        "task": list(df["task"]),
+        "duration": [float(v) for v in duration_minutes],
+        "tag": [", ".join(tags) if tags else "Waste" for tags in special_tags],
+        "raw_tag": list(df["tags"]),
+        "primary_tag": [tags[0] if tags else "Waste" for tags in special_tags],
+        "special_tags": special_tags,
+        "urgent": [bool(v) for v in df["urg"]],
+        "important": [bool(v) for v in df["imp"]],
+    }
     return pd.DataFrame(final_rows)
 
 
