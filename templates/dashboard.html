@@ -271,6 +271,44 @@
         }
         .day-coverage-fill.is-complete { background: linear-gradient(90deg, #34D399, #10B981); }
         [data-theme="dark"] .day-coverage { background: rgba(212, 175, 55, 0.10); }
+        .insight-bar {
+            height: 6px;
+            border-radius: 999px;
+            background: rgba(148, 126, 86, 0.14);
+            overflow: hidden;
+        }
+        .insight-bar > span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #F5B826, #F7CF6B);
+        }
+        .insight-activity { border-radius: 12px; margin: -6px; padding: 6px; width: calc(100% + 12px); transition: background 0.2s ease; }
+        .insight-activity:hover, .insight-activity:focus-visible { background: rgba(247, 207, 107, 0.16); outline: none; }
+        [data-theme="dark"] .insight-activity:hover, [data-theme="dark"] .insight-activity:focus-visible { background: rgba(212, 175, 55, 0.08); }
+        .insight-stat { display: block; }
+        .insight-stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #9CA3AF;
+        }
+        .insight-stat-value { margin-top: 2px; font-size: 1.5rem; font-weight: 300; color: #111827; }
+        .insight-stat-sub { font-size: 0.8rem; color: #6B7280; font-weight: 400; }
+        .insight-note { margin-top: 2px; font-size: 12px; color: #6B7280; }
+        .insight-note.is-good { color: #047857; }
+        .insight-note.is-bad { color: #BE123C; }
+        .insight-link { border-radius: 12px; margin: -6px; padding: 6px; transition: background 0.2s ease; }
+        .insight-link:hover { background: rgba(247, 207, 107, 0.16); }
+        [data-theme="dark"] .insight-bar { background: rgba(212, 175, 55, 0.10); }
+        [data-theme="dark"] .insight-bar > span { background: linear-gradient(90deg, #8A6800, #D4AF37); }
+        [data-theme="dark"] .insight-stat-label { color: #6E6045; }
+        [data-theme="dark"] .insight-stat-value { color: #EDE6D3; }
+        [data-theme="dark"] .insight-stat-sub, [data-theme="dark"] .insight-note { color: #8C7C58; }
+        [data-theme="dark"] .insight-note.is-good { color: #6EE7B7; }
+        [data-theme="dark"] .insight-note.is-bad { color: #FDA4AF; }
+        [data-theme="dark"] .insight-link:hover { background: rgba(212, 175, 55, 0.08); }
         .share-delta {
             display: inline-flex;
             align-items: center;
@@ -1118,6 +1156,92 @@
             </div>
         </div>
 
+        {% if insights and insights.top_activities %}
+        <!-- Insights -->
+        <section class="mt-8 md:mt-10" id="insights" aria-labelledby="insightsTitle">
+            <div class="mb-4 md:mb-6">
+                <h3 id="insightsTitle" class="text-2xl font-light text-gray-900 mb-1">Insights</h3>
+                <p class="text-sm text-gray-500">
+                    {% if period == 'day' %}Where the day went, and how it compares with your week.{% else %}Highlights from this {{ period }}.{% endif %}
+                </p>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                <div class="luxury-card rounded-2xl p-5 md:p-6 lg:col-span-2">
+                    <div class="flex items-baseline justify-between mb-4">
+                        <h4 class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">Top activities</h4>
+                        <span class="text-[11px] text-gray-400">share of logged time</span>
+                    </div>
+                    <ol class="space-y-3">
+                        {% for item in insights.top_activities %}
+                        <li>
+                            <button type="button" class="insight-activity w-full text-left" data-activity="{{ item.name }}" onclick="window.viewActivity(this.dataset.activity)" title="Show {{ item.name }} entries">
+                            <div class="flex items-baseline justify-between gap-3 text-sm">
+                                <span class="min-w-0 truncate text-gray-800 font-medium" title="{{ item.name }}">{{ item.name }}</span>
+                                <span class="shrink-0 text-gray-500 tabular-nums"><span class="js-hover-hours" data-hours="{{ item.hours }}">{{ item.hours }}h</span> · {{ item.share }}%</span>
+                            </div>
+                            <div class="insight-bar mt-1.5" aria-hidden="true"><span style="width: {{ item.bar }}%"></span></div>
+                            </button>
+                        </li>
+                        {% endfor %}
+                    </ol>
+                </div>
+
+                <div class="luxury-card rounded-2xl p-5 md:p-6 flex flex-col gap-4">
+                    {% if period == 'day' %}
+                        {% if insights.vs_week %}
+                        {% set vw = insights.vs_week %}
+                        <h4 class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">vs your last {{ vw.days }} day{{ '' if vw.days == 1 else 's' }}</h4>
+                        <div class="insight-stat">
+                            <div class="insight-stat-label">Growth</div>
+                            <div class="insight-stat-value">{{ vw.growth_hours }}h <span class="insight-stat-sub">avg {{ vw.growth_avg }}h</span></div>
+                            {% set diff = (vw.growth_hours - vw.growth_avg) | round(1) %}
+                            <div class="insight-note {{ 'is-good' if diff > 0 else ('is-bad' if diff < 0 else '') }}">{{ '+' if diff > 0 else '' }}{{ diff }}h vs average</div>
+                        </div>
+                        <div class="insight-stat">
+                            <div class="insight-stat-label">Waste</div>
+                            <div class="insight-stat-value">{{ vw.waste_hours }}h <span class="insight-stat-sub">avg {{ vw.waste_avg }}h</span></div>
+                            {% set diff = (vw.waste_hours - vw.waste_avg) | round(1) %}
+                            <div class="insight-note {{ 'is-good' if diff < 0 else ('is-bad' if diff > 0 else '') }}">{{ '+' if diff > 0 else '' }}{{ diff }}h vs average</div>
+                        </div>
+                        {% else %}
+                        <h4 class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">Your week</h4>
+                        <p class="text-sm text-gray-500">Log a few more days to compare this day with your recent average.</p>
+                        {% endif %}
+                    {% else %}
+                        {% if insights.completeness %}
+                        <div class="insight-stat">
+                            <div class="insight-stat-label">Fully logged days</div>
+                            <div class="insight-stat-value">{{ insights.completeness.complete }}<span class="insight-stat-sub"> / {{ insights.completeness.days }}</span></div>
+                        </div>
+                        {% endif %}
+                        {% if insights.daily_avg %}
+                        <div class="insight-stat">
+                            <div class="insight-stat-label">Daily average</div>
+                            <div class="insight-stat-value text-base">
+                                <span class="text-emerald-700">{{ insights.daily_avg.growth }}h growth</span>
+                                <span class="text-gray-300 mx-1">·</span>
+                                <span class="text-rose-700">{{ insights.daily_avg.waste }}h waste</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if insights.best_growth_day %}
+                        <a class="insight-stat insight-link" href="/?date={{ insights.best_growth_day.date }}&period=day">
+                            <div class="insight-stat-label">Best growth day</div>
+                            <div class="insight-stat-value text-base">{{ insights.best_growth_day.date.strftime('%a, %b %-d') }} <span class="insight-stat-sub">{{ insights.best_growth_day.hours }}h</span></div>
+                        </a>
+                        {% endif %}
+                        {% if insights.most_waste_day %}
+                        <a class="insight-stat insight-link" href="/?date={{ insights.most_waste_day.date }}&period=day">
+                            <div class="insight-stat-label">Most waste</div>
+                            <div class="insight-stat-value text-base">{{ insights.most_waste_day.date.strftime('%a, %b %-d') }} <span class="insight-stat-sub">{{ insights.most_waste_day.hours }}h</span></div>
+                        </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
     </main>
 
     <nav class="mobile-bottom-nav fixed bottom-0 inset-x-0 md:hidden z-50" style="position: fixed;">
@@ -1603,6 +1727,14 @@
             const periodLabel = periodMap[period] || 'Day';
             console.log('View Full ' + periodLabel + ' clicked');
             window.applyFilter('all', 'Full ' + periodLabel + ' Log', '', 'tags');
+        };
+
+        window.viewActivity = function(name) {
+            const period = window.currentPeriod || 'day';
+            const periodMap = { 'day': 'Day', 'week': 'Week', 'month': 'Month' };
+            const clean = String(name || '').replace(/["']/g, ' ').replace(/\s+/g, ' ').trim();
+            window.pendingModalQuery = clean ? `"${clean}"` : '';
+            window.applyFilter('all', `${name} · ${periodMap[period] || 'Day'}`, '', 'tags');
         };
 
         window.toggleDropdown = function() {};
@@ -2500,10 +2632,11 @@
             const active = Object.keys(hidden).length
                 ? tasks.filter(t => !hidden[getKey(t)])
                 : tasks.slice();
-            window.modalActiveTasks = active;
             const searched = searchExpr
                 ? active.filter(t => modalTaskMatchesQuery(t, searchExpr))
                 : active;
+            // Stats describe exactly what's listed: legend selection and search.
+            window.modalActiveTasks = searched;
             const sorters = {
                 time_asc: (a, b) => getTaskTimestamp(a) - getTaskTimestamp(b),
                 time_desc: (a, b) => getTaskTimestamp(b) - getTaskTimestamp(a),
@@ -2675,7 +2808,9 @@
             window.modalData = data;
             window.modalFilterType = filterType;
             window.modalChartMode = chartMode || 'auto';
-            window.modalQuery = '';
+            // A caller (e.g. an Insights activity) may pre-fill the search box.
+            window.modalQuery = window.pendingModalQuery || '';
+            window.pendingModalQuery = '';
             window.hiddenTags = window.hiddenTags || {};
             document.getElementById('modalTitle').textContent = title;
             const editPanel = document.getElementById('taskEditPanel');

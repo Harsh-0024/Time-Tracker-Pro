@@ -21,6 +21,7 @@ from ..repositories.app_settings import get_app_setting, upsert_app_setting
 from ..repositories.logs import fetch_local_data, get_first_log_date
 from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
+from ..services.insights import build_insights
 from ..services.matrix import get_matrix_stats
 from ..services.sync import sync_cloud_data, get_last_sync_stats
 from .decorators import admin_required, login_required
@@ -200,6 +201,7 @@ def dashboard():
 
     matrix = get_matrix_stats(period_df)
     matrix_deltas = _matrix_share_deltas(df, matrix, selected_date, period)
+    insights = build_insights(df, period_df, period, start_date, end_date)
     task_count = int(len(period_df)) if not period_df.empty else 0
 
     idx = (selected_date.weekday() + 1) % 7
@@ -273,6 +275,7 @@ def dashboard():
             avg_end_date=avg_end_date,
             sync_stats=sync_stats or {},
             matrix_deltas=matrix_deltas,
+            insights=insights,
             delta_label=_DELTA_LABELS.get(period, "vs previous"),
         )
     )
