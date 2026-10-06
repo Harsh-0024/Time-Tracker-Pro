@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 ~05:45 IST: Insights feature shipped; continuing UX/bug sweep.
+- 2026-10-07 04:24 IST: Insights feature shipped; continuing UX/bug sweep.
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
