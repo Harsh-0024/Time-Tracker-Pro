@@ -18,10 +18,11 @@ from ..core.dates import get_period_range, parse_date_param, parse_period_param
 from ..core.rows import display_name, row_value
 from ..core.tags import primary_special_tag
 from ..repositories.app_settings import get_app_setting, upsert_app_setting
+from ..repositories.goals import get_user_goals, parse_goal_hours, upsert_user_goals
 from ..repositories.logs import fetch_local_data, get_first_log_date
 from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
-from ..services.insights import build_day_timeline, build_insights
+from ..services.insights import build_day_timeline, build_goal_progress, build_insights
 from ..services.matrix import get_matrix_stats
 from ..services.sync import sync_cloud_data, get_last_sync_stats
 from .decorators import admin_required, login_required
@@ -98,7 +99,26 @@ def settings():
         profile_error=session.pop("profile_error", None),
         profile_success=session.pop("profile_success", None),
         pending_email=session.get("pending_email_new"),
+        goals=get_user_goals(db_name, user_id),
+        goals_error=session.pop("goals_error", None),
+        goals_success=session.pop("goals_success", None),
     )
+
+
+@bp.route("/settings/goals", methods=["POST"], endpoint="update_goals")
+@login_required
+def update_goals():
+    db_name = current_app.config["DB_NAME"]
+    user_id = int(get_current_user_id() or 0)
+    try:
+        growth = parse_goal_hours(request.form.get("growth_hours"))
+        waste = parse_goal_hours(request.form.get("waste_limit_hours"))
+    except ValueError:
+        session["goals_error"] = "Goals must be numbers of hours between 0 and 24."
+        return redirect(url_for("main.settings") + "#goals-settings")
+    upsert_user_goals(db_name, user_id, growth, waste)
+    session["goals_success"] = "Goals saved." if (growth is not None or waste is not None) else "Goals cleared."
+    return redirect(url_for("main.settings") + "#goals-settings")
 
 
 @bp.route("/admin/app-icon", methods=["POST"], endpoint="update_app_icon")
@@ -216,6 +236,8 @@ def dashboard():
     insights = build_insights(df, period_df, period, start_date, end_date)
     day_timeline = build_day_timeline(df, selected_date) if period == "day" else None
     logged_coverage = _logged_coverage(float(matrix.get("total_hours") or 0.0), start_date, end_date)
+    goals = get_user_goals(db_name, user_id)
+    goal_progress = build_goal_progress(period_df, period, start_date, end_date, goals)
     task_count = int(len(period_df)) if not period_df.empty else 0
 
     idx = (selected_date.weekday() + 1) % 7
@@ -292,6 +314,7 @@ def dashboard():
             insights=insights,
             day_timeline=day_timeline,
             logged_coverage=logged_coverage,
+            goal_progress=goal_progress,
             delta_label=_DELTA_LABELS.get(period, "vs previous"),
         )
     )

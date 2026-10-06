@@ -320,6 +320,19 @@
         [data-theme="dark"] .day-timeline::after { opacity: 0.12; }
         [data-theme="dark"] .day-timeline-seg { box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.45); }
         [data-theme="dark"] .day-timeline-axis { color: #6E6045; }
+        .goal-bar {
+            margin-top: 6px;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(148, 126, 86, 0.14);
+            overflow: hidden;
+        }
+        .goal-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #F5B826, #F7CF6B); transition: width 0.5s ease; }
+        .goal-bar.is-met > span { background: linear-gradient(90deg, #10B981, #34D399); }
+        .goal-bar.is-limit > span { background: linear-gradient(90deg, #A8A29E, #D6D3D1); }
+        .goal-bar.is-limit.is-over > span { background: linear-gradient(90deg, #E11D48, #FB7185); }
+        [data-theme="dark"] .goal-bar { background: rgba(212, 175, 55, 0.10); }
+        [data-theme="dark"] .goal-bar.is-limit > span { background: linear-gradient(90deg, #57534E, #78716C); }
         .insight-bar {
             height: 6px;
             border-radius: 999px;
@@ -1259,6 +1272,48 @@
                 </div>
 
                 <div class="luxury-card rounded-2xl p-5 md:p-6 flex flex-col gap-4">
+                    {% if goal_progress %}
+                    <div class="goal-block">
+                        <div class="flex items-baseline justify-between mb-3">
+                            <h4 class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">{{ 'Daily goals' if period == 'day' else 'Goals this ' + period }}</h4>
+                            <a href="{{ url_for('main.settings') }}#goals-settings" class="text-[11px] text-gray-400 hover:text-gray-600 underline-offset-2 hover:underline">Edit</a>
+                        </div>
+                        {% if period == 'day' %}
+                            {% if goal_progress.growth %}{% set gp = goal_progress.growth %}
+                            <div class="goal-row">
+                                <div class="flex items-baseline justify-between text-sm">
+                                    <span class="text-gray-700">Growth</span>
+                                    <span class="tabular-nums {{ 'text-emerald-700 font-semibold' if gp.met else 'text-gray-600' }}">{{ gp.actual }}h <span class="text-gray-400">/ {{ '%g' | format(gp.target) }}h</span>{% if gp.met %} ✓{% endif %}</span>
+                                </div>
+                                <div class="goal-bar {{ 'is-met' if gp.met else '' }}" role="progressbar" aria-label="Growth goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ gp.pct }}"><span style="width: {{ gp.pct }}%"></span></div>
+                            </div>
+                            {% endif %}
+                            {% if goal_progress.waste %}{% set wp = goal_progress.waste %}
+                            <div class="goal-row mt-3">
+                                <div class="flex items-baseline justify-between text-sm">
+                                    <span class="text-gray-700">Waste</span>
+                                    <span class="tabular-nums {{ 'text-rose-700 font-semibold' if wp.over else 'text-gray-600' }}">{{ wp.actual }}h <span class="text-gray-400">/ {{ '%g' | format(wp.limit) }}h max</span></span>
+                                </div>
+                                <div class="goal-bar is-limit {{ 'is-over' if wp.over else '' }}" role="progressbar" aria-label="Waste limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ wp.pct }}"><span style="width: {{ wp.pct }}%"></span></div>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            {% if goal_progress.growth %}{% set gp = goal_progress.growth %}
+                            <div class="flex items-baseline justify-between text-sm">
+                                <span class="text-gray-700">Growth ≥ {{ '%g' | format(gp.target) }}h</span>
+                                <span class="tabular-nums text-gray-600"><span class="text-lg font-light text-gray-900">{{ gp.met_days }}</span> / {{ gp.days }} days</span>
+                            </div>
+                            {% endif %}
+                            {% if goal_progress.waste %}{% set wp = goal_progress.waste %}
+                            <div class="flex items-baseline justify-between text-sm mt-2">
+                                <span class="text-gray-700">Waste ≤ {{ '%g' | format(wp.limit) }}h</span>
+                                <span class="tabular-nums text-gray-600"><span class="text-lg font-light text-gray-900">{{ wp.kept_days }}</span> / {{ wp.days }} days</span>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    <div class="h-px bg-[rgba(148,126,86,0.18)]" aria-hidden="true"></div>
+                    {% endif %}
                     {% if period == 'day' %}
                         {% if insights.vs_week %}
                         {% set vw = insights.vs_week %}
@@ -1308,6 +1363,9 @@
                             <div class="insight-stat-value text-base">{{ insights.most_waste_day.date.strftime('%a, %b %-d') }} <span class="insight-stat-sub">{{ insights.most_waste_day.hours }}h</span></div>
                         </a>
                         {% endif %}
+                    {% endif %}
+                    {% if not goal_progress %}
+                    <a href="{{ url_for('main.settings') }}#goals-settings" class="mt-auto text-xs text-gray-500 hover:text-gray-800 underline-offset-2 hover:underline">Set daily goals for Growth and Waste →</a>
                     {% endif %}
                 </div>
             </div>

@@ -249,6 +249,18 @@ def init_db(db_name: str) -> None:
 
     conn.execute(
         """
+        CREATE TABLE IF NOT EXISTS user_goals (
+            user_id INTEGER PRIMARY KEY,
+            growth_hours REAL,
+            waste_limit_hours REAL,
+            updated_at TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS login_failures (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             identifier TEXT NOT NULL,

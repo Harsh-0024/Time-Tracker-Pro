@@ -166,3 +166,61 @@ def build_day_timeline(df: pd.DataFrame, day: date) -> Dict[str, Any]:
             covered.append([start_min, end_min])
     logged = sum(e - s for s, e in covered)
     return {"segments": segments, "logged_pct": round(logged / total * 100.0, 1)}
+
+
+def build_goal_progress(
+    period_df: pd.DataFrame,
+    period: str,
+    start_date: date,
+    end_date: date,
+    goals: Dict[str, Optional[float]],
+    today: Optional[date] = None,
+) -> Optional[Dict[str, Any]]:
+    """Progress against the user's daily Growth target and Waste limit.
+
+    Day view: today's hours vs the goal. Week/month view: on how many logged days
+    (that have started) each goal was met. ``None`` when no goals are set.
+    """
+    target = goals.get("growth_hours")
+    limit = goals.get("waste_limit_hours")
+    if target is None and limit is None:
+        return None
+    today = today or date.today()
+    result: Dict[str, Any] = {"period": period}
+
+    if period_df.empty:
+        growth_by_day = pd.Series(dtype=float)
+        waste_by_day = pd.Series(dtype=float)
+        logged_days: List[date] = []
+    else:
+        growth_by_day = _daily_minutes(period_df, _growth_mask(period_df)) / 60.0
+        waste_by_day = _daily_minutes(period_df, _waste_mask(period_df)) / 60.0
+        logged_days = sorted(d for d in period_df["date"].unique() if d <= max(today, start_date))
+
+    if period == "day":
+        growth = float(growth_by_day.sum()) if not growth_by_day.empty else 0.0
+        waste = float(waste_by_day.sum()) if not waste_by_day.empty else 0.0
+        if target is not None:
+            result["growth"] = {
+                "actual": round(growth, 1),
+                "target": target,
+                "pct": round(min(100.0, growth / target * 100.0), 1) if target else 100.0,
+                "met": growth >= target,
+            }
+        if limit is not None:
+            result["waste"] = {
+                "actual": round(waste, 1),
+                "limit": limit,
+                "pct": round(min(100.0, waste / limit * 100.0), 1) if limit else (100.0 if waste else 0.0),
+                "over": waste > limit,
+            }
+        return result
+
+    days = len(logged_days)
+    if target is not None:
+        met = sum(1 for d in logged_days if float(growth_by_day.get(d, 0.0)) >= target)
+        result["growth"] = {"target": target, "met_days": met, "days": days}
+    if limit is not None:
+        kept = sum(1 for d in logged_days if float(waste_by_day.get(d, 0.0)) <= limit)
+        result["waste"] = {"limit": limit, "kept_days": kept, "days": days}
+    return result

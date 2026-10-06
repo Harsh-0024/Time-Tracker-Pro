@@ -31,6 +31,7 @@ _USER_OWNED_TABLES = (
     "sheety_api_accounts",
     "sheety_outbox",
     "sheet_rewrite_state",
+    "user_goals",
 )
 
 
