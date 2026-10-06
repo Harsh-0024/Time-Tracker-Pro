@@ -224,3 +224,48 @@ def build_goal_progress(
         kept = sum(1 for d in logged_days if float(waste_by_day.get(d, 0.0)) <= limit)
         result["waste"] = {"limit": limit, "kept_days": kept, "days": days}
     return result
+
+
+def goal_streaks(
+    df: pd.DataFrame,
+    day: date,
+    goals: Dict[str, Optional[float]],
+    max_days: int = 366,
+) -> Dict[str, int]:
+    """Consecutive days, ending on ``day``, on which each goal was met.
+
+    ``day`` itself only breaks a streak once it has data (an unlogged or
+    in-progress day shouldn't zero out yesterday's run). A day with no logs at
+    all ends the streak.
+    """
+    target = goals.get("growth_hours")
+    limit = goals.get("waste_limit_hours")
+    streaks: Dict[str, int] = {}
+    if df.empty or (target is None and limit is None):
+        return streaks
+    window = df[(df["date"] <= day) & (df["date"] > day - timedelta(days=max_days))]
+    if window.empty:
+        return {key: 0 for key, goal in (("growth", target), ("waste", limit)) if goal is not None}
+    logged = set(window["date"].unique())
+    growth = _daily_minutes(window, _growth_mask(window)) / 60.0
+    waste = _daily_minutes(window, _waste_mask(window)) / 60.0
+
+    def run(is_met) -> int:
+        count = 0
+        current = day
+        if current in logged and not is_met(current):
+            return 0
+        if current not in logged or not is_met(current):
+            current -= timedelta(days=1)
+        else:
+            count, current = 1, current - timedelta(days=1)
+        while current in logged and is_met(current):
+            count += 1
+            current -= timedelta(days=1)
+        return count
+
+    if target is not None:
+        streaks["growth"] = run(lambda d: float(growth.get(d, 0.0)) >= target)
+    if limit is not None:
+        streaks["waste"] = run(lambda d: float(waste.get(d, 0.0)) <= limit)
+    return streaks

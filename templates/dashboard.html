@@ -362,6 +362,7 @@
         .goal-bar.is-limit > span { background: linear-gradient(90deg, #A8A29E, #D6D3D1); }
         .goal-bar.is-limit.is-over > span { background: linear-gradient(90deg, #E11D48, #FB7185); }
         [data-theme="dark"] .goal-bar { background: rgba(212, 175, 55, 0.10); }
+        [data-theme="dark"] .goal-streak { color: #6EE7B7; }
         [data-theme="dark"] .goal-bar.is-limit > span { background: linear-gradient(90deg, #57534E, #78716C); }
         .insight-bar {
             height: 6px;
@@ -1366,6 +1367,9 @@
                                 <div class="goal-bar {{ 'is-met' if gp.met else '' }}" role="progressbar" aria-label="Growth goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ gp.pct }}"><span style="width: {{ gp.pct }}%"></span></div>
                             </div>
                             {% endif %}
+                            {% if goal_progress.streaks and goal_progress.streaks.growth and goal_progress.streaks.growth > 1 %}
+                            <div class="mt-1.5 text-[11px] text-emerald-700 goal-streak">🔥 {{ goal_progress.streaks.growth }}-day Growth streak</div>
+                            {% endif %}
                             {% if goal_progress.waste %}{% set wp = goal_progress.waste %}
                             <div class="goal-row mt-3">
                                 <div class="flex items-baseline justify-between text-sm">
@@ -1374,6 +1378,9 @@
                                 </div>
                                 <div class="goal-bar is-limit {{ 'is-over' if wp.over else '' }}" role="progressbar" aria-label="Waste limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ wp.pct }}"><span style="width: {{ wp.pct }}%"></span></div>
                             </div>
+                            {% if goal_progress.streaks and goal_progress.streaks.waste and goal_progress.streaks.waste > 1 %}
+                            <div class="mt-1.5 text-[11px] text-emerald-700 goal-streak">{{ goal_progress.streaks.waste }} days in a row under the Waste limit</div>
+                            {% endif %}
                             {% endif %}
                         {% else %}
                             {% if goal_progress.growth %}{% set gp = goal_progress.growth %}

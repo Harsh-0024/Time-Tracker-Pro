@@ -22,7 +22,7 @@ from ..repositories.goals import get_user_goals, parse_goal_hours, upsert_user_g
 from ..repositories.logs import fetch_local_data, get_first_log_date
 from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
-from ..services.insights import build_day_timeline, build_goal_progress, build_insights
+from ..services.insights import build_day_timeline, build_goal_progress, build_insights, goal_streaks
 from ..services.matrix import get_matrix_stats
 from ..services.sync import get_last_sync_stats, sync_cloud_data, sync_status_payload
 from .decorators import admin_required, login_required
@@ -245,6 +245,8 @@ def dashboard():
             sheet_connected = False
         onboarding = {"sheet_connected": sheet_connected}
     goal_progress = build_goal_progress(period_df, period, start_date, end_date, goals)
+    if goal_progress is not None and period == "day":
+        goal_progress["streaks"] = goal_streaks(df, selected_date, goals)
     task_count = int(len(period_df)) if not period_df.empty else 0
 
     idx = (selected_date.weekday() + 1) % 7
