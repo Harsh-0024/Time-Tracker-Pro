@@ -248,6 +248,31 @@ def _optional_int(value: Any) -> Optional[int]:
         return None
 
 
+def _find_task_row(conn, task_id: int, user_id: int):
+    """Look up a user's log row by local id or Sheety row id.
+
+    Clients may pass ``?by=sheety`` (or ``?by=local``) to say which id they sent;
+    without it we keep the legacy behaviour of trying the local id first.
+    """
+    by = (request.args.get("by") or "").strip().lower()
+    by_local = ("SELECT * FROM logs WHERE id = ? AND user_id = ?", (int(task_id), int(user_id)))
+    by_sheety = (
+        "SELECT * FROM logs WHERE sheety_id = ? AND user_id = ? ORDER BY id DESC LIMIT 1",
+        (int(task_id), int(user_id)),
+    )
+    if by == "sheety":
+        lookups = [by_sheety]
+    elif by == "local":
+        lookups = [by_local]
+    else:
+        lookups = [by_local, by_sheety]
+    for sql, params in lookups:
+        row = conn.execute(sql, params).fetchone()
+        if row:
+            return row
+    return None
+
+
 @bp.route("/api/graph-data", endpoint="graph_data")
 @api_or_login_required
 def graph_data():
@@ -432,15 +457,7 @@ def update_task(task_id: int):
     data = request.get_json(silent=True) or {}
 
     conn = get_db_connection(db_name)
-    row = conn.execute(
-        "SELECT * FROM logs WHERE id = ? AND user_id = ?",
-        (int(task_id), int(user_id)),
-    ).fetchone()
-    if not row:
-        row = conn.execute(
-            "SELECT * FROM logs WHERE sheety_id = ? AND user_id = ? ORDER BY id DESC LIMIT 1",
-            (int(task_id), int(user_id)),
-        ).fetchone()
+    row = _find_task_row(conn, task_id, user_id)
     if not row:
         conn.close()
         return jsonify({"error": "Task not found"}), 404
@@ -1114,15 +1131,7 @@ def delete_task(task_id: int):
     user_id = int(getattr(g, "user_id", 0) or 0)
 
     conn = get_db_connection(db_name)
-    row = conn.execute(
-        "SELECT * FROM logs WHERE id = ? AND user_id = ?",
-        (int(task_id), int(user_id)),
-    ).fetchone()
-    if not row:
-        row = conn.execute(
-            "SELECT * FROM logs WHERE sheety_id = ? AND user_id = ? ORDER BY id DESC LIMIT 1",
-            (int(task_id), int(user_id)),
-        ).fetchone()
+    row = _find_task_row(conn, task_id, user_id)
     if not row:
         conn.close()
         return jsonify({"error": "Task not found"}), 404

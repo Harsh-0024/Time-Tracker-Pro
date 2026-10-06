@@ -3135,7 +3135,7 @@
                     saveBtn.disabled = true;
                 }
                 try {
-                    const response = await fetch(`/api/tasks/${taskId}`, {
+                    const response = await fetch(`/api/tasks/${taskId}?by=sheety`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ task: name, start, end, tag: tags, urgent, important })
@@ -3178,7 +3178,7 @@
                 const originalText = confirmGraphDelete.textContent;
                 confirmGraphDelete.textContent = 'Deleting...';
                 try {
-                    const response = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+                    const response = await fetch(`/api/tasks/${taskId}?by=sheety`, { method: 'DELETE' });
                     const contentType = response.headers.get('content-type') || '';
                     const result = contentType.includes('application/json') ? await response.json() : null;
                     if (!response.ok) {

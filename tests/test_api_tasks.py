@@ -30,3 +30,31 @@ def test_tasks_are_scoped_to_user(db_path, login):
 def test_tasks_requires_login(app):
     resp = app.test_client().get("/api/tasks")
     assert resp.status_code == 401
+
+
+def test_find_task_row_respects_id_kind(app, db_path):
+    import sqlite3
+
+    from time_tracker_pro.db import get_db_connection
+    from time_tracker_pro.web.api import _find_task_row
+
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "09:00:00", "2026-09-20", "10:00:00", task="First", sheety_id=500)
+    add_log(db_path, uid, "2026-09-20", "10:00:00", "2026-09-20", "11:00:00", task="Second", sheety_id=1)
+    conn = sqlite3.connect(db_path)
+    first_local_id = conn.execute("SELECT id FROM logs WHERE task = 'First'").fetchone()[0]
+    conn.close()
+    assert first_local_id == 1  # local id 1 collides with Second's sheety_id 1
+
+    conn = get_db_connection(db_path)
+    try:
+        with app.test_request_context("/api/tasks/1?by=sheety"):
+            assert _find_task_row(conn, 1, uid)["task"] == "Second"
+        with app.test_request_context("/api/tasks/1?by=local"):
+            assert _find_task_row(conn, 1, uid)["task"] == "First"
+        with app.test_request_context("/api/tasks/500"):
+            assert _find_task_row(conn, 500, uid)["task"] == "First"
+        with app.test_request_context("/api/tasks/1?by=sheety"):
+            assert _find_task_row(conn, 1, uid + 1) is None
+    finally:
+        conn.close()
