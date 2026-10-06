@@ -49,6 +49,9 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
   result isn't shown until the next navigation. Consider dropping it or making it non-forced.
 - instance/pwa/app-icon.png (the uploaded icon) is actually a JPEG (394x394); manifest claims 512x512 PNG.
   It now gets served with the right content type, but a real 512x512 PNG would be better for PWA installs.
+- Tailwind is loaded from cdn.tailwindcss.com (the in-browser JIT "play" build, ~300KB JS, not meant for
+  production; dashboard loads it with `defer`, which can flash unstyled content). Compiling a static CSS file
+  with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
 - UX polish: keyboard shortcuts, empty states, a11y labels
