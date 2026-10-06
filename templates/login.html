@@ -136,10 +136,21 @@
         
         const otpBtn = document.getElementById('otpBtn');
 
+        // A disabled button is left out of the submitted form data, so carry the
+        // clicked button's name/value in a hidden field before disabling it.
+        function keepSubmitterValue(form, button) {
+            if (!form || !button || !button.name) return;
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = button.name;
+            hidden.value = button.value;
+            form.appendChild(hidden);
+        }
         if (loginForm && loginBtn) {
             loginForm.addEventListener('submit', (event) => {
                 const submitter = event.submitter;
                 if (submitter === otpBtn) {
+                    keepSubmitterValue(loginForm, otpBtn);
                     otpBtn.disabled = true;
                     otpBtn.textContent = 'Sending code...';
                     return;

@@ -99,6 +99,16 @@
         const verifyBtn = document.getElementById('verifyBtn');
         const resendBtn = document.getElementById('resendBtn');
         
+        // A disabled button is left out of the submitted form data, so carry the
+        // clicked button's name/value in a hidden field before disabling it.
+        function keepSubmitterValue(form, button) {
+            if (!form || !button || !button.name) return;
+            const hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = button.name;
+            hidden.value = button.value;
+            form.appendChild(hidden);
+        }
         if (verifyForm) {
             verifyForm.addEventListener('submit', (e) => {
                 const submitter = e.submitter;
@@ -106,6 +116,7 @@
                     verifyBtn.disabled = true;
                     verifyBtn.textContent = 'Verifying...';
                 } else if (submitter === resendBtn) {
+                    keepSubmitterValue(verifyForm, resendBtn);
                     resendBtn.disabled = true;
                     resendBtn.textContent = 'Sending...';
                 }
