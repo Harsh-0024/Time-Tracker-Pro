@@ -409,6 +409,51 @@ def graph_data():
     )
 
 
+@bp.route("/api/graph-views", methods=["GET"], endpoint="list_graph_views")
+@api_or_login_required
+def list_graph_views_route():
+    from ..repositories.graph_views import list_graph_views
+
+    db_name = current_app.config["DB_NAME"]
+    user_id = int(getattr(g, "user_id", 0) or 0)
+    return jsonify({"views": list_graph_views(db_name, user_id)})
+
+
+@bp.route("/api/graph-views", methods=["POST"], endpoint="create_graph_view")
+@api_or_login_required
+def create_graph_view_route():
+    from ..repositories.graph_views import create_graph_view
+
+    db_name = current_app.config["DB_NAME"]
+    user_id = int(getattr(g, "user_id", 0) or 0)
+    data = request.get_json(silent=True) or {}
+    try:
+        view = create_graph_view(
+            db_name,
+            user_id,
+            name=data.get("name") or "",
+            focus=data.get("focus") or "",
+            search=data.get("search") or "",
+            range_value=str(data.get("range") or ""),
+            ma_window=data.get("ma"),
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    return jsonify({"view": view}), 201
+
+
+@bp.route("/api/graph-views/<int:view_id>", methods=["DELETE"], endpoint="delete_graph_view")
+@api_or_login_required
+def delete_graph_view_route(view_id: int):
+    from ..repositories.graph_views import delete_graph_view
+
+    db_name = current_app.config["DB_NAME"]
+    user_id = int(getattr(g, "user_id", 0) or 0)
+    if not delete_graph_view(db_name, user_id, view_id):
+        return jsonify({"error": "View not found"}), 404
+    return jsonify({"success": True})
+
+
 @bp.route("/api/graph-search-suggestions", endpoint="graph_search_suggestions")
 @api_or_login_required
 def graph_search_suggestions():

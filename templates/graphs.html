@@ -95,6 +95,21 @@
             border-color: rgba(185, 132, 40, 0.45);
             color: var(--pill-text-hover);
         }
+        .saved-view-chip {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 126, 86, 0.35);
+            background: rgba(255, 255, 255, 0.85);
+            overflow: hidden;
+        }
+        .saved-view-apply { padding: 6px 4px 6px 12px; font-size: 12px; font-weight: 600; color: #374151; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .saved-view-apply:hover { color: #111827; }
+        .saved-view-delete { padding: 6px 10px 6px 6px; font-size: 14px; line-height: 1; color: #9CA3AF; }
+        .saved-view-delete:hover { color: #BE123C; }
+        [data-theme="dark"] .saved-view-chip { background: #0E0C08; border-color: rgba(212, 175, 55, 0.18); }
+        [data-theme="dark"] .saved-view-apply { color: #B8A878; }
+        [data-theme="dark"] .saved-view-apply:hover { color: #EDE6D3; }
         .range-pill.active, .ma-pill.active {
             background: linear-gradient(135deg, #F8D574, #F5B826);
             color: #3B2A0A;
@@ -397,6 +412,11 @@
                         <button id="graphSearchApply" class="primary-cta text-sm md:text-base w-full sm:w-auto">Apply</button>
                         <button id="graphSearchClear" class="secondary-cta text-sm md:text-base w-full sm:w-auto">Clear</button>
                         <button id="reviewGraphTasks" class="secondary-cta text-sm md:text-base w-full sm:w-auto hidden">Review tasks</button>
+                        <button id="graphSaveView" type="button" class="secondary-cta text-sm md:text-base w-full sm:w-auto sm:ml-auto" title="Save this focus, search, range and average window">☆ Save view</button>
+                    </div>
+                    <div id="graphSavedViews" class="hidden flex flex-wrap items-center gap-2" aria-label="Saved views">
+                        <span class="text-[10px] md:text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 mr-1">Saved</span>
+                        <div id="graphSavedViewsList" class="contents"></div>
                     </div>
                 </div>
             </div>
@@ -2870,6 +2890,97 @@
                 }
             }
         }
+
+        // ---- Saved views -------------------------------------------------
+        const graphSaveViewBtn = document.getElementById('graphSaveView');
+        const graphSavedViews = document.getElementById('graphSavedViews');
+        const graphSavedViewsList = document.getElementById('graphSavedViewsList');
+        let graphViews = [];
+
+        function rangeLabelFor(range) {
+            return String(range) === 'all' ? 'All' : `${range}d`;
+        }
+
+        function renderSavedViews() {
+            if (!graphSavedViews || !graphSavedViewsList) return;
+            graphSavedViews.classList.toggle('hidden', graphViews.length === 0);
+            graphSavedViewsList.innerHTML = graphViews.map(view => {
+                const detail = [getFocusLabel(view.focus), view.search ? `“${view.search}”` : '', rangeLabelFor(view.range), `MA ${view.ma}d`]
+                    .filter(Boolean).join(' · ');
+                return `<span class="saved-view-chip">
+                    <button type="button" class="saved-view-apply" data-view-id="${Number(view.id)}" title="${escapeSuggestionHtml(detail)}">${escapeSuggestionHtml(view.name)}</button>
+                    <button type="button" class="saved-view-delete" data-delete-view-id="${Number(view.id)}" aria-label="Delete saved view ${escapeSuggestionHtml(view.name)}">×</button>
+                </span>`;
+            }).join('');
+        }
+
+        async function loadSavedViews() {
+            try {
+                const resp = await fetch('/api/graph-views', { credentials: 'include' });
+                if (!resp.ok) return;
+                const data = await resp.json();
+                graphViews = Array.isArray(data.views) ? data.views : [];
+                renderSavedViews();
+            } catch (e) {
+                console.warn('Could not load saved views', e);
+            }
+        }
+
+        function applySavedView(view) {
+            if (!view) return;
+            graphExcludedIds = new Set();
+            graphSearchQuery = String(view.search || '');
+            if (graphSearchInput) graphSearchInput.value = graphSearchQuery;
+            currentRange = normalizeRangeValue(view.range);
+            currentDays = currentRange === 'all' ? getAllDaysDefault() : Number(currentRange || 30);
+            maWindow = Number(view.ma || 14);
+            shouldAutoMAOnNextRender = false;
+            syncRangePills();
+            syncMAPills();
+            setFocus(view.focus || 'work', { fetch: false });
+            fetchGraphData({ includeTasks: Boolean(graphSearchQuery) });
+        }
+
+        async function saveCurrentView() {
+            const search = (graphSearchQuery || '').trim();
+            const suggested = [getFocusLabel(graphFocusValue), search, rangeLabelFor(currentRange)].filter(Boolean).join(' · ');
+            const name = window.prompt('Name this view', suggested);
+            if (name === null) return;
+            try {
+                const resp = await fetch('/api/graph-views', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, focus: graphFocusValue, search, range: currentRange, ma: maWindow })
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+                graphViews.push(data.view);
+                renderSavedViews();
+                if (window.showSuccessToast) window.showSuccessToast('View saved');
+            } catch (e) {
+                if (window.showErrorToast) window.showErrorToast(e.message || 'Could not save view');
+            }
+        }
+
+        if (graphSaveViewBtn) graphSaveViewBtn.addEventListener('click', saveCurrentView);
+        if (graphSavedViewsList) {
+            graphSavedViewsList.addEventListener('click', async (event) => {
+                const del = event.target.closest('[data-delete-view-id]');
+                if (del) {
+                    const id = Number(del.dataset.deleteViewId);
+                    const resp = await fetch(`/api/graph-views/${id}`, { method: 'DELETE', credentials: 'include' });
+                    if (resp.ok) {
+                        graphViews = graphViews.filter(v => Number(v.id) !== id);
+                        renderSavedViews();
+                    }
+                    return;
+                }
+                const apply = event.target.closest('[data-view-id]');
+                if (apply) applySavedView(graphViews.find(v => Number(v.id) === Number(apply.dataset.viewId)));
+            });
+        }
+        loadSavedViews();
 
         graphFocusBtn.addEventListener('click', () => {
             graphFocusMenu.classList.toggle('hidden');
