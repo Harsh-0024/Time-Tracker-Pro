@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 04:42 IST: graphs 'last 7 days', F shortcut, smoke tests, settings polish.
+- 2026-10-07 04:46 IST: saved graph views shipped; 103 tests green.
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -36,6 +36,9 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - graphs pill layout; security headers; README + .env.example
 - graphs 'Last 7 days' card; F = full log shortcut; smoke tests (tests/test_smoke.py)
 - API Keys panel auto-expands; verify-page copy; error toast escapes text
+- category legend shows hours; doughnut dark mode; admin join dates/count
+- non-numeric durations -> 400 (create/update)
+- Saved graph views (graph_bookmarks table, /api/graph-views)
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
