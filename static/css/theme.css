@@ -615,3 +615,13 @@
 [data-theme="dark"] .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
     border-color: rgba(212,175,55,0.10) !important;
 }
+
+/* Respect the OS "reduce motion" setting: no wave animations, slides or smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
