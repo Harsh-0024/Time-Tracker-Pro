@@ -1697,9 +1697,9 @@
                         const textDecoration = isHidden ? 'line-through' : 'none';
                         const opacity = isHidden ? '0.5' : '1';
                         const cursor = item.disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-70';
-                        return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${item.key}" style="opacity:${opacity}">
+                        return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeSuggestionHtml(item.key)}" style="opacity:${opacity}">
                             <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
-                            <span style="text-decoration:${textDecoration}">${item.label}</span>
+                            <span style="text-decoration:${textDecoration}">${escapeSuggestionHtml(item.label)}</span>
                         </span>`;
                     }).join('');
                 } else if (mobileLegendEl) {
@@ -1719,9 +1719,9 @@
                     const textDecoration = isHidden ? 'line-through' : 'none';
                     const opacity = isHidden ? '0.5' : '1';
                     const cursor = item.disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-70';
-                    return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${item.key}" style="opacity:${opacity}">
+                    return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeSuggestionHtml(item.key)}" style="opacity:${opacity}">
                         <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
-                        <span style="text-decoration:${textDecoration}" class="max-w-[160px] truncate">${item.label}</span>
+                        <span style="text-decoration:${textDecoration}" class="max-w-[160px] truncate">${escapeSuggestionHtml(item.label)}</span>
                     </span>`;
                 }).join('');
             };
@@ -2000,10 +2000,10 @@
                     <div class="luxury-card rounded-2xl p-4 md:p-5 mb-3 shadow-lg">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex-1 min-w-0">
-                                <div class="font-medium text-gray-900 mb-1 truncate">${normalizeGraphTaskName(task.task) || 'Untitled task'}</div>
+                                <div class="font-medium text-gray-900 mb-1 truncate">${escapeSuggestionHtml(normalizeGraphTaskName(task.task) || 'Untitled task')}</div>
                                 <div class="flex flex-wrap items-center gap-2 text-[13px] text-gray-600">
-                                    <span class="text-gray-500">${task.date}</span>
-                                    <span class="text-gray-500">${task.start_time} - ${task.end_time}</span>
+                                    <span class="text-gray-500">${escapeSuggestionHtml(task.date)}</span>
+                                    <span class="text-gray-500">${escapeSuggestionHtml(task.start_time)} - ${escapeSuggestionHtml(task.end_time)}</span>
                                     ${tagBadge}
                                     ${badges.join('')}
                                 </div>

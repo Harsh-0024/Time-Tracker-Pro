@@ -1235,6 +1235,13 @@
     </div>
 
     <script>
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+        }
+        window.escapeHtml = escapeHtml;
+
         // Global variables
         window.currentDate = '{{ selected_date }}';
         window.currentPeriod = '{{ period }}';
@@ -1486,11 +1493,11 @@
                 return;
             }
             const items = overlaps.map(item => {
-                const label = `${item.task || 'Task'} · ${item.start_time} - ${item.end_time}`;
+                const label = escapeHtml(`${item.task || 'Task'} · ${item.start_time} - ${item.end_time}`);
                 return `
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="text-xs text-amber-900 font-semibold">${label}</div>
-                        <button type="button" class="px-2.5 py-1 rounded-full border border-amber-300 text-[11px] font-semibold text-amber-700 hover:bg-white" data-overlap-id="${item.id}">Edit</button>
+                        <button type="button" class="px-2.5 py-1 rounded-full border border-amber-300 text-[11px] font-semibold text-amber-700 hover:bg-white" data-overlap-id="${Number(item.id) || 0}">Edit</button>
                     </div>
                 `;
             }).join('');
@@ -2215,7 +2222,7 @@
                     const message = getNetworkErrorMessage(error, 'load tasks');
                     setGlobalLoading(false, message);
                     try {
-                        const fallback = { tasks: [], total_hours: 0, total_minutes: 0, count: 0 };
+                        const fallback = { tasks: [], total_hours: 0, total_minutes: 0, count: 0, load_error: message || 'Could not load tasks.' };
                         window.showModal(title, fallback, filterType, chartMode);
                     } catch (e) {
                         console.error('Failed to open modal fallback', e);
@@ -2570,10 +2577,10 @@
                     <div class="luxury-card rounded-2xl p-4 md:p-5 mb-3 shadow-lg">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex-1 min-w-0">
-                                <div class="font-medium text-gray-900 mb-1 truncate">${task.task}</div>
+                                <div class="font-medium text-gray-900 mb-1 truncate" title="${escapeHtml(task.task)}">${escapeHtml(task.task)}</div>
                                 <div class="flex flex-wrap items-center gap-2 text-[13px] text-gray-600">
-                                    <span class="text-gray-500">${task.date}</span>
-                                    <span class="text-gray-500">${task.start_time} - ${task.end_time}</span>
+                                    <span class="text-gray-500">${escapeHtml(task.date)}</span>
+                                    <span class="text-gray-500">${escapeHtml(task.start_time)} - ${escapeHtml(task.end_time)}</span>
                                     ${tagBadge}
                                     ${badges.join('')}
                                 </div>
@@ -2739,6 +2746,20 @@
             renderStats();
             const renderMissingTime = () => {
                 if (!missingContainer) return;
+                if (data.load_error) {
+                    // Don't report the whole day as "missing" when the request itself failed.
+                    missingContainer.innerHTML = `
+                        <div class="rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-4 flex flex-wrap items-center justify-between gap-3" role="alert">
+                            <div>
+                                <p class="text-xs uppercase tracking-[0.22em] text-rose-700 font-semibold">Couldn't load tasks</p>
+                                <p class="text-sm text-rose-900">${escapeHtml(String(data.load_error))}</p>
+                            </div>
+                            <button type="button" class="px-3 py-2 rounded-full bg-white border border-rose-200 text-xs font-semibold text-rose-700 shadow-sm active:scale-[0.98] transition" onclick="window.refreshModalData()">Try again</button>
+                        </div>
+                    `;
+                    missingContainer.classList.remove('hidden');
+                    return;
+                }
                 const period = window.currentPeriod || 'day';
                 if (period !== 'day' || filterType !== 'all') {
                     missingContainer.classList.add('hidden');
@@ -3061,9 +3082,9 @@
                             const textDecoration = isHidden ? 'line-through' : 'none';
                             const opacity = isHidden ? '0.5' : '1';
                             const cursor = item.disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-70';
-                            return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${item.key}" style="opacity:${opacity}">
+                            return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeHtml(item.key)}" style="opacity:${opacity}">
                                 <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
-                                <span style="text-decoration:${textDecoration}">${item.label}</span>
+                                <span style="text-decoration:${textDecoration}">${escapeHtml(item.label)}</span>
                             </span>`;
                         }).join('');
                     } else if (mobileLegendEl) {
@@ -3086,9 +3107,9 @@
                         const textDecoration = isHidden ? 'line-through' : 'none';
                         const opacity = isHidden ? '0.5' : '1';
                         const cursor = item.disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-70';
-                        return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${item.key}" style="opacity:${opacity}">
+                        return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeHtml(item.key)}" style="opacity:${opacity}">
                             <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
-                            <span style="text-decoration:${textDecoration}" class="max-w-[160px] truncate">${item.label}</span>
+                            <span style="text-decoration:${textDecoration}" class="max-w-[160px] truncate">${escapeHtml(item.label)}</span>
                         </span>`;
                     }).join('');
                 };
