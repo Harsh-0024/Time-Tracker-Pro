@@ -271,6 +271,55 @@
         }
         .day-coverage-fill.is-complete { background: linear-gradient(90deg, #34D399, #10B981); }
         [data-theme="dark"] .day-coverage { background: rgba(212, 175, 55, 0.10); }
+        .day-timeline {
+            position: relative;
+            height: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: repeating-linear-gradient(135deg, rgba(148, 126, 86, 0.08) 0 6px, rgba(148, 126, 86, 0.16) 6px 12px);
+        }
+        .day-timeline::after {
+            /* quarter-day guides */
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(90deg, transparent calc(25% - 0.5px), rgba(255,255,255,0.7) calc(25% - 0.5px) calc(25% + 0.5px), transparent calc(25% + 0.5px),
+                                                 transparent calc(50% - 0.5px), rgba(255,255,255,0.7) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px),
+                                                 transparent calc(75% - 0.5px), rgba(255,255,255,0.7) calc(75% - 0.5px) calc(75% + 0.5px), transparent calc(75% + 0.5px));
+        }
+        .day-timeline-seg {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            min-width: 2px;
+            padding: 0;
+            border: 0;
+            background: var(--seg-color);
+            box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.55);
+            cursor: pointer;
+            transition: filter 0.15s ease, transform 0.15s ease;
+        }
+        .day-timeline-seg:hover, .day-timeline-seg:focus-visible {
+            filter: brightness(1.12) saturate(1.1);
+            transform: scaleY(1.08);
+            outline: none;
+            z-index: 1;
+        }
+        .day-timeline-axis {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 10px;
+            color: #9CA3AF;
+            font-variant-numeric: tabular-nums;
+        }
+        [data-theme="dark"] .day-timeline {
+            background: repeating-linear-gradient(135deg, rgba(212, 175, 55, 0.04) 0 6px, rgba(212, 175, 55, 0.08) 6px 12px);
+        }
+        [data-theme="dark"] .day-timeline::after { opacity: 0.12; }
+        [data-theme="dark"] .day-timeline-seg { box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.45); }
+        [data-theme="dark"] .day-timeline-axis { color: #6E6045; }
         .insight-bar {
             height: 6px;
             border-radius: 999px;
@@ -839,6 +888,28 @@
             </div>
         </div>
 
+        {% if day_timeline and day_timeline.segments %}
+        <!-- 24h timeline of the selected day -->
+        <section class="day-timeline-card luxury-card rounded-2xl px-4 py-4 md:px-6 md:py-5 mb-6 md:mb-8" aria-labelledby="dayTimelineTitle">
+            <div class="flex items-baseline justify-between gap-3 mb-3">
+                <h3 id="dayTimelineTitle" class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">Your day<span class="hidden sm:inline">, hour by hour</span></h3>
+                <span class="text-[11px] text-gray-400">{% if day_timeline.logged_pct >= 99.95 %}Fully logged{% else %}{{ (day_timeline.logged_pct * 24 / 100) | round(1) }}h of 24h logged{% endif %}</span>
+            </div>
+            <div class="day-timeline" role="list">
+                {% for seg in day_timeline.segments %}
+                <button type="button" role="listitem" class="day-timeline-seg"
+                    style="left: {{ seg.left }}%; width: {{ seg.width }}%; --seg-color: {{ seg.color }};"
+                    data-activity="{{ seg.task }}" onclick="window.viewActivity(this.dataset.activity)"
+                    title="{{ seg.task }} · {{ seg.start }} – {{ seg.end }} · {{ seg.tag }}"
+                    aria-label="{{ seg.task }}, {{ seg.start }} to {{ seg.end }}, {{ seg.tag }}"></button>
+                {% endfor %}
+            </div>
+            <div class="day-timeline-axis" aria-hidden="true">
+                <span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span>
+            </div>
+        </section>
+        {% endif %}
+
         {% set top_tag_label = tags.labels[0] if tags.labels else 'No tags' %}
         {% set top_tag_hours = tags.data[0] if tags.data else 0 %}
         {% set total_tag_hours = (tags.data | sum) if tags.data else 0 %}
@@ -927,12 +998,13 @@
                         <div class="text-xs font-semibold tracking-[0.16em] text-gray-400 uppercase" id="summaryPeriodTitle" data-total-label="Period total" data-avg-label="Period avg">Period total</div>
                         <div class="mt-2 text-3xl font-light text-gray-900"><span class="js-hover-hours js-summary-hours" data-summary-hours data-total-hours="{{ matrix.total_hours }}" data-hours="{{ matrix.total_hours }}">{{ matrix.total_hours }}h</span></div>
                     </div>
-                    <span class="inline-flex h-9 px-3 items-center rounded-full bg-[#FDF3DF] text-[11px] font-medium tracking-wide text-[#92400E] border border-amber-200">
-                        All logged
+                    {% set fully_logged = logged_coverage is not none and logged_coverage >= 97.9 %}
+                    <span class="inline-flex h-9 px-3 items-center rounded-full text-[11px] font-medium tracking-wide border {{ 'bg-[#ECFDF3] text-[#047857] border-emerald-200' if fully_logged else 'bg-[#FDF3DF] text-[#92400E] border-amber-200' }}" title="Share of the {{ 'day' if period == 'day' else period + ' so far' }} that has been logged">
+                        {% if fully_logged %}Fully logged{% else %}{{ logged_coverage | round(0) | int }}% logged{% endif %}
                     </span>
                 </div>
-                <div class="w-full h-2 rounded-full bg-[#E7D8C2] overflow-hidden">
-                    <div class="h-full rounded-full bg-gradient-to-r from-[#111827] via-[#111827] to-[#F5B826]" data-width="100"></div>
+                <div class="w-full h-2 rounded-full bg-[#E7D8C2] overflow-hidden" role="progressbar" aria-label="Logged share of the period" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ logged_coverage }}">
+                    <div class="h-full rounded-full bg-gradient-to-r from-[#111827] via-[#111827] to-[#F5B826]" data-width="{{ logged_coverage }}"></div>
                 </div>
                 <div class="mt-3 text-xs text-gray-500" id="summaryPeriodCaption" data-total-text="{{ current_month }} · {{ period | title }} view totals." data-avg-text="{{ current_month }} · {{ period | title }} avg/day.">{{ current_month }} · {{ period | title }} view totals.</div>
             </div>

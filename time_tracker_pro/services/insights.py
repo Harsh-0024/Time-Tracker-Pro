@@ -113,3 +113,56 @@ def build_insights(
         "days": logged_days,
     }
     return insights
+
+
+TAG_COLORS = {
+    "Work": "#10B981",
+    "Necessity": "#F59E0B",
+    "Soul": "#6366F1",
+    "Rest": "#C4B5FD",
+    "Waste": "#DC2626",
+}
+
+
+def build_day_timeline(df: pd.DataFrame, day: date) -> Dict[str, Any]:
+    """Segments for a 24h strip: every log overlapping ``day`` (including ones that
+    started the evening before), clipped to the day, positioned in percent."""
+    if df.empty or "start_datetime" not in df.columns:
+        return {"segments": [], "logged_pct": 0.0}
+    day_start = pd.Timestamp(day)
+    day_end = day_start + pd.Timedelta(days=1)
+    overlapping = df[(df["start_datetime"] < day_end) & (df["end_datetime"] > day_start)]
+    if overlapping.empty:
+        return {"segments": [], "logged_pct": 0.0}
+
+    total = 24 * 60.0
+    segments: List[Dict[str, Any]] = []
+    covered: List[List[float]] = []
+    for row in overlapping.sort_values("start_datetime").itertuples(index=False):
+        start = max(row.start_datetime, day_start)
+        end = min(row.end_datetime, day_end)
+        start_min = (start - day_start).total_seconds() / 60.0
+        end_min = (end - day_start).total_seconds() / 60.0
+        if end_min <= start_min:
+            continue
+        tag = row.primary_tag if getattr(row, "primary_tag", None) else "Waste"
+        segments.append(
+            {
+                "task": str(row.task or "").strip() or "Untitled",
+                "tag": tag,
+                "color": TAG_COLORS.get(tag, "#9CA3AF"),
+                "left": round(start_min / total * 100.0, 3),
+                "width": round((end_min - start_min) / total * 100.0, 3),
+                "start": start.strftime("%I:%M %p").lstrip("0"),
+                "end": "12:00 AM" if end == day_end else end.strftime("%I:%M %p").lstrip("0"),
+                "hours": round((end_min - start_min) / 60.0, 2),
+                "important": bool(row.important),
+                "urgent": bool(row.urgent),
+            }
+        )
+        if covered and start_min <= covered[-1][1]:
+            covered[-1][1] = max(covered[-1][1], end_min)
+        else:
+            covered.append([start_min, end_min])
+    logged = sum(e - s for s, e in covered)
+    return {"segments": segments, "logged_pct": round(logged / total * 100.0, 1)}

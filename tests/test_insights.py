@@ -50,3 +50,28 @@ def test_insights_empty_period(db_path):
     uid = make_user(db_path)
     df = _df(db_path, uid)
     assert build_insights(df, df, "day", date(2026, 9, 20), date(2026, 9, 20)) == {"top_activities": []}
+
+
+def test_day_timeline_clips_overnight_and_reports_coverage(db_path):
+    from time_tracker_pro.services.insights import build_day_timeline
+
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-19", "22:00:00", "2026-09-20", "06:00:00", task="Sleep", tags="Necessity")
+    add_log(db_path, uid, "2026-09-20", "06:00:00", "2026-09-20", "12:00:00", task="Work", tags="Work")
+    add_log(db_path, uid, "2026-09-20", "23:00:00", "2026-09-21", "02:00:00", task="Late", tags="Waste")
+    tl = build_day_timeline(_df(db_path, uid), date(2026, 9, 20))
+
+    assert [s["task"] for s in tl["segments"]] == ["Sleep", "Work", "Late"]
+    sleep, work, late = tl["segments"]
+    assert (sleep["left"], sleep["width"], sleep["start"]) == (0.0, 25.0, "12:00 AM")
+    assert (work["left"], work["width"], work["color"]) == (25.0, 25.0, "#10B981")
+    assert late["end"] == "12:00 AM" and round(late["width"], 3) == round(100 / 24, 3)
+    assert tl["logged_pct"] == round(13 / 24 * 100, 1)
+
+
+def test_day_timeline_empty(db_path):
+    from time_tracker_pro.services.insights import build_day_timeline
+
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-18", "08:00:00", "2026-09-18", "09:00:00")
+    assert build_day_timeline(_df(db_path, uid), date(2026, 9, 20)) == {"segments": [], "logged_pct": 0.0}

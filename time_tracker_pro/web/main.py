@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List
@@ -21,7 +21,7 @@ from ..repositories.app_settings import get_app_setting, upsert_app_setting
 from ..repositories.logs import fetch_local_data, get_first_log_date
 from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
-from ..services.insights import build_insights
+from ..services.insights import build_day_timeline, build_insights
 from ..services.matrix import get_matrix_stats
 from ..services.sync import sync_cloud_data, get_last_sync_stats
 from .decorators import admin_required, login_required
@@ -125,6 +125,18 @@ _MATRIX_KEYS = ("q1", "q2", "q3", "q4", "important", "not_important", "urgent", 
 _DELTA_LABELS = {"day": "vs prev day", "week": "vs prev week", "month": "vs prev month"}
 
 
+def _logged_coverage(total_hours: float, start_date, end_date, today=None) -> float:
+    """Logged hours as a % of the 24h days that have started in the period."""
+    today = today or datetime.now().date()
+    last_day = min(end_date, today)
+    elapsed_days = (last_day - start_date).days + 1
+    if elapsed_days <= 0:
+        # A future period: compare against its full length so the number stays meaningful.
+        elapsed_days = (end_date - start_date).days + 1
+    expected = max(1, elapsed_days) * 24.0
+    return round(min(100.0, total_hours / expected * 100.0), 1)
+
+
 def _previous_period_range(selected_date, period: str):
     if period == "week":
         return get_period_range(selected_date - timedelta(days=7), "week")
@@ -202,6 +214,8 @@ def dashboard():
     matrix = get_matrix_stats(period_df)
     matrix_deltas = _matrix_share_deltas(df, matrix, selected_date, period)
     insights = build_insights(df, period_df, period, start_date, end_date)
+    day_timeline = build_day_timeline(df, selected_date) if period == "day" else None
+    logged_coverage = _logged_coverage(float(matrix.get("total_hours") or 0.0), start_date, end_date)
     task_count = int(len(period_df)) if not period_df.empty else 0
 
     idx = (selected_date.weekday() + 1) % 7
@@ -276,6 +290,8 @@ def dashboard():
             sync_stats=sync_stats or {},
             matrix_deltas=matrix_deltas,
             insights=insights,
+            day_timeline=day_timeline,
+            logged_coverage=logged_coverage,
             delta_label=_DELTA_LABELS.get(period, "vs previous"),
         )
     )

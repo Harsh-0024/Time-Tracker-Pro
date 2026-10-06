@@ -58,3 +58,16 @@ def test_favicon_redirects_to_icon(app):
     resp = app.test_client().get("/favicon.ico")
     assert resp.status_code == 302
     assert "/app-icon.png" in resp.headers["Location"]
+
+
+def test_logged_coverage():
+    from time_tracker_pro.web.main import _logged_coverage
+
+    d = date(2026, 9, 20)
+    assert _logged_coverage(12.0, d, d, today=d) == 50.0
+    assert _logged_coverage(24.0, d, d, today=d) == 100.0
+    # Week in progress: only started days count (Sun 13 .. Tue 15 = 3 days).
+    assert _logged_coverage(48.0, date(2026, 9, 13), date(2026, 9, 19), today=date(2026, 9, 15)) == round(48 / 72 * 100, 1)
+    # Future period compares against its full length.
+    assert _logged_coverage(0.0, date(2026, 10, 1), date(2026, 10, 31), today=date(2026, 9, 15)) == 0.0
+    assert _logged_coverage(30.0, d, d, today=d) == 100.0
