@@ -236,6 +236,18 @@ def graph_row_matches(row: pd.Series, expr: Optional[SearchExpr]) -> bool:
     return True
 
 
+def _optional_int(value: Any) -> Optional[int]:
+    """Convert a nullable DataFrame cell to int; NULL columns arrive as NaN."""
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 @bp.route("/api/graph-data", endpoint="graph_data")
 @api_or_login_required
 def graph_data():
@@ -345,7 +357,7 @@ def graph_data():
             tasks.append(
                 {
                     "id": int(row.get("id") or 0),
-                    "sheety_id": (int(row.get("sheety_id")) if row.get("sheety_id") is not None else None),
+                    "sheety_id": _optional_int(row.get("sheety_id")),
                     "task": row.get("task") or "",
                     "date": str(row.get("date") or ""),
                     "start_time": row.get("start_time") or "",
@@ -1348,7 +1360,7 @@ def get_tasks():
             tasks.append(
                 {
                     "id": int(row.get("id") or 0),
-                    "sheety_id": (int(row.get("sheety_id")) if row.get("sheety_id") is not None else None),
+                    "sheety_id": _optional_int(row.get("sheety_id")),
                     "task": row["task"],
                     "start_time": row["start_time"],
                     "end_time": row["end_time"],
