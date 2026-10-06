@@ -50,6 +50,16 @@ def _icon_storage_path() -> Path:
     return icon_dir / "app-icon.png"
 
 
+def _is_admin(user_row) -> bool:
+    return bool(
+        user_row
+        and (
+            (row_value(user_row, "role") or "user") == "admin"
+            or is_admin_email(row_value(user_row, "email"))
+        )
+    )
+
+
 @bp.route("/settings", methods=["GET", "POST"], endpoint="settings")
 @login_required
 def settings():
@@ -66,13 +76,7 @@ def settings():
         return redirect(url_for("main.dashboard"))
 
     user_row = get_user_by_id(db_name, user_id)
-    is_admin = bool(
-        user_row
-        and (
-            (row_value(user_row, "role") or "user") == "admin"
-            or is_admin_email(row_value(user_row, "email"))
-        )
-    )
+    is_admin = _is_admin(user_row)
 
     allow_env_fallback = get_user_count(db_name) <= 1
     env_sheety = (os.getenv("SHEETY_ENDPOINT") or "").strip() if allow_env_fallback else ""
@@ -308,13 +312,7 @@ def dashboard():
         period_label = selected_date.strftime("%B %Y")
 
     user_row = get_user_by_id(db_name, user_id)
-    is_admin = bool(
-        user_row
-        and (
-            (row_value(user_row, "role") or "user") == "admin"
-            or is_admin_email(row_value(user_row, "email"))
-        )
-    )
+    is_admin = _is_admin(user_row)
     current_user = {
         "id": user_id,
         "display_name": display_name(user_row),
@@ -424,13 +422,7 @@ def graphs():
         "display_name": display_name(user_row),
         "role": (row_value(user_row, "role") if user_row else "user"),
     }
-    is_admin = bool(
-        user_row
-        and (
-            (row_value(user_row, "role") or "user") == "admin"
-            or is_admin_email(row_value(user_row, "email"))
-        )
-    )
+    is_admin = _is_admin(user_row)
     return render_template(
         "graphs.html",
         current_user=current_user,
