@@ -75,3 +75,20 @@ def test_day_timeline_empty(db_path):
     uid = make_user(db_path)
     add_log(db_path, uid, "2026-09-18", "08:00:00", "2026-09-18", "09:00:00")
     assert build_day_timeline(_df(db_path, uid), date(2026, 9, 20)) == {"segments": [], "logged_pct": 0.0}
+
+
+def test_daily_breakdown(db_path):
+    from time_tracker_pro.services.insights import build_daily_breakdown
+
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-14", "00:00:00", "2026-09-14", "06:00:00", tags="Necessity")
+    add_log(db_path, uid, "2026-09-14", "06:00:00", "2026-09-14", "12:00:00", tags="Work")
+    add_log(db_path, uid, "2026-09-15", "06:00:00", "2026-09-15", "09:00:00", tags="nonsense")  # -> Waste
+    df = _df(db_path, uid)
+    days = build_daily_breakdown(df, date(2026, 9, 13), date(2026, 9, 19))
+
+    assert [d["date"].day for d in days] == [13, 14, 15, 16, 17, 18, 19]
+    assert days[0] == {"date": date(2026, 9, 13), "total": 0.0, "segments": []}
+    assert [(s["tag"], s["hours"], s["pct"]) for s in days[1]["segments"]] == [("Work", 6.0, 25.0), ("Necessity", 6.0, 25.0)]
+    assert days[1]["total"] == 12.0
+    assert days[2]["segments"][0]["tag"] == "Waste"

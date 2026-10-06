@@ -22,7 +22,13 @@ from ..repositories.goals import get_user_goals, parse_goal_hours, upsert_user_g
 from ..repositories.logs import fetch_local_data, get_first_log_date
 from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
-from ..services.insights import build_day_timeline, build_goal_progress, build_insights, goal_streaks
+from ..services.insights import (
+    build_daily_breakdown,
+    build_day_timeline,
+    build_goal_progress,
+    build_insights,
+    goal_streaks,
+)
 from ..services.matrix import get_matrix_stats
 from ..services.sync import get_last_sync_stats, sync_cloud_data, sync_status_payload
 from .decorators import admin_required, login_required
@@ -235,6 +241,7 @@ def dashboard():
     matrix_deltas = _matrix_share_deltas(df, matrix, selected_date, period)
     insights = build_insights(df, period_df, period, start_date, end_date)
     day_timeline = build_day_timeline(df, selected_date) if period == "day" else None
+    daily_breakdown = build_daily_breakdown(period_df, start_date, end_date) if period != "day" and not df.empty else None
     logged_coverage = _logged_coverage(float(matrix.get("total_hours") or 0.0), start_date, end_date)
     goals = get_user_goals(db_name, user_id)
     onboarding = None
@@ -322,6 +329,7 @@ def dashboard():
             matrix_deltas=matrix_deltas,
             insights=insights,
             day_timeline=day_timeline,
+            daily_breakdown=daily_breakdown,
             logged_coverage=logged_coverage,
             goal_progress=goal_progress,
             onboarding=onboarding,

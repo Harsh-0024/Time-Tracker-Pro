@@ -269,3 +269,33 @@ def goal_streaks(
     if limit is not None:
         streaks["waste"] = run(lambda d: float(waste.get(d, 0.0)) <= limit)
     return streaks
+
+
+TAG_ORDER = ["Work", "Soul", "Rest", "Necessity", "Waste"]
+
+
+def build_daily_breakdown(period_df: pd.DataFrame, start_date: date, end_date: date) -> List[Dict[str, Any]]:
+    """Per-day hours by primary tag for a stacked-column chart (week/month views)."""
+    days = _days(start_date, end_date)
+    by_day: Dict[date, Dict[str, float]] = {d: {} for d in days}
+    if not period_df.empty:
+        grouped = period_df.groupby(["date", "primary_tag"])["duration"].sum()
+        for (d, tag), minutes in grouped.items():
+            if d in by_day:
+                by_day[d][tag] = float(minutes) / 60.0
+    result = []
+    for d in days:
+        tags = by_day[d]
+        total = sum(tags.values())
+        segments = [
+            {
+                "tag": tag,
+                "hours": round(tags[tag], 1),
+                "color": TAG_COLORS.get(tag, "#9CA3AF"),
+                "pct": round(min(tags[tag], 24.0) / 24.0 * 100.0, 2),
+            }
+            for tag in TAG_ORDER + sorted(set(tags) - set(TAG_ORDER))
+            if tags.get(tag)
+        ]
+        result.append({"date": d, "total": round(total, 1), "segments": segments})
+    return result

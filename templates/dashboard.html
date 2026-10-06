@@ -275,6 +275,48 @@
         }
         .day-coverage-fill.is-complete { background: linear-gradient(90deg, #34D399, #10B981); }
         [data-theme="dark"] .day-coverage { background: rgba(212, 175, 55, 0.10); }
+        .daily-columns {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: minmax(0, 1fr);
+            gap: 10px;
+            height: 150px;
+        }
+        .daily-columns.is-month { gap: 3px; }
+        .daily-col {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
+            min-width: 0;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+        .daily-col-bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column-reverse;
+            border-radius: 8px;
+            overflow: hidden;
+            background: repeating-linear-gradient(135deg, rgba(148, 126, 86, 0.06) 0 5px, rgba(148, 126, 86, 0.12) 5px 10px);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .daily-columns.is-month .daily-col-bar { border-radius: 4px; }
+        .daily-col-bar > span { display: block; width: 100%; flex: none; }
+        .daily-col-bar > span + span { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6); }
+        .daily-col:hover .daily-col-bar, .daily-col:focus-visible .daily-col-bar { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(120, 90, 30, 0.18); }
+        .daily-col:focus-visible { outline: none; }
+        .daily-col.is-selected .daily-col-bar { box-shadow: 0 0 0 2px #F5B826; }
+        .daily-col-label { text-align: center; font-size: 10px; color: #9CA3AF; font-variant-numeric: tabular-nums; }
+        .daily-col.is-selected .daily-col-label { color: #111827; font-weight: 700; }
+        .daily-columns.is-month .daily-col-label { font-size: 9px; }
+        @media (max-width: 640px) {
+            .daily-columns.is-month .daily-col:nth-child(odd):not(.is-selected) .daily-col-label { visibility: hidden; }
+        }
+        [data-theme="dark"] .daily-col-bar { background: repeating-linear-gradient(135deg, rgba(212, 175, 55, 0.03) 0 5px, rgba(212, 175, 55, 0.07) 5px 10px); }
+        [data-theme="dark"] .daily-col-bar > span + span { box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5); }
+        [data-theme="dark"] .daily-col-label { color: #6E6045; }
+        [data-theme="dark"] .daily-col.is-selected .daily-col-label { color: #EDE6D3; }
         .day-timeline {
             position: relative;
             height: 30px;
@@ -971,6 +1013,32 @@
                     <a href="{{ url_for('main.settings') }}#ai-keys" class="px-5 py-2.5 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-md active:scale-[0.98] transition-transform text-center">Connect sheet</a>
                     {% endif %}
                 </div>
+            </div>
+        </section>
+        {% endif %}
+
+        {% if daily_breakdown %}
+        <!-- Week/Month: one stacked column per day -->
+        <section class="luxury-card rounded-2xl px-4 py-4 md:px-6 md:py-5 mb-6 md:mb-8" aria-labelledby="dailyBreakdownTitle">
+            <div class="flex items-baseline justify-between gap-3 mb-3">
+                <h3 id="dailyBreakdownTitle" class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">Day by day</h3>
+                <div class="hidden sm:flex items-center gap-3 text-[11px] text-gray-500">
+                    {% for tag in ['Work', 'Soul', 'Rest', 'Necessity', 'Waste'] %}
+                    <span class="inline-flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-full" style="background: {{ {'Work': '#10B981', 'Soul': '#6366F1', 'Rest': '#C4B5FD', 'Necessity': '#F59E0B', 'Waste': '#DC2626'}[tag] }}"></span>{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="daily-columns {{ 'is-month' if period == 'month' else '' }}" role="list">
+                {% for day in daily_breakdown %}
+                <a role="listitem" class="daily-col{% if day.date == selected_date %} is-selected{% endif %}" href="/?date={{ day.date }}&period=day"
+                   title="{{ day.date.strftime('%a, %b %-d') }} · {{ day.total }}h logged{% for seg in day.segments %} · {{ seg.tag }} {{ seg.hours }}h{% endfor %}"
+                   aria-label="{{ day.date.strftime('%A %B %-d') }}: {{ day.total }} hours logged">
+                    <span class="daily-col-bar">
+                        {% for seg in day.segments %}<span style="height: {{ seg.pct }}%; background: {{ seg.color }};"></span>{% endfor %}
+                    </span>
+                    <span class="daily-col-label">{{ day.date.strftime('%a')[0] if period == 'week' else day.date.day }}</span>
+                </a>
+                {% endfor %}
             </div>
         </section>
         {% endif %}
