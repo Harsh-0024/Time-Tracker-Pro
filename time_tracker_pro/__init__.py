@@ -82,6 +82,14 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         except Exception:
             return "1"
 
+    @app.after_request
+    def _security_headers(response):
+        # Cheap hardening that doesn't interfere with the inline scripts/CDN assets.
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        return response
+
     @app.context_processor
     def inject_pwa_assets():
         version = _icon_version()

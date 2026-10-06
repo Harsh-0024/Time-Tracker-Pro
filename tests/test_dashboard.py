@@ -94,3 +94,10 @@ def test_week_label(db_path, login):
     assert "Sep 13 – 19, 2026" in client.get("/?date=2026-09-16&period=week").get_data(as_text=True)
     assert "Sep 27 – Oct 3, 2026" in client.get("/?date=2026-09-30&period=week").get_data(as_text=True)
     assert "Dec 27, 2026 – Jan 2, 2027" in client.get("/?date=2026-12-30&period=week").get_data(as_text=True)
+
+
+def test_security_headers(app):
+    resp = app.test_client().get("/login")
+    assert resp.headers["X-Content-Type-Options"] == "nosniff"
+    assert resp.headers["X-Frame-Options"] == "SAMEORIGIN"
+    assert resp.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
