@@ -679,6 +679,20 @@
         }
 
         const firstLogDateStr = "{{ first_log_date or '' }}";
+        const USER_GOALS = {{ (goals or {}) | tojson }};
+
+        // Daily goal shown as a reference line: Growth target on the Growth (q2) graph,
+        // Waste limit on the Waste-quadrant (q4) graph. Not drawn for filtered/search views.
+        function goalLineFor(metricKey) {
+            if (graphSearchQuery) return null;
+            if (metricKey === 'q2' && USER_GOALS.growth_hours != null) {
+                return { value: Number(USER_GOALS.growth_hours), label: 'Goal', color: '#10B981' };
+            }
+            if (metricKey === 'q4' && USER_GOALS.waste_limit_hours != null) {
+                return { value: Number(USER_GOALS.waste_limit_hours), label: 'Limit', color: '#E11D48' };
+            }
+            return null;
+        }
 
         function parseIsoDate(value) {
             const clean = String(value || '').trim();
@@ -2543,6 +2557,21 @@
                 pointBorderWidth: 2
             };
 
+            const goalLine = goalLineFor(metricKey);
+            const goalDataset = goalLine ? {
+                __kind: 'goal',
+                label: `${goalLine.label} (${formatGraphValue(goalLine.value, valueScale, 1)})`,
+                data: labels.map(() => goalLine.value),
+                borderColor: goalLine.color,
+                borderWidth: 1.5,
+                borderDash: [3, 5],
+                fill: false,
+                tension: 0,
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                pointHitRadius: 0
+            } : null;
+
             if (chartInstance) {
                 chartInstance.data.labels = shortLabels;
                 const datasets = chartInstance.data.datasets || [];
@@ -2551,6 +2580,8 @@
 
                 Object.assign(datasets[0], maDataset);
                 Object.assign(datasets[1], rawDataset);
+                datasets.length = 2;
+                if (goalDataset) datasets.push(goalDataset);
                 chartInstance.options.scales.x.min = xMinLabel;
                 chartInstance.options.scales.x.max = xMaxLabel;
                 if (chartInstance.options?.scales?.y?.ticks) {
@@ -2568,6 +2599,7 @@
                             const kind = context?.dataset?.__kind;
                             const y = Number(context?.parsed?.y || 0);
                             if (kind === 'raw') return `Day: ${formatGraphValue(y, valueScale, 2)}`;
+                            if (kind === 'goal') return context.dataset.label;
                             return `MA (${maWindow}d): ${formatGraphValue(y, valueScale, 2)}`;
                         }
                     };
@@ -2610,7 +2642,7 @@
                         datasets: [
                             maDataset,
                             rawDataset
-                        ]
+                        ].concat(goalDataset ? [goalDataset] : [])
                     },
                     options: {
                         responsive: true,
@@ -2635,6 +2667,7 @@
                                         const kind = context?.dataset?.__kind;
                                         const y = Number(context?.parsed?.y || 0);
                                         if (kind === 'raw') return `Day: ${formatGraphValue(y, valueScale, 2)}`;
+                                        if (kind === 'goal') return context.dataset.label;
                                         return `MA (${maWindow}d): ${formatGraphValue(y, valueScale, 2)}`;
                                     }
                                 }
