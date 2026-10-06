@@ -7,8 +7,22 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07: branch created, exploring codebase.
+- 2026-10-07 ~04:20 IST: bug-fix pass in progress (see Done).
 
 ## Done
+- fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
+- escape task names in innerHTML (XSS) + day-log error state with retry
+- password reset logged user out (missing ua_hash); min password length 8 everywhere
+- admin delete-user now cascades to all user-owned tables
+- edit/delete send ?by=sheety to avoid local/sheety id ambiguity
 
 ## Ideas / TODO queue
+- Week strip on dashboard clips the selected day at narrow widths
+- Login brute-force throttling
+- UX polish: keyboard shortcuts, empty states, a11y labels
+- Feature ideas: streaks / goals, weekly summary insights
+
+## Dev notes
+- Test venv: python3 -m venv <scratch>/venv && pip install -r requirements.txt pytest (project venv/ is broken: points at old path)
+- Run dev server safely: copy productivity_demo_data.db, blank sheety creds in the copy, set DISABLE_CLOUD_SYNC=1,
+  SMTP/BREVO empty, HTTP(S)_PROXY=http://127.0.0.1:9, LOCAL_AUTH_BYPASS=1 LOCAL_AUTH_USER_ID=3 (user with most data)
