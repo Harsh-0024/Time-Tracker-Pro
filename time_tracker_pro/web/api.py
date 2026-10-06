@@ -476,12 +476,16 @@ def update_task(task_id: int):
         return jsonify({"error": "Task name is required"}), 400
 
     duration_minutes = None
-    if data.get("duration_minutes") is not None:
-        duration_minutes = int(float(data.get("duration_minutes") or 0))
-    elif data.get("duration") is not None:
-        duration_minutes = int(round(float(data.get("duration") or 0) * 60))
-    else:
-        duration_minutes = int(row["duration"] or 0)
+    try:
+        if data.get("duration_minutes") is not None:
+            duration_minutes = int(float(data.get("duration_minutes") or 0))
+        elif data.get("duration") is not None:
+            duration_minutes = int(round(float(data.get("duration") or 0) * 60))
+        else:
+            duration_minutes = int(row["duration"] or 0)
+    except (TypeError, ValueError):
+        conn.close()
+        return jsonify({"error": "Duration must be a number"}), 400
 
     if duration_minutes <= 0:
         conn.close()
@@ -918,10 +922,13 @@ def create_task():
         return jsonify({"error": "Start time is required"}), 400
 
     duration_minutes = None
-    if data.get("duration_minutes") is not None:
-        duration_minutes = int(float(data.get("duration_minutes") or 0))
-    elif data.get("duration") is not None:
-        duration_minutes = int(round(float(data.get("duration") or 0) * 60))
+    try:
+        if data.get("duration_minutes") is not None:
+            duration_minutes = int(float(data.get("duration_minutes") or 0))
+        elif data.get("duration") is not None:
+            duration_minutes = int(round(float(data.get("duration") or 0) * 60))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Duration must be a number"}), 400
 
     if duration_minutes is None or duration_minutes <= 0:
         return jsonify({"error": "Duration must be greater than 0"}), 400

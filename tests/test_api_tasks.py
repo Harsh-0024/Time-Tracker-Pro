@@ -78,3 +78,11 @@ def test_create_task_rejects_non_numeric_duration(db_path, login):
     )
     assert resp.status_code == 400
     assert resp.get_json()["error"] == "Duration must be a number"
+
+
+def test_update_task_rejects_non_numeric_duration(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "09:00:00", "2026-09-20", "10:00:00", task="Synced", sheety_id=7)
+    resp = login(uid).put("/api/tasks/7?by=sheety", json={"duration": "soon"})
+    assert resp.status_code == 400
+    assert resp.get_json()["error"] == "Duration must be a number"
