@@ -285,7 +285,8 @@ def graph_data():
     raw_exclude = (request.args.get("exclude") or "").strip()
     raw_days = request.args.get("days") or "30"
     try:
-        days = max(1, min(int(raw_days), 365))
+        # "All" asks for every day since the first log, so allow multi-year spans.
+        days = max(1, min(int(raw_days), 3660))
     except Exception:
         days = 30
 

@@ -58,3 +58,13 @@ def test_find_task_row_respects_id_kind(app, db_path):
             assert _find_task_row(conn, 1, uid + 1) is None
     finally:
         conn.close()
+
+
+def test_graph_data_allows_more_than_a_year(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2025-01-05", "09:00:00", "2025-01-05", "10:00:00")
+    add_log(db_path, uid, "2026-09-20", "09:00:00", "2026-09-20", "10:00:00")
+    data = login(uid).get("/api/graph-data?days=700&end=2026-09-20").get_json()
+    assert len(data["labels"]) == 700
+    assert data["labels"][0] == "2024-10-21"  # 2026-09-20 minus 699 days
+    assert data["total_hours"] == 2.0
