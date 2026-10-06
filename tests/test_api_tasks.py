@@ -68,3 +68,13 @@ def test_graph_data_allows_more_than_a_year(db_path, login):
     assert len(data["labels"]) == 700
     assert data["labels"][0] == "2024-10-21"  # 2026-09-20 minus 699 days
     assert data["total_hours"] == 2.0
+
+
+def test_create_task_rejects_non_numeric_duration(db_path, login):
+    uid = make_user(db_path)
+    resp = login(uid).post(
+        "/api/tasks",
+        json={"task": "x", "date": "2026-09-20", "start_time": "09:00", "duration_minutes": "abc"},
+    )
+    assert resp.status_code == 400
+    assert resp.get_json()["error"] == "Duration must be a number"
