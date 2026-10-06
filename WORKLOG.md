@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 04:24 IST: Insights feature shipped; continuing UX/bug sweep.
+- 2026-10-07 04:30 IST: goals + timeline shipped; next: more UX polish / bug sweep.
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -25,6 +25,9 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - Insights section (top activities, vs-7-day avg, best/worst day, completeness)
 - 'Log in via OTP' + 'Resend code' buttons were broken (disabled submitter) -> fixed
 - graphs: a11y pressed states; All range no longer capped at 365 days
+- 24h day timeline strip; Period Total badge/bar show real logged coverage
+- Daily goals (Settings > Daily Goals; user_goals table; dashboard progress)
+- Settings: 'AI Keys' -> 'API Keys'; shortcuts 3/4
 
 ## Ideas / TODO queue
 - UX polish: keyboard shortcuts, empty states, a11y labels
