@@ -638,6 +638,23 @@ def delete_graph_view_route(view_id: int):
     return jsonify({"success": True})
 
 
+@bp.route("/api/day-notes", methods=["GET"], endpoint="list_day_notes")
+@api_or_login_required
+def list_day_notes():
+    """Notes between ?start= and ?end= (YYYY-MM-DD, inclusive)."""
+    db_name = current_app.config["DB_NAME"]
+    user_id = int(getattr(g, "user_id", 0) or 0)
+    try:
+        start = datetime.strptime((request.args.get("start") or "").strip(), "%Y-%m-%d").date()
+        end = datetime.strptime((request.args.get("end") or "").strip(), "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"error": "Pass start and end as YYYY-MM-DD."}), 400
+    if end < start:
+        return jsonify({"error": "end must be on or after start."}), 400
+    notes = get_day_notes(db_name, user_id, start, end)
+    return jsonify({"notes": [{"date": day.isoformat(), "note": text} for day, text in sorted(notes.items())]})
+
+
 @bp.route("/api/day-notes/<day>", methods=["PUT"], endpoint="put_day_note")
 @api_or_login_required
 def put_day_note(day: str):
