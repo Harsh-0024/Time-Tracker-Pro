@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 07:15 IST: session active (resumed 06:22).
+- 2026-10-07 07:32 IST: session active (resumed 06:22).
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -54,6 +54,9 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - dashboard: latest matrix click wins; removed debug console.logs
 - login redirect next= without dangling '?'; graphs shortcuts (/ 1-6 ?); graphs y-axis from 0
 - empty-state copy names the period
+- admin icon upload checks PNG bytes; goals '-0' -> 0
+- task modals (dashboard+graphs): wider on phones, names wrap, single-day lists drop repeated date
+- graphs: 'Review tasks'/Export crashed on empty task list
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
