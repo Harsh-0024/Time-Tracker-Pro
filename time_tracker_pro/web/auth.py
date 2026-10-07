@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import os
 import re
 import time
 from datetime import datetime, timezone
@@ -24,7 +23,6 @@ from ..repositories.users import (
     get_user_by_username_or_id_or_email,
     get_user_count,
 )
-from ..repositories.settings import get_user_settings
 from ..services.verification import (
     VERIFICATION_CODE_TTL_MINUTES,
     consume_verification,

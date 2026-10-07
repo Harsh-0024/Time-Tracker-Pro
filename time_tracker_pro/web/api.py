@@ -3,7 +3,6 @@ from __future__ import annotations
 import csv
 import json
 import logging
-import os
 import re
 from datetime import date, datetime, timedelta
 from urllib.parse import urlparse
