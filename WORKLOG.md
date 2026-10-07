@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 23:10 IST: 22:20 resume session ACTIVE.
+- 2026-10-07 23:11 IST: 22:20 resume session ACTIVE.
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
@@ -15,7 +15,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 3. BUGs: pull-to-refresh never worked (lib needed a missing element) -> new installed-app-only 'Pull down to sync'; forgot-password turned a user ID into '<id>@gmail.com'; verify-email taps on 'Resend' could miss (focus/scroll hijack); Enter on login skipped the busy state; Growth streak vanished after the first partial log of the day.
 4. Features: DAY NOTES (private note per day, autosaved; listed in week/month; in Copy summary + JSON export); goal dots (week/month: one per day; day view: last 7 days) + best streak; graphs Calendar heatmap; offline page for the installed app (minimal service worker, nothing else cached); streaks in Copy summary.
 5. Perf: fetch_local_data 161 -> 69 ms at 22k logs (dashboard ~165 -> ~95 ms), output identical. Touches time *display formatting* only - see Done list if you want it reverted.
-Verification: pytest (207, py3.14 + 3.12), browser pane on rendered pages + a live local server (synthetic data, throwaway account), node harness for the service worker. Nothing pushed.
+Verification: pytest (208, py3.14 + 3.12), browser pane on rendered pages + a live local server (synthetic data, throwaway account), node harness for the service worker. Nothing pushed.
 
 ## 21:20 run summary - most important first
 1. Feature: Insights 'Top activities' now show a trend per activity (week/month: per-day change vs last period; day: 'usually Xh/day').
@@ -261,6 +261,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [22:20 run] feat: graphs calendar shows day notes (marker + note in tooltip / tap caption; /api/graph-data returns 'notes' for the range) (+ test). FIX: short ranges (30-180 days) drew huge stretched calendar cells -> columns capped at 18px; levels use color-mix where supported
 - [22:20 run] feat: day notes also appear under the day headers of graphs 'Review tasks' and the dashboard week/month full log (escaped; embedded via tojson) (+ test)
 - [22:20 run] live end-to-end pass (local server on a temp DB with 120 days of synthetic logs + a throwaway test account; no real data): login, day note save/reload, today's goal dots + streak/best, graphs calendar from real graph-data incl. note marker, Settings 'Send code' (SMTP off -> friendly toast, no reload, typed password kept, message not repeated on next load), week full log note under day header. No console errors
+- [22:20 run] feat(api): GET /api/day-notes?start=&end= (token/scripts); README documents the notes API (+ test)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
