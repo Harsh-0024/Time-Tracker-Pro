@@ -129,6 +129,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [14:21 run] numbers: server rounded halves to even (3.25h -> 3.2h) while JS views show 3.3h - common with 15-min logs; core/numbers.round_half_up used in matrix/insights/dashboard. Day timeline '6.7h of 24h' (rounded % converted back) -> real hours
 - [14:21 run] BUG: creating a task while a sheet rewrite was in progress (Sheety write queued, no row id) saved the row and then 500'd (int(None)) -> user would re-add = duplicate. Now 200 + queued flag. No-Sheety error copy now says where to connect a sheet.
 - [14:21 run] api: absurd task durations (1e19) overflowed datetime -> 500; now 400 above a 1-year sanity bound (24h cap question still open). JSON/query fuzz of all write endpoints: 0 server errors now
+- [14:21 run] feat: dashboard shortcut N = add a task (opens the full log with the Add-task form focused); listed under '?'
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync

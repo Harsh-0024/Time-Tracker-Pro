@@ -4186,6 +4186,20 @@
                         event.preventDefault();
                         window.viewFullDay();
                     }
+                } else if (key === 'n') {
+                    // New task: open the full log, then its Add-task panel once the modal is up.
+                    event.preventDefault();
+                    window.viewFullDay();
+                    let tries = 0;
+                    const openWhenReady = () => {
+                        const modal = document.getElementById('taskModal');
+                        if (modal && modal.classList.contains('active') && window.openCreateTaskPanel) {
+                            window.openCreateTaskPanel();
+                        } else if (++tries < 40) {
+                            setTimeout(openWhenReady, 50);
+                        }
+                    };
+                    openWhenReady();
                 } else if (key === '?') {
                     event.preventDefault();
                     if (shortcutToast && !document.body.contains(shortcutToast)) {
@@ -4212,6 +4226,10 @@
                                     <div class="flex items-center gap-2">
                                         <kbd class="toast-kbd">F</kbd>
                                         <span class="toast-kbd-label">Full log for this period</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">N</kbd>
+                                        <span class="toast-kbd-label">Add a task</span>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <kbd class="toast-kbd">G</kbd>
