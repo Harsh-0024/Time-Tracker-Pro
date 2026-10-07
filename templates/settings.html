@@ -658,14 +658,10 @@
     </div>
 
     <script>
-        let allowSettingsFocus = false;
         document.addEventListener('DOMContentLoaded', () => {
             if (document.activeElement && document.activeElement.tagName === 'INPUT') {
                 document.activeElement.blur();
             }
-            setTimeout(() => {
-                allowSettingsFocus = true;
-            }, 800);
         });
 
         const settingsEmail = document.getElementById('settingsEmail');
@@ -747,22 +743,6 @@
             });
         });
 
-        const preventAutoFocus = () => {
-            const active = document.activeElement;
-            if (!allowSettingsFocus && active && active.id === 'settingsNewUserId') {
-                active.blur();
-            }
-        };
-        const userIdInput = document.getElementById('settingsNewUserId');
-        if (userIdInput) {
-            userIdInput.readOnly = true;
-            setTimeout(() => {
-                userIdInput.readOnly = false;
-            }, 700);
-        }
-        setTimeout(preventAutoFocus, 0);
-        window.addEventListener('pageshow', () => setTimeout(preventAutoFocus, 0));
-        document.addEventListener('focusin', preventAutoFocus);
 
         const updateForms = ['updateUsernameForm', 'updatePasswordForm'];
         updateForms.forEach(formId => {
