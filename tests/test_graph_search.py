@@ -40,3 +40,18 @@ def test_vectorised_search_matches_row_by_row(db_path):
         expr = parse_graph_search(query)
         expected = [bool(graph_row_matches(row, expr)) for _, row in df.iterrows()]
         assert graph_search_mask(df, expr).tolist() == expected, query
+
+
+def test_graph_data_by_hour(db_path, login):
+    uid = make_user(db_path)
+    # Two days plotted; 08:30-10:00 on day 1 and an overnight 23:00-01:00 into day 2.
+    add_log(db_path, uid, "2026-10-01", "08:30:00", "2026-10-01", "10:00:00", task="Gym", tags="Soul")
+    add_log(db_path, uid, "2026-10-01", "23:00:00", "2026-10-02", "01:00:00", task="Read", tags="Soul")
+    data = login(uid).get("/api/graph-data?days=2&end=2026-10-02").get_json()
+    by_hour = data["by_hour"]
+    assert len(by_hour) == 24
+    assert by_hour[8] == 15.0 and by_hour[9] == 30.0  # 30 and 60 minutes over 2 days
+    assert by_hour[23] == 30.0 and by_hour[0] == 30.0
+    assert sum(by_hour) == 105.0
+    empty = login(uid).get("/api/graph-data?days=2&end=2026-09-01").get_json()
+    assert empty["by_hour"] == [0] * 24

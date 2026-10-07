@@ -392,6 +392,27 @@ def _find_task_row(conn, task_id: int, user_id: int):
     return None
 
 
+def _minutes_by_hour(df: pd.DataFrame, first_day, last_day, days: int) -> List[float]:
+    """Average minutes per day spent in each hour-of-day slot (0-23), with logs
+    clipped to the plotted days. Powers the graphs 'By time of day' card."""
+    totals = [0] * 24
+    if df.empty or "start_datetime" not in df.columns or days <= 0:
+        return [0.0] * 24
+    lo = int(pd.Timestamp(first_day).value // 60_000_000_000)
+    hi = int((pd.Timestamp(last_day) + pd.Timedelta(days=1)).value // 60_000_000_000)
+    spans = df[["start_datetime", "end_datetime"]].dropna()
+    starts = pd.to_datetime(spans["start_datetime"]).astype("int64") // 60_000_000_000
+    ends = pd.to_datetime(spans["end_datetime"]).astype("int64") // 60_000_000_000
+    for start, end in zip(starts, ends):
+        # Naive datetimes: minutes since the epoch, so (minute // 60) % 24 is the hour of day.
+        minute, end = max(int(start), lo), min(int(end), hi)
+        while minute < end:
+            slot_end = min(end, (minute // 60 + 1) * 60)
+            totals[(minute // 60) % 24] += slot_end - minute
+            minute = slot_end
+    return [round(total / days, 1) for total in totals]
+
+
 @bp.route("/api/graph-data", endpoint="graph_data")
 @api_or_login_required
 def graph_data():
@@ -424,7 +445,7 @@ def graph_data():
             end_date_to_use = today - timedelta(days=1)
         start_date = end_date_to_use - timedelta(days=days - 1)
         labels = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
-        return jsonify({"labels": labels, "values": [0 for _ in labels], "total_hours": 0, "avg_hours": 0, "max_hours": 0})
+        return jsonify({"labels": labels, "values": [0 for _ in labels], "total_hours": 0, "avg_hours": 0, "max_hours": 0, "by_hour": [0] * 24})
 
     if "primary_tag" not in df.columns:
         df["primary_tag"] = df["tag"].apply(primary_special_tag)
@@ -471,7 +492,7 @@ def graph_data():
     df = df[(df["date"] >= start_date) & (df["date"] <= end_date_to_use)]
     if df.empty:
         labels = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
-        return jsonify({"labels": labels, "values": [0 for _ in labels], "total_hours": 0, "avg_hours": 0, "max_hours": 0})
+        return jsonify({"labels": labels, "values": [0 for _ in labels], "total_hours": 0, "avg_hours": 0, "max_hours": 0, "by_hour": [0] * 24})
 
     daily = df.groupby("date")["duration"].sum() if not df.empty else {}
     labels: List[str] = []
@@ -494,6 +515,7 @@ def graph_data():
         active_days = max(1, days - first_logged_index)
         avg_hours = round(total_hours / active_days, 2)
     max_hours = round(max(values) if values else 0, 2)
+    by_hour = _minutes_by_hour(df, start_date, end_date_to_use, active_days if first_logged_index is not None else days)
 
     tasks: List[Dict[str, Any]] = []
     if include_tasks and not df.empty:
@@ -524,6 +546,7 @@ def graph_data():
             "total_hours": total_hours,
             "avg_hours": avg_hours,
             "max_hours": max_hours,
+            "by_hour": by_hour,
             "tasks": tasks,
         }
     )

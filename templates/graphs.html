@@ -494,6 +494,17 @@
             </div>
             <div id="weekdayBars" class="grid grid-cols-7 gap-1.5 md:gap-3" role="list"></div>
         </section>
+
+        <section class="luxury-card rounded-2xl p-4 md:p-6 mt-3 md:mt-4" id="hourCard" aria-labelledby="hourTitle">
+            <div class="flex items-baseline justify-between gap-3 mb-3">
+                <h3 id="hourTitle" class="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-semibold">By time of day</h3>
+                <p class="text-[11px] text-gray-500 text-right" id="hourCaption">Average per day in this range</p>
+            </div>
+            <div id="hourBars" class="grid gap-[2px] md:gap-1 h-20 md:h-24 rounded-lg bg-[rgba(148,126,86,0.10)] px-1 pt-1" style="grid-template-columns: repeat(24, minmax(0, 1fr));" role="list"></div>
+            <div class="grid grid-cols-4 mt-1.5 text-[10px] md:text-xs text-gray-500" aria-hidden="true">
+                <span>12a</span><span>6a</span><span>12p</span><span>6p</span>
+            </div>
+        </section>
     </main>
 
     <nav class="mobile-bottom-nav fixed bottom-0 inset-x-0 md:hidden z-50" style="position: fixed;">
@@ -966,6 +977,42 @@
             if (caption) {
                 caption.textContent = best >= 0
                     ? `Average per day · most on ${names[best]}`
+                    : 'Nothing logged in this range';
+            }
+        }
+
+        // Average minutes per day in each hour of the day (server 'by_hour'): when the focus happens.
+        function hourLabel(hour) {
+            const h = ((hour % 24) + 24) % 24;
+            return `${h % 12 === 0 ? 12 : h % 12} ${h < 12 ? 'AM' : 'PM'}`;
+        }
+
+        // '2–3 PM', '11 AM–12 PM'
+        function hourRange(hour) {
+            const [from, fromHalf] = hourLabel(hour).split(' ');
+            const to = hourLabel(hour + 1);
+            return to.endsWith(fromHalf) ? `${from}–${to}` : `${hourLabel(hour)}–${to}`;
+        }
+
+        function updateHourPattern(byHour) {
+            const wrap = document.getElementById('hourBars');
+            const caption = document.getElementById('hourCaption');
+            if (!wrap) return;
+            const minutes = Array.from({ length: 24 }, (_, i) => Number(byHour?.[i]) || 0);
+            const max = Math.max(...minutes, 0);
+            const best = max > 0 ? minutes.indexOf(max) : -1;
+            const color = (graphColorScheme && graphColorScheme.primary) || metricColors[currentMetric] || '#111827';
+            wrap.innerHTML = minutes.map((value, hour) => {
+                const pct = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 2;
+                const isBest = hour === best;
+                const text = `${hourLabel(hour)}: ${formatGraphValue(value / 60, 'minutes')} per day`;
+                return `<div class="h-full flex items-end min-w-0" role="listitem" aria-label="${text}" title="${text}">
+                    <div class="w-full rounded-sm md:rounded" style="height:${pct}%;background:${color};opacity:${isBest ? 1 : (value > 0 ? 0.45 : 0.15)}"></div>
+                </div>`;
+            }).join('');
+            if (caption) {
+                caption.textContent = best >= 0
+                    ? `Average per day · peak ${hourRange(best)}`
                     : 'Nothing logged in this range';
             }
         }
@@ -2583,7 +2630,7 @@
             return { index: null, value: null };
         }
 
-        function updateChart({ labels, values, total_hours, avg_hours, max_hours }, metricKey, rangeDays = currentDays) {
+        function updateChart({ labels, values, total_hours, avg_hours, max_hours, by_hour }, metricKey, rangeDays = currentDays) {
             closeGraphPointDetail();
             if (graphSearchQuery && graphTasks.length) {
                 values = deriveValuesFromTasks(labels);
@@ -2861,6 +2908,7 @@
             maxHoursEl.textContent = formatGraphValue(max_hours, valueScale, 1);
             updateRecentAverage(values, avg_hours, valueScale, labels);
             updateWeekdayPattern(labels, values, valueScale);
+            updateHourPattern(by_hour);
 
             const label = metricLabels[metricKey] || 'Total time';
             if (graphFocusValue === 'search_only' && graphSearchQuery) {
