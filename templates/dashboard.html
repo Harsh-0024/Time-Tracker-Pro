@@ -1566,8 +1566,11 @@
                             </div>
                             {% if goal_progress.recent %}{{ goal_dots(goal_progress.recent, 'growth', 'Growth goal, last 7 days', 'goal met', 'below goal') }}{% endif %}
                             {% endif %}
-                            {% if goal_progress.streaks and goal_progress.streaks.growth and goal_progress.streaks.growth > 1 %}
-                            <div class="mt-1.5 text-[11px] text-emerald-700 goal-streak">🔥 {{ goal_progress.streaks.growth }}-day Growth streak</div>
+                            {% set gs = goal_progress.streaks or {} %}
+                            {% if gs.growth and gs.growth > 1 %}
+                            <div class="mt-1.5 text-[11px] text-emerald-700 goal-streak">🔥 {{ gs.growth }}-day Growth streak{% if gs.growth_best and gs.growth_best > gs.growth %} <span class="text-gray-500">· best {{ gs.growth_best }}</span>{% endif %}</div>
+                            {% elif gs.growth_best and gs.growth_best > 1 %}
+                            <div class="mt-1.5 text-[11px] text-gray-500">Best Growth streak: {{ gs.growth_best }} days</div>
                             {% endif %}
                             {% if goal_progress.waste %}{% set wp = goal_progress.waste %}
                             <div class="goal-row mt-3">
@@ -1578,8 +1581,11 @@
                                 <div class="goal-bar is-limit {{ 'is-over' if wp.over else '' }}" role="progressbar" aria-label="Waste limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ wp.pct }}"><span style="width: {{ wp.pct }}%"></span></div>
                             </div>
                             {% if goal_progress.recent %}{{ goal_dots(goal_progress.recent, 'waste', 'Waste limit, last 7 days', 'under limit', 'over limit') }}{% endif %}
-                            {% if goal_progress.streaks and goal_progress.streaks.waste and goal_progress.streaks.waste > 1 %}
-                            <div class="mt-1.5 text-[11px] text-emerald-700 goal-streak">{{ goal_progress.streaks.waste }} days in a row under the Waste limit</div>
+                            {% set ws = goal_progress.streaks or {} %}
+                            {% if ws.waste and ws.waste > 1 %}
+                            <div class="mt-1.5 text-[11px] text-emerald-700 goal-streak">{{ ws.waste }} days in a row under the Waste limit{% if ws.waste_best and ws.waste_best > ws.waste %} <span class="text-gray-500">· best {{ ws.waste_best }}</span>{% endif %}</div>
+                            {% elif ws.waste_best and ws.waste_best > 1 %}
+                            <div class="mt-1.5 text-[11px] text-gray-500">Best run under the Waste limit: {{ ws.waste_best }} days</div>
                             {% endif %}
                             {% endif %}
                         {% else %}

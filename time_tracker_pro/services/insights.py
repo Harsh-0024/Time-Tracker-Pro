@@ -388,10 +388,27 @@ def goal_streaks(
             current -= timedelta(days=1)
         return count
 
+    def best_run(is_met) -> int:
+        # Longest run of consecutive logged days meeting the goal in the window.
+        best = length = 0
+        previous = None
+        for d in sorted(logged):
+            if is_met(d):
+                length = length + 1 if previous is not None and d - previous == timedelta(days=1) else 1
+                best = max(best, length)
+                previous = d
+            else:
+                length, previous = 0, None
+        return best
+
     if target is not None:
-        streaks["growth"] = run(lambda d: float(growth.get(d, 0.0)) >= target, open_today=True)
+        growth_met = lambda d: float(growth.get(d, 0.0)) >= target  # noqa: E731
+        streaks["growth"] = run(growth_met, open_today=True)
+        streaks["growth_best"] = max(best_run(growth_met), streaks["growth"])
     if limit is not None:
-        streaks["waste"] = run(lambda d: float(waste.get(d, 0.0)) <= limit)
+        waste_kept = lambda d: float(waste.get(d, 0.0)) <= limit  # noqa: E731
+        streaks["waste"] = run(waste_kept)
+        streaks["waste_best"] = max(best_run(waste_kept), streaks["waste"])
     return streaks
 
 

@@ -84,11 +84,11 @@ def test_goal_streaks(db_path):
     df = fetch_local_data(db_path, uid)
     goals = {"growth_hours": 4.0, "waste_limit_hours": 2.0}
 
-    assert goal_streaks(df, date(2026, 9, 19), goals) == {"growth": 2, "waste": 5}
+    assert goal_streaks(df, date(2026, 9, 19), goals) == {"growth": 2, "growth_best": 2, "waste": 5, "waste_best": 5}
     # An unlogged "today" doesn't break yesterday's streak.
-    assert goal_streaks(df, date(2026, 9, 20), goals) == {"growth": 2, "waste": 5}
-    assert goal_streaks(df, date(2026, 9, 17), goals) == {"growth": 0, "waste": 3}
-    assert goal_streaks(df, date(2026, 9, 16), {"growth_hours": 4.0, "waste_limit_hours": None}) == {"growth": 2}
+    assert goal_streaks(df, date(2026, 9, 20), goals) == {"growth": 2, "growth_best": 2, "waste": 5, "waste_best": 5}
+    assert goal_streaks(df, date(2026, 9, 17), goals) == {"growth": 0, "growth_best": 2, "waste": 3, "waste_best": 3}
+    assert goal_streaks(df, date(2026, 9, 16), {"growth_hours": 4.0, "waste_limit_hours": None}) == {"growth": 2, "growth_best": 2}
 
 
 def test_goal_calendar_week(db_path, login):
@@ -148,6 +148,32 @@ def test_goal_streak_survives_todays_partial_growth(db_path):
     df = fetch_local_data(db_path, uid)
     goals = {"growth_hours": 4.0, "waste_limit_hours": 2.0}
     # Today (17th) is in progress: Growth keeps yesterday's run, an exceeded Waste limit is final.
-    assert goal_streaks(df, date(2026, 9, 17), goals, today=date(2026, 9, 17)) == {"growth": 2, "waste": 0}
+    assert goal_streaks(df, date(2026, 9, 17), goals, today=date(2026, 9, 17)) == {"growth": 2, "growth_best": 2, "waste": 0, "waste_best": 2}
     # Once the day is over, the shortfall is a miss.
-    assert goal_streaks(df, date(2026, 9, 17), goals, today=date(2026, 9, 18)) == {"growth": 0, "waste": 0}
+    assert goal_streaks(df, date(2026, 9, 17), goals, today=date(2026, 9, 18)) == {"growth": 0, "growth_best": 2, "waste": 0, "waste_best": 2}
+
+
+def test_goal_best_streak_skips_gaps(db_path):
+    from time_tracker_pro.services.insights import goal_streaks
+
+    uid = make_user(db_path)
+    # Met on 1-3 (run of 3), unlogged 4th, met 5-6, missed 7th, met 8th.
+    for day, h in {1: 5, 2: 5, 3: 5, 5: 5, 6: 5, 7: 1, 8: 5}.items():
+        d = f"2026-09-{day:02d}"
+        add_log(db_path, uid, d, "06:00:00", d, f"{6 + h:02d}:00:00", urg=0, imp=1)
+    df = fetch_local_data(db_path, uid)
+    s = goal_streaks(df, date(2026, 9, 8), {"growth_hours": 4.0, "waste_limit_hours": None}, today=date(2026, 10, 1))
+    assert s == {"growth": 1, "growth_best": 3}
+
+
+def test_dashboard_shows_best_streak(db_path, login):
+    uid = make_user(db_path)
+    for day, h in {1: 5, 2: 5, 3: 5, 5: 5, 6: 5, 7: 1}.items():
+        d = f"2026-09-{day:02d}"
+        add_log(db_path, uid, d, "06:00:00", d, f"{6 + h:02d}:00:00", urg=0, imp=1)
+    upsert_user_goals(db_path, uid, 4.0, None)
+    client = login(uid)
+    html = client.get("/?date=2026-09-06&period=day").get_data(as_text=True)
+    assert "🔥 2-day Growth streak" in html and "· best 3" in html
+    html = client.get("/?date=2026-09-07&period=day").get_data(as_text=True)
+    assert "Growth streak" in html and "Best Growth streak: 3 days" in html and "🔥" not in html.split("Best Growth streak")[0][-300:]
