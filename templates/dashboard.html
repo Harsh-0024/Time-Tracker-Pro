@@ -2144,7 +2144,8 @@
             const period = window.currentPeriod || 'day';
             const periodMap = { 'day': 'Day', 'week': 'Week', 'month': 'Month' };
             const clean = String(name || '').replace(/["']/g, ' ').replace(/\s+/g, ' ').trim();
-            window.pendingModalQuery = clean ? `"${clean}"` : '';
+            // 'only': exactly the activity the row counted, not every task containing its name.
+            window.pendingModalQuery = clean ? `only "${clean}"` : '';
             window.applyFilter('all', `${name} · ${periodMap[period] || 'Day'}`, '', 'tags');
         };
 
@@ -2895,7 +2896,7 @@
                     return;
                 }
                 const upper = token.toUpperCase();
-                if (upper === 'AND' || upper === 'OR' || upper === 'NOT') {
+                if (upper === 'AND' || upper === 'OR' || upper === 'NOT' || upper === 'ONLY') {
                     tokens.push({ type: upper });
                     return;
                 }
@@ -2925,6 +2926,12 @@
                 if (token.type === 'TERM') {
                     consume();
                     return { type: 'term', value: token.value };
+                }
+                if (token.type === 'ONLY') {
+                    // 'only sleep': the task is exactly that (not 'Sleep in').
+                    consume();
+                    const expr = parsePrimary();
+                    return expr && expr.type === 'term' ? { type: 'only', value: expr.value } : expr;
                 }
                 if (token.type === '(') {
                     consume();
@@ -2965,7 +2972,7 @@
                         left = { type: 'and', left, right: { type: 'not', expr: right } };
                         continue;
                     }
-                    if (token.type === 'TERM' || token.type === '(' || token.type === 'NOT') {
+                    if (token.type === 'TERM' || token.type === '(' || token.type === 'NOT' || token.type === 'ONLY') {
                         const right = parseNot();
                         if (!right) break;
                         left = { type: 'and', left, right };
@@ -3015,9 +3022,16 @@
             return taskText.includes(clean) || tagText.includes(clean) || rawTag.includes(clean);
         }
 
+        // Same name rule as Insights' Top activities: case, spacing and a stray
+        // trailing '.'/',' ("Instagram .") don't make a different activity.
+        function modalActivityName(value) {
+            return normalizeModalValue(String(value || '').replace(/[\s.,;:]+$/, ''));
+        }
+
         function evaluateModalQuery(expr, task) {
             if (!expr) return true;
             if (expr.type === 'term') return modalTermMatches(task, expr.value);
+            if (expr.type === 'only') return modalActivityName(task.task) === modalActivityName(expr.value);
             if (expr.type === 'not') return !evaluateModalQuery(expr.expr, task);
             if (expr.type === 'and') return evaluateModalQuery(expr.left, task) && evaluateModalQuery(expr.right, task);
             if (expr.type === 'or') return evaluateModalQuery(expr.left, task) || evaluateModalQuery(expr.right, task);
