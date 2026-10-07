@@ -422,7 +422,7 @@ def graph_data():
 
     tasks: List[Dict[str, Any]] = []
     if include_tasks and not df.empty:
-        for _, row in df.iterrows():
+        for row in df.to_dict("records"):
             minutes = int(row.get("duration") or 0)
             tasks.append(
                 {
@@ -1476,7 +1476,7 @@ def get_tasks():
 
     tasks: List[Dict[str, Any]] = []
     if not filtered.empty:
-        for _, row in filtered.iterrows():
+        for row in filtered.to_dict("records"):
             tasks.append(
                 {
                     "id": int(row.get("id") or 0),
@@ -1680,7 +1680,7 @@ def export_csv():
     export_rows: List[Dict[str, Any]] = []
 
     if not df.empty:
-        for _, row in df.iterrows():
+        for row in df.to_dict("records"):
             start_dt = row.get("start_datetime")
             end_dt = row.get("end_datetime")
             if pd.isna(start_dt) or pd.isna(end_dt):
