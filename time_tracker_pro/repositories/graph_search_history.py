@@ -5,9 +5,14 @@ from typing import Any, Dict, List
 from ..db import get_db_connection
 
 
+MAX_QUERY_LENGTH = 200  # same cap as saved graph views
+MAX_FOCUS_LENGTH = 32
+MAX_HISTORY_ROWS_PER_USER = 1000
+
+
 def record_graph_search_combo(db_name: str, user_id: int, focus: str, search_query: str) -> None:
-    focus_value = (focus or "").strip().lower() or "total"
-    query_value = " ".join(str(search_query or "").strip().split())
+    focus_value = ((focus or "").strip().lower() or "total")[:MAX_FOCUS_LENGTH]
+    query_value = " ".join(str(search_query or "").strip().split())[:MAX_QUERY_LENGTH]
     if not query_value:
         return
 
@@ -19,6 +24,16 @@ def record_graph_search_combo(db_name: str, user_id: int, focus: str, search_que
             VALUES (?, ?, ?)
             """,
             (int(user_id), focus_value, query_value),
+        )
+        # Suggestions only need recent history; don't let one user grow the table without bound.
+        conn.execute(
+            """
+            DELETE FROM graph_search_history
+            WHERE user_id = ? AND id NOT IN (
+                SELECT id FROM graph_search_history WHERE user_id = ? ORDER BY id DESC LIMIT ?
+            )
+            """,
+            (int(user_id), int(user_id), MAX_HISTORY_ROWS_PER_USER),
         )
         conn.commit()
     finally:

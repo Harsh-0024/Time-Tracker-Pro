@@ -64,3 +64,21 @@ def test_infinite_ma_window_is_400_not_500(db_path, login):
         content_type="application/json",
     )
     assert resp.status_code == 400
+
+
+def test_graph_search_history_is_capped(db_path, monkeypatch):
+    import sqlite3
+
+    from conftest import make_user
+    from time_tracker_pro.repositories import graph_search_history as gsh
+
+    uid = make_user(db_path, username="hist", email="hist@example.com")
+    monkeypatch.setattr(gsh, "MAX_HISTORY_ROWS_PER_USER", 5)
+    for i in range(8):
+        gsh.record_graph_search_combo(db_path, uid, "total", f"q{i}")
+    gsh.record_graph_search_combo(db_path, uid, "total", "x" * 5000)
+    rows = sqlite3.connect(db_path).execute(
+        "SELECT search_query FROM graph_search_history WHERE user_id = ? ORDER BY id", (uid,)
+    ).fetchall()
+    assert [r[0] for r in rows[:4]] == ["q4", "q5", "q6", "q7"]
+    assert len(rows) == 5 and len(rows[-1][0]) == gsh.MAX_QUERY_LENGTH
