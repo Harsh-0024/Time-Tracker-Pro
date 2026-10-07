@@ -284,6 +284,10 @@ def dashboard():
     goal_progress = build_goal_progress(period_df, period, start_date, end_date, goals)
     if goal_progress is not None and period == "day":
         goal_progress["streaks"] = goal_streaks(df, selected_date, goals)
+        recent_start = selected_date - timedelta(days=6)
+        recent_df = df[(df["date"] >= recent_start) & (df["date"] <= selected_date)] if not df.empty else df
+        recent = build_goal_progress(recent_df, "week", recent_start, selected_date, goals)
+        goal_progress["recent"] = recent["calendar"] if recent else None
     task_count = int(len(period_df)) if not period_df.empty else 0
 
     idx = (selected_date.weekday() + 1) % 7

@@ -327,7 +327,7 @@ def build_goal_progress(
 
     # One entry per calendar day so the view can draw a met/missed dot row.
     # Same rules as the counts above: unlogged days and days that haven't
-    # started are neither met nor missed.
+    # started are neither met nor missed; today's Growth isn't 'missed' yet.
     logged = set(logged_days)
     calendar = []
     for d in _days(start_date, end_date):
@@ -336,7 +336,7 @@ def build_goal_progress(
         growth_h = float(growth_by_day.get(d, 0.0))
         waste_h = float(waste_by_day.get(d, 0.0))
         if target is not None:
-            entry["growth"] = state or ("met" if growth_h >= target else "missed")
+            entry["growth"] = state or ("met" if growth_h >= target else ("open" if d == today else "missed"))
             entry["growth_hours"] = round_half_up(growth_h, 1)
         if limit is not None:
             entry["waste"] = state or ("met" if waste_h <= limit else "missed")

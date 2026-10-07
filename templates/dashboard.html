@@ -444,6 +444,8 @@
         .goal-dot.is-met { background: #10B981; }
         .goal-dot.is-missed { background: #F5B826; }
         .goal-dots[aria-label^="Waste"] .goal-dot.is-missed { background: #E11D48; }
+        .goal-dot.is-open { border: 2px solid #F5B826; }
+        [data-theme="dark"] .goal-dot.is-open { border-color: #F4D03F; }
         .goal-dot.is-none { border: 1.5px dashed rgba(148, 126, 86, 0.45); }
         .goal-dot.is-future { background: rgba(148, 126, 86, 0.12); }
         [data-theme="dark"] .goal-dot.is-met { background: #34D399; }
@@ -1541,9 +1543,9 @@
 
                 <div class="luxury-card rounded-2xl p-5 md:p-6 flex flex-col gap-4">
 {% macro goal_dots(calendar, key, label, verb_met, verb_missed) %}
-                            <div class="goal-dots{{ ' is-month' if calendar|length > 7 }}" role="group" aria-label="{{ label }} by day">
-                            {% for c in calendar %}{% set st = c[key] %}{% set tip = c.date.strftime('%a %-d %b') ~ ': ' ~ ({'met': verb_met ~ ' (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'missed': verb_missed ~ ' (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'none': 'nothing logged', 'future': 'not yet'}[st]) %}
-                                {% if st in ('met', 'missed') %}<a class="goal-dot is-{{ st }}" href="/?date={{ c.date }}&period=day" title="{{ tip }}" aria-label="{{ tip }}"></a>{% else %}<span class="goal-dot is-{{ st }}" title="{{ tip }}" role="img" aria-label="{{ tip }}"></span>{% endif %}
+                            <div class="goal-dots{{ ' is-month' if calendar|length > 7 }}" role="group" aria-label="{{ label }}">
+                            {% for c in calendar %}{% set st = c[key] %}{% set tip = c.date.strftime('%a %-d %b') ~ ': ' ~ ({'met': verb_met ~ ' (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'missed': verb_missed ~ ' (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'open': 'so far (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'none': 'nothing logged', 'future': 'not yet'}[st]) %}
+                                {% if st in ('met', 'missed', 'open') %}<a class="goal-dot is-{{ st }}" href="/?date={{ c.date }}&period=day" title="{{ tip }}" aria-label="{{ tip }}"></a>{% else %}<span class="goal-dot is-{{ st }}" title="{{ tip }}" role="img" aria-label="{{ tip }}"></span>{% endif %}
                             {% endfor %}
                             </div>
 {% endmacro %}
@@ -1562,6 +1564,7 @@
                                 </div>
                                 <div class="goal-bar {{ 'is-met' if gp.met else '' }}" role="progressbar" aria-label="Growth goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ gp.pct }}"><span style="width: {{ gp.pct }}%"></span></div>
                             </div>
+                            {% if goal_progress.recent %}{{ goal_dots(goal_progress.recent, 'growth', 'Growth goal, last 7 days', 'goal met', 'below goal') }}{% endif %}
                             {% endif %}
                             {% if goal_progress.streaks and goal_progress.streaks.growth and goal_progress.streaks.growth > 1 %}
                             <div class="mt-1.5 text-[11px] text-emerald-700 goal-streak">🔥 {{ goal_progress.streaks.growth }}-day Growth streak</div>
@@ -1574,6 +1577,7 @@
                                 </div>
                                 <div class="goal-bar is-limit {{ 'is-over' if wp.over else '' }}" role="progressbar" aria-label="Waste limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ wp.pct }}"><span style="width: {{ wp.pct }}%"></span></div>
                             </div>
+                            {% if goal_progress.recent %}{{ goal_dots(goal_progress.recent, 'waste', 'Waste limit, last 7 days', 'under limit', 'over limit') }}{% endif %}
                             {% if goal_progress.streaks and goal_progress.streaks.waste and goal_progress.streaks.waste > 1 %}
                             <div class="mt-1.5 text-[11px] text-emerald-700 goal-streak">{{ goal_progress.streaks.waste }} days in a row under the Waste limit</div>
                             {% endif %}
@@ -1584,14 +1588,14 @@
                                 <span class="text-gray-700">Growth ≥ {{ '%g' | format(gp.target) }}h</span>
                                 <span class="tabular-nums text-gray-600"><span class="text-lg font-light text-gray-900">{{ gp.met_days }}</span> / {{ gp.days }} days</span>
                             </div>
-                            {% if goal_progress.calendar %}{{ goal_dots(goal_progress.calendar, 'growth', 'Growth goal', 'goal met', 'below goal') }}{% endif %}
+                            {% if goal_progress.calendar %}{{ goal_dots(goal_progress.calendar, 'growth', 'Growth goal by day', 'goal met', 'below goal') }}{% endif %}
                             {% endif %}
                             {% if goal_progress.waste %}{% set wp = goal_progress.waste %}
                             <div class="flex items-baseline justify-between text-sm mt-2">
                                 <span class="text-gray-700">Waste ≤ {{ '%g' | format(wp.limit) }}h</span>
                                 <span class="tabular-nums text-gray-600"><span class="text-lg font-light text-gray-900">{{ wp.kept_days }}</span> / {{ wp.days }} days</span>
                             </div>
-                            {% if goal_progress.calendar %}{{ goal_dots(goal_progress.calendar, 'waste', 'Waste limit', 'under limit', 'over limit') }}{% endif %}
+                            {% if goal_progress.calendar %}{{ goal_dots(goal_progress.calendar, 'waste', 'Waste limit by day', 'under limit', 'over limit') }}{% endif %}
                             {% endif %}
                         {% endif %}
                     </div>

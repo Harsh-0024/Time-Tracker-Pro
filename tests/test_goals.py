@@ -116,3 +116,22 @@ def test_goal_calendar_week(db_path, login):
     assert 'href="/?date=2026-09-14&period=day" title="Mon 14 Sep: goal met (5h)"' in html
     assert 'title="Tue 15 Sep: over limit (6h)"' in html
     assert html.count('class="goal-dot is-') == 14
+
+
+def test_goal_calendar_today_is_open_and_day_view_shows_last_7_days(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-15", "08:00:00", "2026-09-15", "10:00:00", urg=0, imp=1)  # 2h growth
+    df = fetch_local_data(db_path, uid)
+    goals = {"growth_hours": 4.0, "waste_limit_hours": None}
+    week = df[(df["date"] >= date(2026, 9, 13)) & (df["date"] <= date(2026, 9, 19))]
+    p = build_goal_progress(week, "week", date(2026, 9, 13), date(2026, 9, 19), goals, today=date(2026, 9, 15))
+    assert p["calendar"][2]["growth"] == "open"  # today, below goal so far: not a miss yet
+    assert p["growth"] == {"target": 4.0, "met_days": 0, "days": 1}
+
+    upsert_user_goals(db_path, uid, 4.0, 3.0)
+    html = login(uid).get("/?date=2026-09-15&period=day").get_data(as_text=True)
+    assert 'aria-label="Growth goal, last 7 days by day"' not in html  # label reads naturally
+    assert 'aria-label="Growth goal, last 7 days"' in html
+    assert 'title="Tue 15 Sep: below goal (2h)"' in html  # a past day, so a real miss
+    assert 'title="Wed 9 Sep: nothing logged"' in html
+    assert html.count('class="goal-dot is-') == 14
