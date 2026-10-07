@@ -136,3 +136,9 @@ def test_import_csv_without_valid_rows_keeps_existing_logs(db_path, login):
     count = conn.execute("SELECT COUNT(*) FROM logs WHERE user_id = ?", (uid,)).fetchone()[0]
     conn.close()
     assert count == 1
+
+
+def test_import_csv_unparseable_content_is_400(db_path, login):
+    client = login(make_user(db_path))
+    resp = client.post("/api/import-csv", json={"csv_data": "\n\n"})
+    assert resp.status_code == 400 and resp.get_json()["status"] == "error"

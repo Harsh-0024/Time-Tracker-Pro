@@ -1583,8 +1583,12 @@ def import_csv():
                 "count": inserted_count,
             }
         )
-    except Exception as exc:
-        return jsonify({"status": "error", "message": str(exc)}), 500
+    except ValueError as exc:  # includes pandas ParserError / EmptyDataError
+        # Bad CSV content: the parser's message tells the user what's wrong.
+        return jsonify({"status": "error", "message": str(exc)}), 400
+    except Exception:
+        logger.exception("CSV import failed user_id=%s", int(user_id))
+        return jsonify({"status": "error", "message": "Import failed. Please try again."}), 500
 
 
 _CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
@@ -1737,8 +1741,9 @@ def sync_status():
         if user_id is None and token_is_valid(headers):
             user_id = resolve_request_user_id(headers)
         return jsonify(sync_status_payload(db_name, int(user_id) if user_id is not None else None))
-    except Exception as exc:
-        return jsonify({"error": str(exc)}), 500
+    except Exception:
+        logger.exception("sync-status failed")
+        return jsonify({"error": "Could not read sync status."}), 500
 
 
 @bp.route("/sync-now", endpoint="sync_now")
@@ -1812,9 +1817,9 @@ def create_sheety_account():
             "account_id": account_id,
             "message": "API account created successfully"
         }), 201
-    except Exception as exc:
-        logger.error(f"Error creating API account: {exc}")
-        return jsonify({"error": str(exc)}), 500
+    except Exception:
+        logger.exception("Error creating API account")
+        return jsonify({"error": "Could not save the API account. Please try again."}), 500
 
 
 @bp.route("/api/sheety-accounts/<int:account_id>", methods=["DELETE"], endpoint="delete_sheety_account")
@@ -1833,9 +1838,9 @@ def delete_sheety_account(account_id: int):
             return jsonify({"success": True, "message": "API account deleted"}), 200
         else:
             return jsonify({"error": "Account not found"}), 404
-    except Exception as exc:
-        logger.error(f"Error deleting API account: {exc}")
-        return jsonify({"error": str(exc)}), 500
+    except Exception:
+        logger.exception("Error deleting API account")
+        return jsonify({"error": "Could not delete the API account. Please try again."}), 500
 
 
 @bp.route("/api/sheety-accounts/<int:account_id>/test", methods=["GET"], endpoint="test_sheety_account")
