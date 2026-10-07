@@ -4010,7 +4010,7 @@
                 const notice = getSheetyNotice(stats);
                 if (!notice || !window.showWarningToast) return;
                 window.__sheetyNoticeShown = true;
-                window.showWarningToast(notice.message, 9000);
+                window.showToast(notice.message, 'warning', 9000, { html: true });
             };
             showSheetyNotice(window.syncStats);
             let shortcutToast = null;
@@ -4682,7 +4682,7 @@
                     }
                     const notice = getSheetyNotice(result?.stats || null);
                     if (notice && window.showWarningToast) {
-                        window.showWarningToast(notice.message, 9000);
+                        window.showToast(notice.message, 'warning', 9000, { html: true });
                     } else if (showLoading && window.showSuccessToast) {
                         window.showSuccessToast('Synced latest data');
                     }

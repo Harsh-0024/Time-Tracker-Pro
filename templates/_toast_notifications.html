@@ -5,7 +5,9 @@
     (function() {
         'use strict';
         
-        window.showToast = function(message, type = 'info', duration = 5000) {
+        // Messages are plain text (server errors can echo user data); only the static 'shortcut'
+        // cheat-sheets or callers passing {html: true} with already-escaped markup render HTML.
+        window.showToast = function(message, type = 'info', duration = 5000, options = {}) {
             const container = document.getElementById('toastContainer');
             if (!container) return null;
             
@@ -58,9 +60,7 @@
                     <svg class="w-5 h-5 flex-shrink-0 mt-0.5" style="color: ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
                     </svg>
-                    <div class="flex-1 text-sm font-medium" style="color: #FFFFFF; word-break: break-word;">
-                        ${message}
-                    </div>
+                    <div class="toast-message flex-1 text-sm font-medium" style="color: #FFFFFF; word-break: break-word;"></div>
                     <button class="toast-close flex-shrink-0 ml-2 hover:opacity-70 transition-opacity" aria-label="Close">
                         <svg class="w-4 h-4" style="color: ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -68,7 +68,13 @@
                     </button>
                 </div>
             `;
-            
+            const messageEl = toast.querySelector('.toast-message');
+            if (options.html === true || type === 'shortcut') {
+                messageEl.innerHTML = message;
+            } else {
+                messageEl.textContent = String(message ?? '');
+            }
+
             // Add to container
             container.appendChild(toast);
             
@@ -108,8 +114,9 @@
         
         // API Failover notification helper
         window.showApiFailoverNotification = function(fromAccount, toAccount) {
-            const message = `API switched from <strong>${fromAccount}</strong> to <strong>${toAccount}</strong> due to connection failure.`;
-            window.showToast(message, 'failover', 8000);
+            const esc = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+            const message = `API switched from <strong>${esc(fromAccount)}</strong> to <strong>${esc(toAccount)}</strong> due to connection failure.`;
+            window.showToast(message, 'failover', 8000, { html: true });
         };
         
         // Success helper
