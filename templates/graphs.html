@@ -3156,10 +3156,14 @@
                 const del = event.target.closest('[data-delete-view-id]');
                 if (del) {
                     const id = Number(del.dataset.deleteViewId);
-                    const resp = await fetch(`/api/graph-views/${id}`, { method: 'DELETE', credentials: 'include' });
-                    if (resp.ok) {
+                    try {
+                        const resp = await fetch(`/api/graph-views/${id}`, { method: 'DELETE', credentials: 'include' });
+                        if (!resp.ok && resp.status !== 404) throw new Error(`HTTP ${resp.status}`);
+                        // 404: already gone (e.g. deleted in another tab) - drop it here too.
                         graphViews = graphViews.filter(v => Number(v.id) !== id);
                         renderSavedViews();
+                    } catch (e) {
+                        if (window.showErrorToast) window.showErrorToast('Could not delete the view. Try again.');
                     }
                     return;
                 }
