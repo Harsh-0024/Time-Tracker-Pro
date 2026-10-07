@@ -1853,6 +1853,10 @@
                     }));
                 return visibleItems.concat(hiddenItems);
             };
+            // Toggleable legend entries are buttons (keyboard + screen readers); 'Other' stays a span.
+            const legendTag = (item) => item.disabled
+                ? 'span'
+                : `button type="button" aria-pressed="${item.hidden ? 'false' : 'true'}" title="${item.hidden ? 'Show' : 'Hide'} ${escapeSuggestionHtml(item.label)}"`;
             const updateMobileLegend = (chart) => {
                 if (mobileLegendEl && isModalMobile) {
                     const legendItems = buildLegendItems();
@@ -1862,10 +1866,10 @@
                         const textDecoration = isHidden ? 'line-through' : 'none';
                         const opacity = isHidden ? '0.5' : '1';
                         const cursor = item.disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-70';
-                        return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeSuggestionHtml(item.key)}" style="opacity:${opacity}">
+                        return `<${legendTag(item)} class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeSuggestionHtml(item.key)}" style="opacity:${opacity}">
                             <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
                             <span style="text-decoration:${textDecoration}">${escapeSuggestionHtml(item.label)}</span>
-                        </span>`;
+                        </${item.disabled ? 'span' : 'button'}>`;
                     }).join('');
                 } else if (mobileLegendEl) {
                     mobileLegendEl.innerHTML = '';
@@ -1884,10 +1888,10 @@
                     const textDecoration = isHidden ? 'line-through' : 'none';
                     const opacity = isHidden ? '0.5' : '1';
                     const cursor = item.disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-70';
-                    return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeSuggestionHtml(item.key)}" style="opacity:${opacity}">
+                    return `<${legendTag(item)} class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeSuggestionHtml(item.key)}" style="opacity:${opacity}">
                         <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
                         <span style="text-decoration:${textDecoration}" class="max-w-[160px] truncate">${escapeSuggestionHtml(item.label)}</span>
-                    </span>`;
+                    </${item.disabled ? 'span' : 'button'}>`;
                 }).join('');
             };
             updateMobileLegend(null);
@@ -1903,11 +1907,12 @@
                     datasets: [{
                         data: values,
                         backgroundColor: colors,
-                        borderWidth: 2,
+                        // A lone slice would show its rim as a seam at 12 o'clock.
+                        borderWidth: (c) => (c.chart.data.datasets[0].data.filter(v => Number(v) > 0).length > 1 ? 2 : 0),
                         // Slice gaps take the surface colour (white rims glare in dark mode).
                         borderColor: isDarkTheme() ? '#0E0C08' : '#FFFFFF',
                         hoverOffset: 10,
-                        hoverBorderWidth: 3
+                        hoverBorderWidth: (c) => (c.chart.data.datasets[0].data.filter(v => Number(v) > 0).length > 1 ? 3 : 0)
                     }]
                 },
                 plugins: [percentLabelPlugin],
@@ -2004,6 +2009,10 @@
                 updateDesktopLegend(graphTaskChartInstance);
                 renderGraphTaskStats();
                 renderGraphTaskList();
+                // The legend was re-rendered: keep keyboard focus on the entry just toggled.
+                const container = event.currentTarget;
+                const again = Array.from(container.querySelectorAll('button[data-legend-key]')).find(el => el.dataset.legendKey === key);
+                if (again) again.focus();
             };
             if (mobileLegendEl) {
                 mobileLegendEl.addEventListener('click', legendClickHandler);
