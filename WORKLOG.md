@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 09:45 IST: session ended cleanly (06:22-09:45); next run can resume from the TODO queue.
+- 2026-10-07 08:22 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
