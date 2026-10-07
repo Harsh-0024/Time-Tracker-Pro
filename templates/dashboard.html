@@ -1556,6 +1556,20 @@
                         </a>
                         {% endif %}
                     {% endif %}
+                    {% if insights.longest_growth_block %}
+                    {% set lb = insights.longest_growth_block %}
+                    {% if period == 'day' %}
+                    <div class="insight-stat">
+                        <div class="insight-stat-label">Longest growth block</div>
+                        <div class="insight-stat-value text-base"><span class="break-words">{{ lb.task }}</span> <span class="insight-stat-sub">{{ lb.hours }}h{% if lb.start_time %} · from {{ lb.start_time }}{% endif %}</span></div>
+                    </div>
+                    {% else %}
+                    <a class="insight-stat insight-link" href="/?date={{ lb.date }}&period=day">
+                        <div class="insight-stat-label">Longest growth block</div>
+                        <div class="insight-stat-value text-base"><span class="break-words">{{ lb.task }}</span> <span class="insight-stat-sub">{{ lb.hours }}h · {{ lb.date.strftime('%a, %b %-d') }}</span></div>
+                    </a>
+                    {% endif %}
+                    {% endif %}
                     {% if not goal_progress %}
                     <a href="{{ url_for('main.settings') }}#goals-settings" class="mt-auto text-xs text-gray-500 hover:text-gray-800 underline-offset-2 hover:underline">Set daily goals for Growth and Waste →</a>
                     {% endif %}

@@ -5,6 +5,7 @@ Everything here is derived from the already-loaded logs DataFrame (see
 """
 from __future__ import annotations
 
+import re
 from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -58,6 +59,24 @@ def _days(start: date, end: date) -> List[date]:
     return [start + timedelta(days=i) for i in range((end - start).days + 1)]
 
 
+def longest_growth_block(period_df: pd.DataFrame) -> Optional[Dict[str, Any]]:
+    """The single longest Growth (important, not urgent) log in the period."""
+    if period_df.empty:
+        return None
+    growth = period_df[_growth_mask(period_df)]
+    growth = growth[growth["duration"] > 0]
+    if growth.empty:
+        return None
+    row = growth.loc[growth["duration"].idxmax()]
+    name = re.sub(r"[\s.,;:]+$", "", str(row.get("task") or "")).strip() or "Untitled"
+    return {
+        "task": name,
+        "date": row["date"],
+        "start_time": str(row.get("start_time") or ""),
+        "hours": round(float(row["duration"]) / 60.0, 1),
+    }
+
+
 def build_insights(
     df: pd.DataFrame,
     period_df: pd.DataFrame,
@@ -70,6 +89,9 @@ def build_insights(
     insights: Dict[str, Any] = {"top_activities": top_activities(period_df)}
     if period_df.empty:
         return insights
+    block = longest_growth_block(period_df)
+    if block:
+        insights["longest_growth_block"] = block
 
     if period == "day":
         # Compare the day with the 7 days before it.

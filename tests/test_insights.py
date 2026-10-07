@@ -101,3 +101,25 @@ def test_daily_breakdown(db_path):
     assert [(s["tag"], s["hours"], s["pct"]) for s in days[1]["segments"]] == [("Work", 6.0, 25.0), ("Necessity", 6.0, 25.0)]
     assert days[1]["total"] == 12.0
     assert days[2]["segments"][0]["tag"] == "Waste"
+
+
+def test_longest_growth_block_picks_longest_q2_log(db_path):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "06:00:00", "2026-09-20", "08:00:00", task="Reading .", urg=0, imp=1)
+    add_log(db_path, uid, "2026-09-20", "08:00:00", "2026-09-20", "13:00:00", task="Netflix", urg=0, imp=0)
+    add_log(db_path, uid, "2026-09-21", "09:00:00", "2026-09-21", "12:30:00", task="Deep work", urg=0, imp=1)
+    add_log(db_path, uid, "2026-09-21", "13:00:00", "2026-09-21", "18:00:00", task="Urgent thing", urg=1, imp=1)
+    df = _df(db_path, uid)
+    week = build_insights(df, df, "week", date(2026, 9, 20), date(2026, 9, 26), today=date(2026, 9, 26))
+    block = week["longest_growth_block"]
+    assert (block["task"], block["hours"], block["date"]) == ("Deep work", 3.5, date(2026, 9, 21))
+    assert block["start_time"] == "09:00 AM"
+    day = df[df["date"] == date(2026, 9, 20)]
+    assert build_insights(df, day, "day", date(2026, 9, 20), date(2026, 9, 20))["longest_growth_block"]["task"] == "Reading"
+
+
+def test_longest_growth_block_absent_without_growth(db_path):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "08:00:00", "2026-09-20", "13:00:00", task="Netflix", urg=0, imp=0)
+    df = _df(db_path, uid)
+    assert "longest_growth_block" not in build_insights(df, df, "day", date(2026, 9, 20), date(2026, 9, 20))

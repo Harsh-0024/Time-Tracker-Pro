@@ -117,3 +117,16 @@ def test_no_empty_period_card_when_period_has_logs(db_path, login):
     uid = make_user(db_path)
     add_log(db_path, uid, "2026-09-20", "08:00:00", "2026-09-20", "09:00:00")
     assert "Nothing logged" not in login(uid).get("/?date=2026-09-20").get_data(as_text=True)
+
+
+def test_dashboard_shows_longest_growth_block(db_path, login):
+    from conftest import add_log, make_user
+
+    uid = make_user(db_path, username="blocky", email="blocky@example.com")
+    add_log(db_path, uid, "2026-09-21", "09:00:00", "2026-09-21", "12:30:00", task="Deep <work>", urg=0, imp=1)
+    client = login(uid)
+    for url in ("/?date=2026-09-21", "/?date=2026-09-21&period=week"):
+        html = client.get(url).get_data(as_text=True)
+        assert "Longest growth block" in html, url
+        assert "Deep &lt;work&gt;" in html and "Deep <work>" not in html
+    assert 'href="/?date=2026-09-21&period=day"' in client.get("/?date=2026-09-21&period=week").get_data(as_text=True)
