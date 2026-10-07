@@ -252,7 +252,20 @@ def graph_term_matches(row: pd.Series, term: str) -> bool:
     tokens.update(split_terms(date_value))
     for tag in tags:
         tokens.update(split_terms(tag))
-    return clean in tokens
+    if clean in tokens:
+        return True
+    # Several words ('"deep work"'): consecutive words of the task, date or a tag,
+    # like the graphs page's own list filter ("Deep work ." matches too).
+    sequence = split_terms(clean)
+    if len(sequence) > 1:
+        groups = [split_terms(task_value), split_terms(date_value)] + [split_terms(tag) for tag in tags]
+        return any(_has_sequence(group, sequence) for group in groups)
+    return False
+
+
+def _has_sequence(tokens: List[str], sequence: List[str]) -> bool:
+    n = len(sequence)
+    return any(tokens[i:i + n] == sequence for i in range(len(tokens) - n + 1))
 
 
 def graph_only_matches(row: pd.Series, term: str) -> bool:
@@ -289,8 +302,12 @@ def _norm_text(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value or "").strip().lower())
 
 
+def _word_list(value: str) -> List[str]:
+    return [part for part in re.split(r"[^a-z0-9]+", value) if part]
+
+
 def _word_parts(value: str) -> set:
-    return {part for part in re.split(r"[^a-z0-9]+", value) if part}
+    return set(_word_list(value))
 
 
 def _term_mask(df: pd.DataFrame, term: str, cache: Dict[str, Any]) -> pd.Series:
@@ -318,15 +335,27 @@ def _term_mask(df: pd.DataFrame, term: str, cache: Dict[str, Any]) -> pd.Series:
             for tag in tags:
                 words.update(_word_parts(tag))
             cache["tags"][key] = tags | words
+            cache.setdefault("tag_phrases", {})[key] = [_word_list(tag) for tag in tags]
         tasks = df["task"] if "task" in df.columns else pd.Series(None, index=df.index)
         cache["task_text"] = tasks.map(_norm_text)
         cache["date_text"] = (df["date"] if "date" in df.columns else pd.Series(None, index=df.index)).map(_norm_text)
 
+    sequence = _word_list(clean)
+    multi = len(sequence) > 1
+
     def text_hits(texts: pd.Series) -> pd.Series:
-        hits = {text: clean == text or clean in _word_parts(text) for text in set(texts)}
+        hits = {
+            text: clean == text or clean in _word_parts(text) or (multi and _has_sequence(_word_list(text), sequence))
+            for text in set(texts)
+        }
         return texts.map(hits).astype(bool)
 
-    mask = cache["tag_keys"].map(lambda key: clean in cache["tags"][key]).astype(bool)
+    def tag_hit(key) -> bool:
+        if clean in cache["tags"][key]:
+            return True
+        return multi and any(_has_sequence(words, sequence) for words in cache["tag_phrases"][key])
+
+    mask = cache["tag_keys"].map(tag_hit).astype(bool)
     mask |= text_hits(cache["task_text"])
     mask |= text_hits(cache["date_text"])
     if clean == "important" and "important" in df.columns:
