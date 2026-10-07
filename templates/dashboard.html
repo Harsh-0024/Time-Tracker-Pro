@@ -4048,6 +4048,12 @@
                     // ignore focus errors
                 }
             }
+            // Totals, matrix, timeline and insights are server-rendered: after an
+            // add/edit/delete in the log, reload so they match what was just changed.
+            if (window.dashboardStale) {
+                window.dashboardStale = false;
+                window.location.reload();
+            }
         };
 
         // Initialize on DOM load
@@ -4684,6 +4690,7 @@
                         }
                         window.closeCreateTaskPanel();
                         window.refreshModalData();
+                        window.dashboardStale = true;
                     } catch (error) {
                         const message = getNetworkErrorMessage(error, 'add the task');
                         if (window.showErrorToast) {
@@ -4809,6 +4816,7 @@
                         }
                         window.closeEditTaskPanel();
                         window.refreshModalData();
+                        window.dashboardStale = true;
                     } catch (error) {
                         const message = getNetworkErrorMessage(error, 'update the task');
                         if (window.showErrorToast) {
@@ -4850,6 +4858,7 @@
                         }
                         window.closeDeleteTaskConfirm();
                         window.refreshModalData();
+                        window.dashboardStale = true;
                     } catch (error) {
                         const message = getNetworkErrorMessage(error, 'delete the task');
                         if (window.showErrorToast) {
