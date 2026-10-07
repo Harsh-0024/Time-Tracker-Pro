@@ -99,3 +99,13 @@ def test_admin_list_shows_email_admins_as_admin(db_path, login, monkeypatch):
     html = login(admin).get("/admin/users").get_data(as_text=True)
     assert f'name="user_id" value="{plain}"' in html
     assert f'name="user_id" value="{boss}"' not in html
+
+
+def test_admin_list_shows_log_activity(db_path, login):
+    admin = make_user(db_path, username="root", email="root@example.com", role="admin")
+    busy = make_user(db_path, username="busy", email="busy@example.com")
+    add_log(db_path, busy, "2026-09-01", "08:00:00", "2026-09-01", "09:00:00")
+    add_log(db_path, busy, "2026-10-05", "08:00:00", "2026-10-05", "09:00:00")
+    html = login(admin).get("/admin/users").get_data(as_text=True)
+    assert "2 logs" in html and "last Oct 5, 2026" in html
+    assert "No logs yet" in html  # the admin has none

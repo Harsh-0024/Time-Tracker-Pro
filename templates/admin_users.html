@@ -99,7 +99,7 @@
 
         <section class="luxury-card rounded-3xl p-8">
             <h2 class="text-xl font-semibold text-gray-900">All Users <span class="text-sm font-normal text-gray-500">({{ users | length }})</span></h2>
-            <p class="text-sm text-gray-600 mt-1">Name, user ID, email, verification status and join date.</p>
+            <p class="text-sm text-gray-600 mt-1">Name, user ID, email, verification status, join date and logging activity.</p>
 
             <div class="mt-6 space-y-4 md:hidden">
                 {% for user in users %}
@@ -122,6 +122,9 @@
                             <span class="font-semibold {{ 'text-emerald-600' if user.is_verified else 'text-amber-700' }}">{{ 'Verified' if user.is_verified else 'Pending' }}</span>
                             {% if user.created_at %}<span class="text-gray-500">Joined {{ user.created_at | short_date }}</span>{% endif %}
                         </div>
+                        <div class="mt-1 text-xs text-gray-500">
+                            {% if user.log_count %}{{ '{:,}'.format(user.log_count) }} log{{ '' if user.log_count == 1 else 's' }} · last {{ user.last_log_date | short_date }}{% else %}No logs yet{% endif %}
+                        </div>
                     </div>
                 {% endfor %}
             </div>
@@ -134,7 +137,8 @@
                             <th class="py-3 pr-6">Email</th>
                             <th class="py-3 pr-6">Role</th>
                             <th class="py-3 pr-6">Verified</th>
-                            <th class="py-3">Joined</th>
+                            <th class="py-3 pr-6">Joined</th>
+                            <th class="py-3">Activity</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
@@ -155,7 +159,10 @@
                                         <span class="text-amber-700 font-semibold">Pending</span>
                                     {% endif %}
                                 </td>
-                                <td class="py-3 text-gray-600 whitespace-nowrap">{{ user.created_at | short_date }}</td>
+                                <td class="py-3 pr-6 text-gray-600 whitespace-nowrap">{{ user.created_at | short_date }}</td>
+                                <td class="py-3 text-gray-600 whitespace-nowrap">
+                                    {% if user.log_count %}{{ '{:,}'.format(user.log_count) }} log{{ '' if user.log_count == 1 else 's' }} <span class="text-gray-400">·</span> last {{ user.last_log_date | short_date }}{% else %}<span class="text-gray-400">No logs yet</span>{% endif %}
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>

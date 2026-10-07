@@ -11,9 +11,14 @@ def list_users(db_name: str) -> List[sqlite3.Row]:
     conn = get_db_connection(db_name)
     users = conn.execute(
         """
-        SELECT id, name, user_id, email, role, is_verified, created_at
-        FROM users
-        ORDER BY created_at DESC
+        SELECT u.id, u.name, u.user_id, u.email, u.role, u.is_verified, u.created_at,
+               COALESCE(l.log_count, 0) AS log_count, l.last_log_date
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) AS log_count, MAX(start_date) AS last_log_date
+            FROM logs GROUP BY user_id
+        ) l ON l.user_id = u.id
+        ORDER BY u.created_at DESC
         """
     ).fetchall()
     conn.close()
