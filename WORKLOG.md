@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 17:05 IST: 16:20 resume session ACTIVE (another run should exit).
+- 2026-10-07 17:20 IST: 16:20 resume session ACTIVE (another run should exit).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -143,6 +143,10 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [16:20 run] export: dismissing the CSV/JSON picker still toasted 'Summary exported successfully'; Export Summary file named after the exported day, not today
 - [16:20 run] week 'Day by day': each column shows its hours (were tooltip-only, invisible on touch)
 - [16:20 run] header: 'September 2026' wrapped at every width (fixed 240px column); week/month titles take free space; 768-1023px day strip showed ~5 of 7 days -> fits (button 'Full Day' there); summary cards p-6 below lg
+- [16:20 run] exports: overnight logs had end date = start date -> /api/tasks + graph-data rows carry end_date (+ test)
+- [16:20 run] register / forgot-password errors kept nothing typed -> name/email/user ID (never passwords) preserved (+ tests)
+- [16:20 run] register note: stock blue box -> cream/amber like the rest of the app
+- [16:20 run] fuzzed ~2000 GETs on graph-data/search/tasks/tags/export/dashboard params: 0 server errors
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
