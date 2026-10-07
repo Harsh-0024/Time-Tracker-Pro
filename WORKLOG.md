@@ -7,18 +7,18 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 20:15 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 20:16 IST: 19:20 resume session finished (idle - next scheduled run may continue).
 
 ## 19:20 run summary - most important first
 1. SECURITY: verification/welcome emails injected the registrant's name as raw HTML (phishing via someone else's address). Escaped.
 2. BUG: search 'sleep, rest' (graphs placeholder example) matched nothing; graphs chart vs Review list disagreed for 'only X' and quoted phrases ("Deep work ." rows). All aligned + tests.
-3. BUG: one unsynced log anywhere blocked editing every task ('must be linked to Sheety'). Fixed.
+3. BUG: one unsynced log anywhere blocked editing every task ('must be linked to Sheety'). Fixed. Also: 'Missing time' mishandled logs crossing midnight.
 4. BUG: stale session (browser update changes UA) made /login drop ?next= -> you landed on the dashboard. Fixed.
 5. UX: Insights Top-activity rows now list exactly what they counted; Settings export toasts for empty range/errors instead of raw JSON / empty file.
 6. Features: Add-task name autocomplete w/ tag prefill; week/month 'vs last week/month' daily averages; graphs 'By time of day' card; 'Again' on task cards; swipe week strip / day-by-day chart on phones; admin log counts.
 7. Perf: responses gzipped (dashboard 292KB -> 53KB); graph search ~10x faster (vectorised, equivalence-tested); task lists/exports iterate records (~300ms saved at 22k logs).
 8. a11y: skip links, date-picker + graphs focus-menu keyboard support.
-All tests pass (177, py3.14 + 3.12). Nothing pushed.
+All tests pass (178, py3.14 + 3.12). Nothing pushed.
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
