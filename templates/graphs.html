@@ -518,7 +518,7 @@
     </nav>
 
     <div id="graphTaskModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="graphTaskTitle">
-        <div class="modal-content p-8" role="document">
+        <div class="modal-content p-5 sm:p-8" role="document">
             <div class="flex justify-between items-center mb-6">
                 <h2 id="graphTaskTitle" class="text-2xl font-semibold text-gray-900">Tasks in this graph</h2>
                 <button id="closeGraphTasks" class="text-gray-400 hover:text-gray-600 transition focus:outline-none focus:ring-0 focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:rounded-full">
@@ -2082,7 +2082,7 @@
                     <div class="luxury-card rounded-2xl p-4 md:p-5 mb-3 shadow-lg">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex-1 min-w-0">
-                                <div class="font-medium text-gray-900 mb-1 truncate">${escapeSuggestionHtml(normalizeGraphTaskName(task.task) || 'Untitled task')}</div>
+                                <div class="font-medium text-gray-900 mb-1 line-clamp-2 break-words">${escapeSuggestionHtml(normalizeGraphTaskName(task.task) || 'Untitled task')}</div>
                                 <div class="flex flex-wrap items-center gap-2 text-[13px] text-gray-600">
                                     <span class="text-gray-500">${escapeSuggestionHtml(task.date)}</span>
                                     <span class="text-gray-500">${escapeSuggestionHtml(task.start_time)} - ${escapeSuggestionHtml(task.end_time)}</span>
