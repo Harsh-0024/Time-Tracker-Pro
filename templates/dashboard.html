@@ -1220,7 +1220,8 @@
                 <div class="w-full h-2 rounded-full bg-[#E7D8C2] overflow-hidden" role="progressbar" aria-label="Logged share of the period" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ logged_coverage }}">
                     <div class="h-full rounded-full bg-gradient-to-r from-[#111827] via-[#111827] to-[#F5B826]" data-width="{{ logged_coverage }}"></div>
                 </div>
-                <div class="mt-3 text-xs text-gray-500" id="summaryPeriodCaption" data-total-text="{{ current_month }} · {{ period | title }} view totals." data-avg-text="{{ current_month }} · {{ period | title }} avg/day.">{{ current_month }} · {{ period | title }} view totals.</div>
+                {% set caption_period = (selected_date.strftime('%a ') ~ selected_date.day ~ selected_date.strftime(' %b %Y')) if period == 'day' else current_month %}
+                <div class="mt-3 text-xs text-gray-500" id="summaryPeriodCaption" data-total-text="{{ caption_period }} · {{ period | title }} view totals." data-avg-text="{{ caption_period }} · {{ period | title }} avg/day.">{{ caption_period }} · {{ period | title }} view totals.</div>
             </div>
             <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between {% if tags.labels %}cursor-pointer summary-card{% endif %}" {% if tags.labels %}data-filter="tag" data-title="{{ top_tag_label }}" data-tag="{{ top_tag_label }}" data-chart="tasks" role="button" tabindex="0"{% endif %}>
                 <div class="flex items-center justify-between mb-4">
@@ -1236,7 +1237,7 @@
                 <div class="w-full h-2 rounded-full bg-[#E7D8C2] overflow-hidden">
                     <div class="h-full rounded-full bg-gradient-to-r from-[#F97316] via-[#F59E0B] to-[#FACC15]" data-width="{{ top_tag_pct }}"></div>
                 </div>
-                <div class="mt-3 text-xs text-gray-500">{{ top_tag_pct }}% of logged time this period.</div>
+                <div class="mt-3 text-xs text-gray-500">{% if tags.labels %}Most-logged of {{ tags.labels | length }} tag{{ '' if tags.labels | length == 1 else 's' }} {{ 'that day' if period == 'day' else 'this ' ~ period }}.{% else %}No tags logged {{ 'that day' if period == 'day' else 'this ' ~ period }}.{% endif %}</div>
             </div>
             <div class="luxury-card rounded-2xl p-8 flex flex-col justify-between cursor-pointer summary-card" data-filter="{{ top_quad_key }}" data-title="{{ top_quad_label }}" data-chart="tasks" role="button" tabindex="0">
                 <div class="flex items-center justify-between mb-4">
