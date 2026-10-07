@@ -82,3 +82,17 @@ def test_note_box_on_a_day_without_logs(db_path, login):
     html = client.get("/?date=2026-09-20&period=day").get_data(as_text=True)
     assert "Nothing logged on" in html
     assert html.count('id="dayNoteInput"') == 1 and "Day off, hiking.</textarea>" in html
+
+
+def test_json_export_includes_notes(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-15", "08:00:00", "2026-09-15", "10:00:00", task="Study", tags="Work", urg=0, imp=1)
+    client = login(uid)
+    client.put("/api/day-notes/2026-09-15", json={"note": "In range"})
+    client.put("/api/day-notes/2026-10-01", json={"note": "Later"})
+    data = json.loads(client.get("/api/export-csv?mode=all&format=json").get_data(as_text=True))
+    assert data["notes"] == [{"date": "2026-09-15", "note": "In range"}, {"date": "2026-10-01", "note": "Later"}]
+    data = json.loads(client.get("/api/export-csv?mode=range&start_date=2026-09-01&end_date=2026-09-30&format=json").get_data(as_text=True))
+    assert data["notes"] == [{"date": "2026-09-15", "note": "In range"}] and len(data["rows"]) == 1
+    csv_text = client.get("/api/export-csv?mode=all&format=csv").get_data(as_text=True)
+    assert "In range" not in csv_text

@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import re
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from urllib.parse import urlparse
 from io import BytesIO, StringIO
 from typing import Any, Dict, List, Optional, Tuple
@@ -1877,9 +1877,14 @@ def export_csv():
             )
 
     if export_format == "json":
+        from ..repositories.day_notes import get_day_notes
+
+        notes_from, notes_to = (start_date, end_date) if mode == "range" else (date.min, date.max)
+        notes = get_day_notes(db_name, user_id, notes_from, notes_to)
         payload = {
             "columns": headers,
             "rows": export_rows,
+            "notes": [{"date": day.isoformat(), "note": text} for day, text in sorted(notes.items())],
         }
         buffer = BytesIO(json.dumps(payload, ensure_ascii=True, indent=2).encode("utf-8"))
         resp = send_file(
