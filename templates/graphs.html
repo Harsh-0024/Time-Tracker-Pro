@@ -500,7 +500,7 @@
 
         <section class="luxury-card rounded-2xl p-4 md:p-6 mt-3 md:mt-4" id="hourCard" aria-labelledby="hourTitle">
             <div class="flex items-baseline justify-between gap-3 mb-3">
-                <h3 id="hourTitle" class="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-semibold">By time of day</h3>
+                <h3 id="hourTitle" class="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-semibold whitespace-nowrap">By time of day</h3>
                 <p class="text-[11px] text-gray-500 text-right" id="hourCaption">Average per day in this range</p>
             </div>
             <div id="hourBars" class="grid gap-[2px] md:gap-1 h-20 md:h-24 rounded-lg bg-[rgba(148,126,86,0.10)] px-1 pt-1" style="grid-template-columns: repeat(24, minmax(0, 1fr));" role="list"></div>
@@ -1014,9 +1014,19 @@
                 </div>`;
             }).join('');
             if (caption) {
-                caption.textContent = best >= 0
-                    ? `Average per day · peak ${hourRange(best)}`
-                    : 'Nothing logged in this range';
+                caption.textContent = '';
+                if (best >= 0) {
+                    // Phones: just 'Peak 2–3 PM' so the header stays on one line.
+                    const lead = document.createElement('span');
+                    lead.className = 'hidden sm:inline';
+                    lead.textContent = 'Average per day · peak ';
+                    const short = document.createElement('span');
+                    short.className = 'sm:hidden';
+                    short.textContent = 'Peak ';
+                    caption.append(lead, short, document.createTextNode(hourRange(best)));
+                } else {
+                    caption.textContent = 'Nothing logged in this range';
+                }
             }
         }
 
