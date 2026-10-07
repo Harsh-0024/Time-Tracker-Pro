@@ -471,7 +471,8 @@
         [data-theme="dark"] .insight-note.is-good { color: #6EE7B7; }
         [data-theme="dark"] .insight-note.is-bad { color: #FDA4AF; }
         [data-theme="dark"] .insight-link:hover { background: rgba(212, 175, 55, 0.08); }
-        .matrix-card:focus-visible { outline: 2px solid #F5B826; outline-offset: 3px; }
+        .matrix-card:focus-visible, .card-title-btn:focus-visible { outline: 2px solid #F5B826; outline-offset: 3px; }
+        .card-title-btn { font: inherit; color: inherit; text-align: left; border-radius: 6px; }
         .share-delta {
             display: inline-flex;
             align-items: center;
@@ -1427,7 +1428,8 @@
             <div class="space-y-8">
                 <div class="luxury-card rounded-2xl p-6 md:p-8 h-full flex flex-col {% if tags.labels %}cursor-pointer{% endif %}" id="tags" {% if tags.labels %}onclick="window.applyFilter('all', 'By Category')"{% endif %}>
                     <div class="mb-4 md:mb-6">
-                        <h3 class="text-xl font-light text-gray-900 mb-1">Time by Category</h3>
+                        {# Keyboard path into the card: the click bubbles to the card's onclick. #}
+                        <h3 class="text-xl font-light text-gray-900 mb-1">{% if tags.labels %}<button type="button" class="card-title-btn" aria-label="Time by Category: view tasks by category">Time by Category</button>{% else %}Time by Category{% endif %}</h3>
                         <p class="text-xs text-gray-500">Tag distribution</p>
                     </div>
                     <div class="relative w-full flex-1 flex flex-col items-center justify-center min-h-0" role="img" aria-label="Time spent by tag category">
