@@ -70,8 +70,12 @@ def settings():
     current = get_user_settings(db_name, user_id)
 
     if request.method == "POST":
+        from .api import _api_url_error
+
         sheety_endpoint = request.form.get("sheety_endpoint")
         sheety_token = request.form.get("sheety_token")
+        if (sheety_endpoint or "").strip() and _api_url_error(sheety_endpoint.strip()):
+            return redirect(url_for("main.settings"))
         upsert_user_settings(db_name, user_id, sheety_endpoint, sheety_token)
         return redirect(url_for("main.dashboard"))
 

@@ -45,6 +45,29 @@ def _text(value: Any) -> str:
     """Stringify a JSON field so a number/bool can't crash .strip()."""
     return "" if value is None else str(value)
 
+
+def _api_url_error(url: str) -> Optional[str]:
+    """Why a Sheety base URL is unacceptable, or None. The server fetches this URL, so
+    stick to https and refuse loopback/private IP literals."""
+    import ipaddress
+
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return "API base URL is not a valid URL"
+    if parsed.scheme != "https" or not parsed.hostname:
+        return "API base URL must start with https://"
+    host = parsed.hostname
+    if host == "localhost" or host.endswith(".localhost"):
+        return "API base URL must be a public address"
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return None
+    if not ip.is_global:
+        return "API base URL must be a public address"
+    return None
+
 SearchExpr = Tuple[str, Any]
 SEARCH_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|\(|\)|,|\+|\-|\*|\bAND\b|\bOR\b|\bNOT\b|[^\s()+*\-()]+', re.IGNORECASE)
 
@@ -1758,6 +1781,9 @@ def create_sheety_account():
         
         if not api_base_url:
             return jsonify({"error": "API base URL is required"}), 400
+        url_error = _api_url_error(api_base_url)
+        if url_error:
+            return jsonify({"error": url_error}), 400
         
         if not account_email:
             user_row = get_user_by_id(db_name, user_id)

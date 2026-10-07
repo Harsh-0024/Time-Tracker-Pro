@@ -109,3 +109,13 @@ def test_update_task_infinite_duration_is_400(db_path, login):
     add_log(db_path, uid, "2026-09-20", "09:00:00", "2026-09-20", "10:00:00", task="Synced", sheety_id=7)
     resp = login(uid).put("/api/tasks/7?by=sheety", json={"duration": "inf", "task": 5})
     assert resp.status_code == 400
+
+
+def test_sheety_account_url_must_be_public_https(db_path, login):
+    client = login(make_user(db_path))
+    for bad in ("javascript:alert(1)", "http://api.sheety.co/x", "https://127.0.0.1/x",
+                "https://169.254.169.254/latest", "https://localhost/x", "https://10.0.0.5/x"):
+        resp = client.post("/api/sheety-accounts", json={"api_base_url": bad})
+        assert resp.status_code == 400, bad
+    resp = client.post("/api/sheety-accounts", json={"api_base_url": "https://api.sheety.co/abc/timeLogs/sheet1"})
+    assert resp.status_code == 201
