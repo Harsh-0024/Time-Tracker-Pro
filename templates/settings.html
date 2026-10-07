@@ -478,13 +478,17 @@
                     </div>
                     <div>
                         <label for="newApiBaseUrl" class="block text-sm font-medium text-gray-700 mb-1">Base API URL</label>
-                        <input id="newApiBaseUrl" name="api_base_url" autocapitalize="none" spellcheck="false" type="url" inputmode="url" autocomplete="off" required placeholder="https://api.sheety.co/1a861cfa9dca4f459ca9c1bf60ca2e09/timeLogs/sheet1" class="w-full px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-base" />
+                        <input id="newApiBaseUrl" name="api_base_url" autocapitalize="none" spellcheck="false" type="url" inputmode="url" autocomplete="off" required placeholder="https://api.sheety.co/your-project-id/timeLogs/sheet1" class="w-full px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-base" />
                         <p class="text-xs text-gray-500 mt-1">Format: https://api.sheety.co/[project_id]/[project_name]/[sheet_name]</p>
                         <p class="text-xs text-gray-500 mt-1">We use the same base URL for GET/POST and append /&lt;Object ID&gt; for PUT/DELETE. Make sure all four methods are enabled in Sheety.</p>
                     </div>
                     <div>
                         <label for="newApiToken" class="block text-sm font-medium text-gray-700 mb-1">Bearer Token (optional)</label>
-                        <input id="newApiToken" name="api_token" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Bearer token if required" class="w-full px-4 py-3 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-base" />
+                        <div class="relative">
+                            {# A secret: masked like a password, but autocomplete=off so password managers leave it alone. #}
+                            <input id="newApiToken" name="api_token" type="password" autocomplete="off" data-lpignore="true" data-1p-ignore autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Bearer token if required" class="w-full px-4 py-3 pr-16 rounded-2xl bg-white/80 border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-base" />
+                            <button type="button" id="toggleApiToken" class="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 rounded-lg text-xs font-semibold text-gray-600 hover:text-gray-900" aria-controls="newApiToken" aria-pressed="false">Show</button>
+                        </div>
                     </div>
                     <div class="flex gap-3">
                         <button type="submit" class="flex-1 py-3 rounded-2xl bg-gray-900 text-amber-300 font-semibold shadow-lg active:scale-[0.99] transition-transform" id="saveApiAccountBtn">
@@ -1002,6 +1006,17 @@
         }
 
         // API Account Management
+        const toggleApiToken = document.getElementById('toggleApiToken');
+        if (toggleApiToken) {
+            toggleApiToken.addEventListener('click', () => {
+                const input = document.getElementById('newApiToken');
+                const show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                toggleApiToken.textContent = show ? 'Hide' : 'Show';
+                toggleApiToken.setAttribute('aria-pressed', show ? 'true' : 'false');
+            });
+        }
+
         const addApiAccountBtn = document.getElementById('addApiAccount');
         const addApiForm = document.getElementById('addApiForm');
         const cancelAddApiBtn = document.getElementById('cancelAddApi');
