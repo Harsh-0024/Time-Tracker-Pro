@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 12:26 IST: resume session ACTIVE (scheduled run, started 12:06).
+- 2026-10-07 14:40 IST: resume session ACTIVE (scheduled run, started 14:21).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -121,6 +121,9 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [12:06 run] feat: same day headers in graphs 'Review tasks'
 - [12:06 run] phones: month title no longer wraps ('September 2026' + 'View Full Month' button) -> button reads 'Full Month' (aria-label keeps full text); server renders the right period label (was 'View Full Day' until JS ran)
 - [12:06 run] a11y: visible keyboard focus rings on day-by-day columns, 24h timeline segments, Insights activity rows (outline was removed)
+- [14:21 run] BUG: X-API-Token header auth never matched (dict(request.headers) spells it 'X-Api-Token'); only ?token= worked
+- [14:21 run] SECURITY: /sync-now, /hard-reset refuse cookie-session GET (405); dashboard POSTs; API-token GET still OK
+- [14:21 run] UX: global error boundary - offline/network failures showed a red toast per request and, after 3, a full-screen 'unstable' overlay; now one connection hint; also removed beacon to non-existent /api/log-error
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -136,7 +139,6 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 ## Ideas / TODO queue
 - (note) dark --text-faint (#6E6045) is 3.2:1 - axe flags ~10 small labels (timeline axis, insight labels). Earlier session chose it for hierarchy; bump to ~#877858 for AA if you prefer.
 - (question) /sync-status answers anonymous callers with config booleans (sheety configured, db exists). Harmless-ish; could 401.
-- (question) /sync-now and /hard-reset are GET with side effects; SameSite=Lax lets another site trigger a forced Sheety sync via a top-level link. Low impact (quota). Consider POST.
 - (note) a dev server with LOCAL_AUTH_BYPASS was blocked by the session's permission classifier; verification done via pytest/Flask test client.
 - (question) ~174 distinct task names are stored with a trailing ' .' (e.g. 'Instagram .' x396 vs 'Instagram' x14) -
   looks like the parser keeps the sentence-ending dot. I only merged them for display; the parser is yours.
