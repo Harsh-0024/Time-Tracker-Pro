@@ -17,7 +17,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
-    <script src="{{ url_for('static', filename='js/pulltorefresh.min.js') }}"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -435,6 +434,16 @@
         .goal-bar.is-limit.is-over > span { background: linear-gradient(90deg, #E11D48, #FB7185); }
         [data-theme="dark"] .goal-bar { background: rgba(212, 175, 55, 0.10); }
         [data-theme="dark"] .goal-streak { color: #6EE7B7; }
+        .pull-sync {
+            position: fixed; top: env(safe-area-inset-top, 0px); left: 50%; z-index: 1500;
+            transform: translate(-50%, -48px); opacity: 0; pointer-events: none;
+            padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+            background: #FFFDF8; color: #374151; border: 1px solid rgba(148, 126, 86, 0.35);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+            transition: transform 0.25s ease, opacity 0.2s ease;
+        }
+        .pull-sync.is-dragging { transition: none; }
+        [data-theme="dark"] .pull-sync { background: #17130C; color: #F3EBD9; border-color: rgba(212, 175, 55, 0.3); }
         .goal-dots { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
         .goal-dots.is-month { gap: 4px; }
         .goal-dot { width: 12px; height: 12px; border-radius: 999px; flex: none; box-sizing: border-box; }
@@ -5330,24 +5339,73 @@
                 }, { passive: true });
             }
 
-            // Initialize pull-to-refresh (handle both UMD global and .default export shapes)
-            const _ptr = typeof PullToRefresh !== 'undefined'
-                ? (typeof PullToRefresh.init === 'function' ? PullToRefresh : PullToRefresh.default)
-                : null;
-            if (_ptr && typeof _ptr.init === 'function') {
-                _ptr.init({
-                    mainElement: 'body',
-                    onRefresh: function() {
-                        window.location.reload();
-                    },
-                    distThreshold: 60,
-                    distMax: 80,
-                    distReload: 50,
-                    instructionsPullToRefresh: 'Pull down to sync',
-                    instructionsReleaseToRefresh: 'Release to sync',
-                    instructionsRefreshing: 'Syncing...'
-                });
-            }
+            // Pull down to sync - only in the installed app (browsers have their own
+            // pull-to-refresh). Never while a dialog is open, when the touch starts in a
+            // scrolled panel, or for sideways swipes (week strip / day-by-day).
+            (function initPullToSync() {
+                const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+                if (!standalone || !('ontouchstart' in window)) return;
+                const READY_AT = 64;
+                const pill = document.createElement('div');
+                pill.className = 'pull-sync';
+                pill.setAttribute('aria-hidden', 'true');
+                document.body.appendChild(pill);
+                let startX = 0, startY = 0, pull = 0, tracking = false, decided = false;
+                const dialogOpen = () => Boolean(document.querySelector('.modal.active, #exportFormatModal:not(.hidden), [role="dialog"][aria-modal="true"]:not(.hidden):not(.modal)'));
+                const inScrolledPanel = (el) => {
+                    for (let node = el; node && node !== document.body; node = node.parentElement) {
+                        if (node.scrollTop > 0) return true;
+                    }
+                    return false;
+                };
+                const show = (distance, text) => {
+                    pill.textContent = text;
+                    pill.style.transform = `translate(-50%, ${Math.round(distance) - 48}px)`;
+                    pill.style.opacity = distance > 8 ? '1' : '0';
+                };
+                const reset = () => {
+                    tracking = false;
+                    decided = false;
+                    pull = 0;
+                    pill.classList.remove('is-dragging');
+                    show(0, '');
+                };
+                document.addEventListener('touchstart', (event) => {
+                    if (event.touches.length !== 1 || window.scrollY > 0 || dialogOpen() || inScrolledPanel(event.target)) return;
+                    if (event.target.closest && event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+                    startX = event.touches[0].clientX;
+                    startY = event.touches[0].clientY;
+                    tracking = true;
+                    decided = false;
+                }, { passive: true });
+                document.addEventListener('touchmove', (event) => {
+                    if (!tracking) return;
+                    const dx = event.touches[0].clientX - startX;
+                    const dy = event.touches[0].clientY - startY;
+                    if (!decided) {
+                        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+                        decided = true;
+                        if (dy <= 0 || Math.abs(dx) > Math.abs(dy)) { reset(); return; }
+                        pill.classList.add('is-dragging');
+                    }
+                    pull = Math.max(0, Math.min(dy * 0.5, 96));
+                    show(pull, pull >= READY_AT ? 'Release to sync' : 'Pull down to sync');
+                }, { passive: true });
+                const finish = () => {
+                    if (!tracking) return;
+                    const ready = pull >= READY_AT;
+                    tracking = false;
+                    pill.classList.remove('is-dragging');
+                    if (ready) {
+                        show(READY_AT, 'Syncing…');
+                        window.location.reload();  // the dashboard syncs on load
+                    } else {
+                        reset();
+                    }
+                };
+                document.addEventListener('touchend', finish, { passive: true });
+                document.addEventListener('touchcancel', reset, { passive: true });
+            })();
         }); // End DOMContentLoaded
     </script>
     {% include '_toast_notifications.html' %}
