@@ -145,7 +145,7 @@
         }
         
         (function () {
-            const focusCode = () => {
+            const focusCode = (scroll = true) => {
                 const el = document.getElementById('verifyCode');
                 if (!el) return;
                 try {
@@ -162,35 +162,33 @@
                     el.setSelectionRange(len, len);
                 } catch (e) {
                 }
+                if (!scroll) return;
                 try {
                     el.scrollIntoView({ block: 'center' });
                 } catch (e) {
                 }
             };
+            // Tapping empty space brings the keyboard back; taps on buttons/links/fields
+            // must go where they were aimed (refocusing + scrolling made 'Resend' miss).
+            const refocusOnBackgroundTap = (event) => {
+                const el = document.getElementById('verifyCode');
+                if (!el || document.activeElement === el) return;
+                if (event.target && event.target.closest && event.target.closest('a, button, input, select, textarea, label, [role="button"]')) return;
+                focusCode(false);
+            };
 
             window.addEventListener('load', () => {
-                setTimeout(focusCode, 50);
-                setTimeout(focusCode, 250);
-                setTimeout(focusCode, 800);
+                setTimeout(() => focusCode(), 50);
+                setTimeout(() => focusCode(), 250);
+                setTimeout(() => focusCode(), 800);
             });
 
             window.addEventListener('pageshow', () => {
-                setTimeout(focusCode, 50);
+                setTimeout(() => focusCode(), 50);
             });
 
-            document.addEventListener('pointerdown', () => {
-                const el = document.getElementById('verifyCode');
-                if (el && document.activeElement !== el) {
-                    focusCode();
-                }
-            }, { passive: true, capture: true });
-
-            document.addEventListener('touchstart', () => {
-                const el = document.getElementById('verifyCode');
-                if (el && document.activeElement !== el) {
-                    focusCode();
-                }
-            }, { passive: true, capture: true });
+            document.addEventListener('pointerdown', refocusOnBackgroundTap, { passive: true, capture: true });
+            document.addEventListener('touchstart', refocusOnBackgroundTap, { passive: true, capture: true });
         })();
     </script>
     {% include '_form_busy.html' %}
