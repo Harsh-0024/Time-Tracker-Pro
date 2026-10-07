@@ -2773,17 +2773,6 @@
             }
         };
 
-        window.promptAddTaskAfterDelete = function() {
-            const shouldAdd = window.confirm('Task deleted. Would you like to add a new task now?');
-            if (!shouldAdd) return;
-            if (window.openCreateTaskPanel) {
-                window.openCreateTaskPanel();
-            }
-            if (window.showInfoToast) {
-                window.showInfoToast('Add the new task details below to keep your timeline aligned.');
-            }
-        };
-
         window.closeDeleteTaskConfirm = function() {
             const panel = document.getElementById('taskDeleteConfirm');
             if (panel) panel.classList.add('hidden');

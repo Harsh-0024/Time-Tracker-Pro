@@ -2311,14 +2311,6 @@
             }
         }
 
-        function promptAddTaskAfterDelete() {
-            const shouldAdd = window.confirm('Task deleted. Would you like to add a new task now?');
-            if (!shouldAdd) return;
-            if (window.showInfoToast) {
-                window.showInfoToast('Add the new task in your Sheety log, then run Sync to pull it in.');
-            }
-        }
-
         async function refreshGraphTaskModal() {
             await fetchGraphData({ includeTasks: true });
             renderGraphTaskStats();
