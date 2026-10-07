@@ -7,16 +7,17 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 20:10 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 20:13 IST: 19:20 resume session ACTIVE.
 
 ## 19:20 run summary - most important first
 1. SECURITY: verification/welcome emails injected the registrant's name as raw HTML (phishing via someone else's address). Escaped.
 2. BUG: search 'sleep, rest' (graphs placeholder example) matched nothing; graphs chart vs Review list disagreed for 'only X' and quoted phrases ("Deep work ." rows). All aligned + tests.
-3. BUG: stale session (browser update changes UA) made /login drop ?next= -> you landed on the dashboard. Fixed.
-4. UX: Insights Top-activity rows now list exactly what they counted; Settings export toasts for empty range/errors instead of raw JSON / empty file.
-5. Features: Add-task name autocomplete w/ tag prefill; week/month 'vs last week/month' daily averages; graphs 'By time of day' card; 'Again' on task cards; swipe week strip / day-by-day chart on phones; admin log counts.
-6. Perf: responses gzipped (dashboard 292KB -> 53KB); graph search ~10x faster (vectorised, equivalence-tested); task lists/exports iterate records (~300ms saved at 22k logs).
-7. a11y: skip links, date-picker + graphs focus-menu keyboard support.
+3. BUG: one unsynced log anywhere blocked editing every task ('must be linked to Sheety'). Fixed.
+4. BUG: stale session (browser update changes UA) made /login drop ?next= -> you landed on the dashboard. Fixed.
+5. UX: Insights Top-activity rows now list exactly what they counted; Settings export toasts for empty range/errors instead of raw JSON / empty file.
+6. Features: Add-task name autocomplete w/ tag prefill; week/month 'vs last week/month' daily averages; graphs 'By time of day' card; 'Again' on task cards; swipe week strip / day-by-day chart on phones; admin log counts.
+7. Perf: responses gzipped (dashboard 292KB -> 53KB); graph search ~10x faster (vectorised, equivalence-tested); task lists/exports iterate records (~300ms saved at 22k logs).
+8. a11y: skip links, date-picker + graphs focus-menu keyboard support.
 All tests pass (170). Nothing pushed.
 
 ## Morning summary (06:22-09:00 session) - most important first
@@ -202,6 +203,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [19:20 run] graphs phone nav: Insights item (-> dashboard#insights), matching the dashboard's five items
 - [19:20 run] dashboard shortcut '/' = search the full log (as on graphs)
 - [19:20 run] feat: graphs reopens with last focus/range/MA (localStorage, validated; search intentionally not restored)
+- [19:20 run] perf: Add-task overlap check only reads logs whose dates touch the entry (115ms -> 2ms at 22k; new overlap test incl. overnight)
+- [19:20 run] BUG: editing ANY task failed with 'Overlapping tasks must be linked to Sheety' if the user had a single unsynced log anywhere (check ran before the overlap test). Now only overlapping logs are checked; scan date-limited (+ tests)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
