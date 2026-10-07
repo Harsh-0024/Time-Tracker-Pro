@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 14:40 IST: resume session ACTIVE (scheduled run, started 14:21).
+- 2026-10-07 14:55 IST: resume session ACTIVE (scheduled run, started 14:21).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -125,6 +125,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [14:21 run] SECURITY: /sync-now, /hard-reset refuse cookie-session GET (405); dashboard POSTs; API-token GET still OK
 - [14:21 run] UX: global error boundary - offline/network failures showed a red toast per request and, after 3, a full-screen 'unstable' overlay; now one connection hint; also removed beacon to non-existent /api/log-error
 - [14:21 run] phones: bottom nav highlighted the wrong section (Insights never lit, 'Tags' shown while reading Insights) - IntersectionObserver threshold 0.4 can't fire for sections taller than ~2.5 screens; replaced by a scroll-position spy (+ aria-current)
+- [14:21 run] dark mode: task-modal pie charts (dashboard full log, graphs Review tasks) had glaring white slice borders -> surface colour
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync

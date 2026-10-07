@@ -1892,7 +1892,8 @@
                         data: values,
                         backgroundColor: colors,
                         borderWidth: 2,
-                        borderColor: '#FFFFFF',
+                        // Slice gaps take the surface colour (white rims glare in dark mode).
+                        borderColor: isDarkTheme() ? '#0E0C08' : '#FFFFFF',
                         hoverOffset: 10,
                         hoverBorderWidth: 3
                     }]
