@@ -7,15 +7,15 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 23:11 IST: 22:20 resume session ACTIVE.
+- 2026-10-07 23:14 IST: 22:20 resume session ACTIVE.
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
 2. BUG: Settings > Update Profile showed no 'Current password' / 'Email code' field on load (the Password form's switch hid them) - name/user-ID changes were blocked until you clicked a toggle.
-3. BUGs: pull-to-refresh never worked (lib needed a missing element) -> new installed-app-only 'Pull down to sync'; forgot-password turned a user ID into '<id>@gmail.com'; verify-email taps on 'Resend' could miss (focus/scroll hijack); Enter on login skipped the busy state; Growth streak vanished after the first partial log of the day.
+3. BUGs: sync's tail-safe sheet rewrite crashed mid-way when it had rows to delete (stale rows left in the sheet; pure code move, see Done); pull-to-refresh never worked (lib needed a missing element) -> new installed-app-only 'Pull down to sync'; forgot-password turned a user ID into '<id>@gmail.com'; verify-email taps on 'Resend' could miss (focus/scroll hijack); Enter on login skipped the busy state; Growth streak vanished after the first partial log of the day.
 4. Features: DAY NOTES (private note per day, autosaved; listed in week/month; in Copy summary + JSON export); goal dots (week/month: one per day; day view: last 7 days) + best streak; graphs Calendar heatmap; offline page for the installed app (minimal service worker, nothing else cached); streaks in Copy summary.
 5. Perf: fetch_local_data 161 -> 69 ms at 22k logs (dashboard ~165 -> ~95 ms), output identical. Touches time *display formatting* only - see Done list if you want it reverted.
-Verification: pytest (208, py3.14 + 3.12), browser pane on rendered pages + a live local server (synthetic data, throwaway account), node harness for the service worker. Nothing pushed.
+Verification: pytest (209, py3.14 + 3.12), browser pane on rendered pages + a live local server (synthetic data, throwaway account), node harness for the service worker. Nothing pushed.
 
 ## 21:20 run summary - most important first
 1. Feature: Insights 'Top activities' now show a trend per activity (week/month: per-day change vs last period; day: 'usually Xh/day').
@@ -262,6 +262,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [22:20 run] feat: day notes also appear under the day headers of graphs 'Review tasks' and the dashboard week/month full log (escaped; embedded via tojson) (+ test)
 - [22:20 run] live end-to-end pass (local server on a temp DB with 120 days of synthetic logs + a throwaway test account; no real data): login, day note save/reload, today's goal dots + streak/best, graphs calendar from real graph-data incl. note marker, Settings 'Send code' (SMTP off -> friendly toast, no reload, typed password kept, message not repeated on next load), week full log note under day header. No console errors
 - [22:20 run] feat(api): GET /api/day-notes?start=&end= (token/scripts); README documents the notes API (+ test)
+- [22:20 run] BUG (sync, found by pyflakes 'undefined name'): services/sync.py _rewrite_sheet_rows - the tail-safe branch (rows appended to the sheet after the snapshot) called the nested _delete_row before its def -> UnboundLocalError AFTER the PUTs had rewritten the leading rows, leaving surplus stale rows in the sheet (e.g. delete a task while the phone appended new rows). Fix = pure move of the def above the branch (diff is identical lines + 1 comment); no ordering/sync logic change. Test with a fake Sheety client reproduces the crash (14d60ca). Flagging since sync is yours - revert if you prefer
+- [22:20 run] chore: unused imports removed (web/api.py os; web/auth.py os, get_user_settings). Not changed: sync.py run_sync assigns cleanup_service/cleanup_url/cleanup_headers (~lines 199-209) that are never used afterwards - looks like leftovers from moving the rewrite out; decorators.py:44 unused db_name
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
