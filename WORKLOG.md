@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 06:40 IST: session active (resumed 06:22).
+- 2026-10-07 06:58 IST: session active (resumed 06:22).
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -48,6 +48,10 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - settings profile tabs fit on phones (tablist semantics)
 - api: non-object JSON / non-string fields / 'inf' duration no longer 500
 - ?date= with year 0001/9999 no longer 500 (guard in web/utils.request_date_param)
+- security: Sheety base URL must be public https (server fetches it -> SSRF)
+- DATA LOSS fix: /api/import-csv with no valid rows deleted all the user's logs
+- graphs: stale graph-data responses ignored (chart could show 30d under 'All')
+- dashboard: latest matrix click wins; removed debug console.logs
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -61,6 +65,8 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (question) /api/import-csv REPLACES all of a user's logs with the CSV contents (by design?). A 1-row CSV
+  would wipe thousands of rows. No UI calls it today. Consider append/merge or a confirm flag.
 - (question) /api/tasks has no upper bound on duration (e.g. 500h accepted if it overlaps nothing). Cap at 24h? Left for owner.
 - UX polish: keyboard shortcuts, empty states, a11y labels
 - Feature ideas: streaks / goals, weekly summary insights
