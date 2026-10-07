@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 14:47 IST: resume session ACTIVE (scheduled run, started 14:21).
+- 2026-10-07 14:43 IST: 14:21 resume session finished (idle; next scheduled run may continue).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -162,6 +162,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - Feature ideas: streaks / goals, weekly summary insights
 
 ## Dev notes
+- Live dev server on synthetic data (no real DB): build a temp DB via create_app({'DB_NAME': tmp}) + insert a verified user and logs, app.run on a free port (5055/5077 may hold leftovers from older sessions - don't kill those). Use tags Work/Necessity/Soul/Rest/Waste only (others count as Waste). Browser-pane viewport/UA changes log you out (ua_hash).
 - Visual checks without the app server: serve those rendered HTML files with `python3 -m http.server` (symlink static/) and open in the browser pane (mobile/dark via resize_window).
 - Gotcha: when the browser pane is hidden, requestAnimationFrame is paused, so Chart.js defers resizes forever and charts look oversized/overflowing. Not a real bug.
 - JS behaviour checks without a server: render pages via the Flask test client with synthetic data, then load the HTML in jsdom (npm i jsdom in the scratchpad; stub IntersectionObserver/matchMedia/fetch/Chart).
