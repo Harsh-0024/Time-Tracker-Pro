@@ -1598,7 +1598,31 @@
                             {% if goal_progress.calendar %}{{ goal_dots(goal_progress.calendar, 'waste', 'Waste limit by day', 'under limit', 'over limit') }}{% endif %}
                             {% endif %}
                         {% endif %}
+                        <p class="goal-dot-caption mt-2 text-[11px] text-gray-500 hidden" aria-live="polite"></p>
                     </div>
+                    <script>
+                        // Touch has no hover tooltip: first tap on a goal dot shows its day,
+                        // a second tap on the same dot opens it. Mouse clicks open straight away.
+                        (function () {
+                            const block = document.currentScript.previousElementSibling;
+                            if (!block) return;
+                            const caption = block.querySelector('.goal-dot-caption');
+                            let lastPointer = 'mouse';
+                            let armed = null;
+                            block.addEventListener('pointerdown', (event) => { lastPointer = event.pointerType || 'mouse'; });
+                            block.addEventListener('click', (event) => {
+                                const dot = event.target.closest('.goal-dot');
+                                if (!dot || lastPointer !== 'touch') return;
+                                if (dot.tagName === 'A' && armed === dot) return;  // second tap: follow the link
+                                event.preventDefault();
+                                armed = dot;
+                                if (caption) {
+                                    caption.textContent = dot.title + (dot.tagName === 'A' ? ' · tap again to open' : '');
+                                    caption.classList.remove('hidden');
+                                }
+                            });
+                        })();
+                    </script>
                     <div class="h-px bg-[rgba(148,126,86,0.18)]" aria-hidden="true"></div>
                     {% endif %}
                     {% if period == 'day' %}
