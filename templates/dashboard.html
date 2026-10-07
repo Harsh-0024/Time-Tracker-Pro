@@ -3018,7 +3018,9 @@
 
         window.rowsToExportCsv = function(rows, headers) {
             const escape = (value) => {
-                const raw = String(value == null ? '' : value);
+                let raw = String(value == null ? '' : value);
+                // Spreadsheets run text starting with = + - @ as a formula (CSV injection).
+                if (typeof value === 'string' && /^[=+\-@\t\r]/.test(raw)) raw = `'${raw}`;
                 const escaped = raw.replace(/"/g, '""');
                 return /[",\n]/.test(escaped) ? `"${escaped}"` : escaped;
             };
