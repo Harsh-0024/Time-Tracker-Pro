@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 20:20 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 19:50 IST: 19:20 resume session ACTIVE.
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -163,6 +163,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [19:20 run] perf: graph-data include_tasks / export-csv iterate records not iterrows (~600 -> ~330ms at 22k logs; byte-identical output)
 - [19:20 run] perf: graph search filter vectorised (~10x; equivalence test vs the row matcher)
 - [19:20 run] feat: phones - swipe the week strip (±1 week, same weekday) or the week/month 'Day by day' chart (±1 period); arrow keys share the same shiftPeriod()
+- [19:20 run] feat: full-log task cards have 'Again' (Add task prefilled with name/tags/priority; focus on End). Phones: card actions on their own row (3 buttons squeezed the times)
+- [19:20 run] chore: removed dead promptAddTaskAfterDelete (blocking confirm) from dashboard + graphs
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
