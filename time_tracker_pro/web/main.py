@@ -117,6 +117,7 @@ def settings():
         pending_email=session.get("pending_email_new"),
         goals=get_user_goals(db_name, user_id),
         goals_error=session.pop("goals_error", None),
+        goals_form=session.pop("goals_form", None),
         goals_success=session.pop("goals_success", None),
     )
 
@@ -131,6 +132,11 @@ def update_goals():
         waste = parse_goal_hours(request.form.get("waste_limit_hours"))
     except ValueError:
         session["goals_error"] = "Goals must be numbers of hours between 0 and 24."
+        # Re-show what was typed so it can be corrected rather than retyped.
+        session["goals_form"] = {
+            "growth_hours": (request.form.get("growth_hours") or "")[:20],
+            "waste_limit_hours": (request.form.get("waste_limit_hours") or "")[:20],
+        }
         return redirect(url_for("main.settings") + "#goals-settings")
     upsert_user_goals(db_name, user_id, growth, waste)
     session["goals_success"] = "Goals saved." if (growth is not None or waste is not None) else "Goals cleared."

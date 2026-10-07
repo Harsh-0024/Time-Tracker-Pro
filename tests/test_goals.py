@@ -35,6 +35,10 @@ def test_update_goals_route(db_path, login):
     assert get_user_goals(db_path, uid) == {"growth_hours": 4.0, "waste_limit_hours": 2.5}  # unchanged
     with client.session_transaction() as sess:
         assert "between 0 and 24" in sess["goals_error"]
+    html = client.get("/settings").get_data(as_text=True)
+    assert 'name="growth_hours"' in html and 'value="99"' in html  # typed value kept for correction
+    html = client.get("/settings").get_data(as_text=True)
+    assert 'value="99"' not in html and 'value="4"' in html  # one-shot: back to the saved goal
 
 
 def test_goal_progress_day_and_week(db_path):
