@@ -5,12 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#F7CF6B">
     <title>Offline · Time Tracker Pro</title>
+    <script>
+        // Same choice as the app's Appearance setting (static/js/theme.js).
+        try {
+            const pref = localStorage.getItem('ttp-theme');
+            if (pref === 'light' || pref === 'dark') document.documentElement.setAttribute('data-theme', pref);
+        } catch (err) { /* storage blocked: follow the system */ }
+    </script>
     <style>
         /* Self-contained: this page is shown when nothing else can load. */
         :root { color-scheme: light dark; --bg: #F7F1E6; --card: #FFFDF8; --text: #1F2937; --muted: #6B7280; --line: rgba(148, 126, 86, 0.35); --accent: #F5B826; }
         @media (prefers-color-scheme: dark) {
-            :root { --bg: #0D0B07; --card: #17130C; --text: #F3EBD9; --muted: #A8997A; --line: rgba(212, 175, 55, 0.25); --accent: #D4AF37; }
+            :root:not([data-theme="light"]) { --bg: #0D0B07; --card: #17130C; --text: #F3EBD9; --muted: #A8997A; --line: rgba(212, 175, 55, 0.25); --accent: #D4AF37; --btn-bg: rgba(212, 175, 55, 0.18); --btn-text: #F4D03F; --btn-ring: rgba(212, 175, 55, 0.45); }
         }
+        :root[data-theme="dark"] { --bg: #0D0B07; --card: #17130C; --text: #F3EBD9; --muted: #A8997A; --line: rgba(212, 175, 55, 0.25); --accent: #D4AF37; --btn-bg: rgba(212, 175, 55, 0.18); --btn-text: #F4D03F; --btn-ring: rgba(212, 175, 55, 0.45); }
         * { box-sizing: border-box; }
         body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px;
                background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; }
@@ -19,8 +27,7 @@
         h1 { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
         p { margin: 0 0 24px; color: var(--muted); font-size: 14px; line-height: 1.5; }
         button { font: inherit; font-weight: 600; font-size: 15px; padding: 12px 28px; border-radius: 999px; border: 0; cursor: pointer;
-                 background: #111827; color: #FCD34D; }
-        @media (prefers-color-scheme: dark) { button { background: rgba(212, 175, 55, 0.18); color: #F4D03F; box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.45); } }
+                 background: var(--btn-bg, #111827); color: var(--btn-text, #FCD34D); box-shadow: inset 0 0 0 1px var(--btn-ring, transparent); }
         button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
     </style>
 </head>
