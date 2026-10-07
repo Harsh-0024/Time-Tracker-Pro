@@ -30,7 +30,7 @@ def parse_goal_hours(raw: Optional[str]) -> Optional[float]:
     value = float(text)
     if value != value or value < 0 or value > MAX_GOAL_HOURS:  # NaN or out of range
         raise ValueError("Goals must be between 0 and 24 hours.")
-    return round(value, 2)
+    return round(value, 2) + 0.0  # + 0.0 turns "-0" into 0.0 (else the form shows "-0")
 
 
 def upsert_user_goals(
