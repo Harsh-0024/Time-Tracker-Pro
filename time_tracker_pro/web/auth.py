@@ -32,7 +32,7 @@ from ..services.verification import (
 )
 from ..services.welcome_email import send_welcome_email
 from .decorators import login_required
-from .utils import safe_next_url
+from .utils import mask_email, safe_next_url
 
 
 bp = Blueprint("auth", __name__)
@@ -83,7 +83,7 @@ def login():
                     session["pending_remember"] = remember
                     session["pending_verification_purpose"] = "login_otp"
                     if send_verification_email(db_name, user, purpose="login_otp"):
-                        target_email = row_value(user, "email") or ""
+                        target_email = mask_email(row_value(user, "email"))
                         session["verification_success"] = (
                             f"Verification code sent to {target_email}." if target_email else "Verification code sent."
                         )
@@ -161,7 +161,7 @@ def forgot_password():
                 session["pending_user_id"] = int(row_value(user, "id"))
                 session["pending_verification_purpose"] = "forgot_password"
                 if send_verification_email(db_name, user, purpose="forgot_password"):
-                    target_email = row_value(user, "email") or ""
+                    target_email = mask_email(row_value(user, "email"))
                     session["verification_success"] = (
                         f"Verification code sent to {target_email}." if target_email else "Verification code sent."
                     )
@@ -320,7 +320,7 @@ def verify_email():
         "verify_email.html",
         error=error,
         success=success,
-        email=row_value(user, "email"),
+        email=row_value(user, "email") if purpose == "verify_email" else mask_email(row_value(user, "email")),
         name=display_name(user),
         title=title,
         subtitle=subtitle,

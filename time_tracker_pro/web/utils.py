@@ -42,3 +42,17 @@ def request_date_param(name: str = "date"):
     if not 1900 <= value.year <= 2200:
         return parse_date_param(None)
     return value
+
+
+def mask_email(email: Optional[str]) -> str:
+    """'harsh@gmail.com' -> 'h•••h@gmail.com'. Forgot-password takes a public user ID,
+    so showing the full address would reveal anyone's email."""
+    value = (email or "").strip()
+    local, sep, domain = value.partition("@")
+    if not sep:
+        return value
+    if len(local) <= 2:
+        masked = local[:1] + "•••"
+    else:
+        masked = local[0] + "•••" + local[-1]
+    return f"{masked}@{domain}"

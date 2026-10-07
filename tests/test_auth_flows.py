@@ -170,3 +170,22 @@ def test_identifier_lookup_prefers_the_email_owner(db_path):
     conn.commit()
     conn.close()
     assert get_user_by_username_or_id_or_email(db_path, "OWNER@example.com")["id"] == owner
+
+
+def test_mask_email():
+    from time_tracker_pro.web.utils import mask_email
+
+    assert mask_email("harsh@gmail.com") == "h•••h@gmail.com"
+    assert mask_email("ab@x.io") == "a•••@x.io"
+    assert mask_email("") == ""
+
+
+def test_forgot_password_by_user_id_does_not_reveal_email(app, db_path, monkeypatch):
+    import time_tracker_pro.web.auth as auth_mod
+
+    monkeypatch.setattr(auth_mod, "send_verification_email", lambda *a, **k: True)
+    make_user(db_path, username="alice", email="alice.secret@example.com")
+    client = app.test_client()
+    resp = client.post("/forgot-password", data={"identifier": "alice"}, follow_redirects=True)
+    assert b"alice.secret@example.com" not in resp.data
+    assert "a•••t@example.com".encode() in resp.data
