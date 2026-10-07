@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
-from flask import Flask, url_for
+from flask import Flask, jsonify, render_template, request, url_for
 
 from .core.time_utils import human_hours
 from .db import init_db
@@ -101,6 +101,26 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         return response
+
+    _ERROR_COPY = {
+        403: ("Not allowed", "You don't have access to this page."),
+        404: ("Page not found", "That page doesn't exist or has moved."),
+        405: ("Not allowed", "That action isn't available here."),
+        500: ("Something went wrong", "An unexpected error occurred. Please try again in a moment."),
+    }
+
+    def _error_response(status: int):
+        title, message = _ERROR_COPY.get(status, ("Error", "Something went wrong."))
+        # API callers (fetch) expect JSON, not an HTML page.
+        if request.path.startswith("/api/") or request.accept_mimetypes.best == "application/json":
+            return jsonify({"error": message}), status
+        try:
+            return render_template("error.html", status=status, title=title, message=message), status
+        except Exception:  # never let the error page itself fail
+            return f"{status} {title}", status
+
+    for _status in (403, 404, 405, 500):
+        app.register_error_handler(_status, lambda exc, _s=_status: _error_response(_s))
 
     @app.context_processor
     def inject_pwa_assets():

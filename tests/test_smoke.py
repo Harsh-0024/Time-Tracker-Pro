@@ -84,3 +84,16 @@ def test_admin_page_login_redirect_comes_back(app, db_path):
     assert client.get("/admin/users").headers["Location"].endswith("next=/admin/users")
     # POST-only targets just go to /login
     assert client.post("/admin/delete-user").headers["Location"].endswith("/login")
+
+
+def test_error_pages_html_and_json(app, db_path, login):
+    client = app.test_client()
+    resp = client.get("/no-such-page")
+    assert resp.status_code == 404
+    assert b"Page not found" in resp.data and b"Go to dashboard" in resp.data
+    resp = client.get("/api/no-such-endpoint")
+    assert resp.status_code == 404
+    assert resp.get_json() == {"error": "That page doesn't exist or has moved."}
+    resp = login(make_user(db_path)).get("/admin/users")
+    assert resp.status_code == 403
+    assert b"Not allowed" in resp.data
