@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 08:34 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
+- 2026-10-07 08:37 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -94,6 +94,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [08:22 run] dashboard shortcuts (arrows/T/G/S) no longer navigate behind an open task/export dialog; <select> ignored
 - [08:22 run] settings export modal: dialog semantics, focus in/out, Tab trap; shortcuts paused while open
 - [08:22 run] dashboard export-format picker: Escape closed the task modal underneath -> now closes picker only
+- [08:22 run] docs: MAX_CONTENT_LENGTH_MB in README/.env.example
+- [08:22 run] dark mode: primary black-pill buttons (Log In, Export, Add task, active toggles) were invisible shapes -> gold/emerald tint + ring
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -120,6 +122,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - Feature ideas: streaks / goals, weekly summary insights
 
 ## Dev notes
+- Visual checks without the app server: serve those rendered HTML files with `python3 -m http.server` (symlink static/) and open in the browser pane (mobile/dark via resize_window).
 - JS behaviour checks without a server: render pages via the Flask test client with synthetic data, then load the HTML in jsdom (npm i jsdom in the scratchpad; stub IntersectionObserver/matchMedia/fetch/Chart).
 - Prod runtime is python 3.12 (runtime.txt): also test with ~/.local/bin/python3.12 venv.
 - Test venv: python3 -m venv <scratch>/venv && pip install -r requirements.txt pytest (project venv/ is broken: points at old path)
