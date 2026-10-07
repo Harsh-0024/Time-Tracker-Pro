@@ -2896,13 +2896,18 @@
         }
 
 
+        let graphFetchSeq = 0;
         async function fetchGraphData({ includeTasks = false, openModal = false } = {}) {
             const metricKey = currentMetric;
             currentDays = getRangeDaysFromSelection();
             const shouldIncludeTasks = includeTasks || graphSearchQuery.length > 0 || graphExcludedIds.size > 0;
             const url = buildGraphUrl(shouldIncludeTasks);
+            // Fetches overlap (init, pill clicks, focus changes); only the newest may render,
+            // otherwise a slow older response repaints the chart with the wrong range/focus.
+            const seq = ++graphFetchSeq;
             try {
                 const response = await fetch(url, { credentials: 'include' });
+                if (seq !== graphFetchSeq) return;
                 if (response.status === 401) {
                     const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
                     window.location.href = `/login?next=${nextUrl}`;
@@ -2910,6 +2915,7 @@
                 }
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
+                if (seq !== graphFetchSeq) return;
                 if (shouldIncludeTasks) {
                     graphTasks = Array.isArray(data.tasks) ? data.tasks : [];
                     graphColorScheme = graphSearchQuery ? deriveSearchColors(graphTasks) : null;
@@ -2926,6 +2932,7 @@
                     openGraphTaskModal();
                 }
             } catch (e) {
+                if (seq !== graphFetchSeq) return;
                 console.error('Failed to load graph data', e);
                 const message = getNetworkErrorMessage(e, 'load graph data');
                 if (window.showErrorToast) {
