@@ -127,6 +127,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [14:21 run] phones: bottom nav highlighted the wrong section (Insights never lit, 'Tags' shown while reading Insights) - IntersectionObserver threshold 0.4 can't fire for sections taller than ~2.5 screens; replaced by a scroll-position spy (+ aria-current)
 - [14:21 run] dark mode: task-modal pie charts (dashboard full log, graphs Review tasks) had glaring white slice borders -> surface colour
 - [14:21 run] numbers: server rounded halves to even (3.25h -> 3.2h) while JS views show 3.3h - common with 15-min logs; core/numbers.round_half_up used in matrix/insights/dashboard. Day timeline '6.7h of 24h' (rounded % converted back) -> real hours
+- [14:21 run] BUG: creating a task while a sheet rewrite was in progress (Sheety write queued, no row id) saved the row and then 500'd (int(None)) -> user would re-add = duplicate. Now 200 + queued flag. No-Sheety error copy now says where to connect a sheet.
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -140,6 +141,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (question) Adding a task REQUIRES a connected Sheety account (create_task posts to Sheety first; local-only users get an error). Update/delete of local-only rows work. If you want local-only users to add tasks, create_task needs a local path - left alone since it touches the sync model.
+- (question) Sessions are bound to the User-Agent (ua_hash). Every browser auto-update (UA version bump) or Safari 'Request Desktop Website' logs the user out. Consider hashing only the browser family/OS, not the full UA.
 - (note) dark --text-faint (#6E6045) is 3.2:1 - axe flags ~10 small labels (timeline axis, insight labels). Earlier session chose it for hierarchy; bump to ~#877858 for AA if you prefer.
 - (question) /sync-status answers anonymous callers with config booleans (sheety configured, db exists). Harmless-ish; could 401.
 - (note) a dev server with LOCAL_AUTH_BYPASS was blocked by the session's permission classifier; verification done via pytest/Flask test client.

@@ -1,3 +1,5 @@
+import sqlite3
+
 from conftest import add_log, make_user
 
 
@@ -142,3 +144,26 @@ def test_import_csv_unparseable_content_is_400(db_path, login):
     client = login(make_user(db_path))
     resp = client.post("/api/import-csv", json={"csv_data": "\n\n"})
     assert resp.status_code == 400 and resp.get_json()["status"] == "error"
+
+
+def test_create_task_while_sheet_rewrite_queues_instead_of_500(db_path, login, monkeypatch):
+    """During a sheet rewrite Sheety writes are queued (no row id yet); the row must still save."""
+    from time_tracker_pro.services import sheety_failover
+
+    monkeypatch.setattr(
+        sheety_failover.SheetyFailoverService,
+        "make_request",
+        lambda self, *a, **k: (True, {"__queued": True, "outbox_id": 1}, None),
+    )
+    uid = make_user(db_path)
+    resp = login(uid).post(
+        "/api/tasks",
+        json={"task": "Walk", "date": "2026-09-20", "start_time": "09:00", "duration": 0.5, "tags": "Soul"},
+    )
+    assert resp.status_code == 200, resp.data
+    body = resp.get_json()
+    assert body["queued"] is True and body["task"]["sheety_id"] is None
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute("SELECT task, sheety_id FROM logs WHERE user_id = ?", (uid,)).fetchall()
+    conn.close()
+    assert rows == [("Walk", None)]

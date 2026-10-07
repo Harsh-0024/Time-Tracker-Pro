@@ -341,7 +341,7 @@ class SheetyFailoverService:
         if not active_account:
             if not accounts:
                 # No accounts configured
-                return False, None, "No Sheety API accounts configured"
+                return False, None, "No Google Sheet connected. Add your Sheety API URL in Settings → API Keys."
             for account in accounts:
                 success, _, _ = self._test_api_account(account)
                 account_id = self._account_id(account)
@@ -353,7 +353,7 @@ class SheetyFailoverService:
                     active_account = account
                     break
             if not active_account:
-                return False, None, "No working Sheety API account found"
+                return False, None, "None of your Sheety accounts responded. Check them in Settings → API Keys."
         
         # Try the active account
         success, data, last_error = self._try_request(active_account, method_upper, endpoint, cleaned_json)
@@ -366,7 +366,7 @@ class SheetyFailoverService:
 
         accounts = self._get_all_accounts(active_account)
         if not accounts:
-            return False, None, "No Sheety API accounts configured"
+            return False, None, "No Google Sheet connected. Add your Sheety API URL in Settings → API Keys."
         active_key = self._account_key(active_account)
 
         attempts = 0

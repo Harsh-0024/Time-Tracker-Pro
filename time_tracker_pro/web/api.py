@@ -1154,6 +1154,7 @@ def create_task():
     queued = bool(isinstance(data, dict) and data.get("__queued"))
     sheety_id = extract_sheety_id(data, sheet_name)
     if sheety_id is None and not queued:
+        conn.close()
         return jsonify({"error": "Sheety did not return a new row id."}), 502
 
     try:
@@ -1189,9 +1190,11 @@ def create_task():
 
     response_payload = {
         "success": True,
+        "queued": bool(queued),
         "task": {
             "id": row_id,
-            "sheety_id": int(sheety_id),
+            # None while queued (a sheet rewrite is in progress); the outbox posts it later.
+            "sheety_id": (int(sheety_id) if sheety_id is not None else None),
             "task": task_name,
             "start_time": start_dt.strftime("%I:%M %p"),
             "end_time": end_dt.strftime("%I:%M %p"),
