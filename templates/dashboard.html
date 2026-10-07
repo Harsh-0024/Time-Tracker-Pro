@@ -946,14 +946,14 @@
 
                 {% if period == 'day' %}
                 <div class="md:flex-1 md:min-w-0 md:flex md:justify-center">
-                    <div id="weekScroller" class="flex justify-start gap-6 overflow-x-auto pt-1 pb-4 px-1 scroll-smooth scroll-px-6 md:gap-4 md:pb-3 md:max-w-[560px]">
+                    <div id="weekScroller" class="flex justify-start gap-6 overflow-x-auto pt-1 pb-4 px-1 scroll-smooth scroll-px-6 md:gap-2 lg:gap-4 md:pb-3 md:max-w-[560px]">
                         {% for day in week_days %}
-                        <a href="/?date={{ day.full_str }}&period={{ period }}" class="flex flex-col items-center min-w-[56px] group" {% if day.is_selected %}data-selected-day="true"{% endif %}>
+                        <a href="/?date={{ day.full_str }}&period={{ period }}" class="flex flex-col items-center min-w-[56px] md:min-w-[44px] lg:min-w-[56px] group" {% if day.is_selected %}data-selected-day="true"{% endif %}>
                             <span class="text-xs font-medium uppercase mb-3 tracking-wider
                                 {% if day.is_selected %} text-gray-900 {% else %} text-gray-400 group-hover:text-gray-600 {% endif %}">
                                 {{ day.day_name }}
                             </span>
-                            <div class="w-14 h-14 flex items-center justify-center rounded-xl text-base font-semibold transition-all duration-200
+                            <div class="w-14 h-14 md:w-11 md:h-11 lg:w-14 lg:h-14 flex items-center justify-center rounded-xl text-base font-semibold transition-all duration-200
                                 {% if day.is_selected %}
                                     selected-day text-white
                                 {% else %}
@@ -971,7 +971,7 @@
                 </div>
                 {% endif %}
 
-                <div class="hidden md:flex items-center gap-2 md:gap-4 shrink-0 md:w-[240px] md:justify-end">
+                <div class="hidden md:flex items-center gap-2 md:gap-4 shrink-0 lg:w-[240px] md:justify-end">
                     <button id="viewFullBtn" onclick="viewFullDay()" class="primary-cta hidden md:inline-flex">
                         View Full Day
                     </button>
