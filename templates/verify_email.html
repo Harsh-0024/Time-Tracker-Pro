@@ -85,7 +85,7 @@
                         Verify & Continue
                     </button>
 
-                    <button id="resendBtn" type="submit" name="action" value="resend" formnovalidate class="w-full py-3 rounded-2xl border border-[rgba(148,126,86,0.35)] text-gray-700 font-semibold bg-white/80 hover:bg-[#F7F1E6] transition-all">
+                    <button id="resendBtn" type="submit" name="action" value="resend" formnovalidate data-wait="{{ resend_wait or 0 }}" class="w-full py-3 rounded-2xl border border-[rgba(148,126,86,0.35)] text-gray-700 font-semibold bg-white/80 hover:bg-[#F7F1E6] transition-all disabled:opacity-60 disabled:cursor-not-allowed">
                         Resend code
                     </button>
                 </form>
@@ -108,6 +108,22 @@
             hidden.name = button.name;
             hidden.value = button.value;
             form.appendChild(hidden);
+        }
+        // Mirror the server's resend cooldown so the button isn't a dead end.
+        if (resendBtn) {
+            let wait = parseInt(resendBtn.dataset.wait || '0', 10);
+            const tick = () => {
+                if (wait > 0) {
+                    resendBtn.disabled = true;
+                    resendBtn.textContent = `Resend code in ${wait}s`;
+                    wait -= 1;
+                    setTimeout(tick, 1000);
+                } else {
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'Resend code';
+                }
+            };
+            if (wait > 0) tick();
         }
         if (verifyForm) {
             verifyForm.addEventListener('submit', (e) => {

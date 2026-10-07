@@ -335,6 +335,7 @@ def verify_email():
         title=title,
         subtitle=subtitle,
         purpose=purpose,
+        resend_wait=seconds_until_resend_allowed(db_name, int(user["id"]), purpose),
     )
 
 
