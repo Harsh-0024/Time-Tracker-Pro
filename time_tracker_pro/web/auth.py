@@ -83,7 +83,7 @@ def login():
                             f"Verification code sent to {target_email}." if target_email else "Verification code sent."
                         )
                     else:
-                        session["verification_error"] = "Unable to send email. Check SMTP settings."
+                        session["verification_error"] = "We couldn't send the email right now. Please try again in a few minutes."
                     return redirect(url_for("auth.verify_email", next=next_url or ""))
         elif not identifier or not password:
             error = "Username, email, or user ID and password are required."
@@ -107,7 +107,7 @@ def login():
                     if send_verification_email(db_name, user):
                         session["verification_success"] = "Verification code sent."
                     else:
-                        session["verification_error"] = "Unable to send email. Check SMTP settings."
+                        session["verification_error"] = "We couldn't send the email right now. Please try again in a few minutes."
 
                     return redirect(url_for("auth.verify_email", next=next_url or ""))
                 else:
@@ -161,7 +161,7 @@ def forgot_password():
                         f"Verification code sent to {target_email}." if target_email else "Verification code sent."
                     )
                     return redirect(url_for("auth.verify_email"))
-                error = "Unable to send email. Check SMTP settings."
+                error = "We couldn't send the email right now. Please try again in a few minutes."
 
     return render_template("forgot_password.html", error=error, success=success)
 
@@ -269,7 +269,7 @@ def verify_email():
             if send_verification_email(db_name, user, purpose=purpose):
                 success = "Verification code resent."
             else:
-                error = "Unable to send email. Check SMTP settings."
+                error = "We couldn't send the email right now. Please try again in a few minutes."
         else:
             code = (request.form.get("code") or "").strip()
             if not code:
@@ -307,7 +307,7 @@ def verify_email():
         if send_verification_email(db_name, user, purpose=purpose):
             success = "Verification code sent."
         else:
-            error = "Unable to send email. Check SMTP settings."
+            error = "We couldn't send the email right now. Please try again in a few minutes."
 
     return render_template(
         "verify_email.html",
@@ -396,7 +396,7 @@ def profile_request_otp():
         if sent_old and sent_new:
             session["profile_success"] = "Verification codes sent to both emails."
         else:
-            session["profile_error"] = "Unable to send verification emails. Check SMTP settings."
+            session["profile_error"] = "We couldn't send the verification emails right now. Please try again in a few minutes."
         return redirect(url_for("main.settings"))
 
     if purpose not in _PROFILE_OTP_PURPOSES:
@@ -406,7 +406,7 @@ def profile_request_otp():
     if send_verification_email(db_name, user, purpose=purpose):
         session["profile_success"] = "Verification code sent."
     else:
-        session["profile_error"] = "Unable to send email. Check SMTP settings."
+        session["profile_error"] = "We couldn't send the email right now. Please try again in a few minutes."
     return redirect(url_for("main.settings"))
 
 
