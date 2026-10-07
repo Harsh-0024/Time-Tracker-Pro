@@ -68,7 +68,7 @@ def test_login_locks_out_after_repeated_failures(app, db_path):
     client = app.test_client()
     for _ in range(login_throttle.MAX_FAILURES):
         resp = client.post("/login", data={"identifier": "alice", "password": "wrong"})
-        assert b"Invalid credentials" in resp.data
+        assert "don’t match".encode() in resp.data
 
     # Even the right password is refused while locked out.
     resp = client.post("/login", data={"identifier": "ALICE", "password": "correct-horse"})
@@ -290,7 +290,7 @@ def test_login_with_huge_password_is_rejected_without_hashing(app, db_path, monk
     called = []
     monkeypatch.setattr(auth_module, "check_password_hash", lambda *a: called.append(1) or False)
     html = app.test_client().post("/login", data={"identifier": "alice", "password": "x" * 5000}).get_data(as_text=True)
-    assert "Invalid credentials." in html and not called
+    assert "don’t match" in html and not called
 
 
 def test_profile_current_password_is_throttled(db_path, login):

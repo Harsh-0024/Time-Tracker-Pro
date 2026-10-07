@@ -113,12 +113,12 @@ def login():
             user = get_user_by_username_or_id_or_email(db_name, identifier)
             if not user:
                 record_failure(db_name, identifier)
-                error = "Invalid credentials."
+                error = "That login and password don’t match. Check both and try again."
             else:
                 pw_hash = row_value(user, "password_hash") or ""
                 if len(password) > MAX_PASSWORD_LENGTH or not check_password_hash(pw_hash, password):
                     record_failure(db_name, identifier)
-                    error = "Invalid credentials."
+                    error = "That login and password don’t match. Check both and try again."
                 elif not int(row_value(user, "is_verified") or 0):
                     session.clear()
                     session["pending_user_id"] = int(row_value(user, "id"))
