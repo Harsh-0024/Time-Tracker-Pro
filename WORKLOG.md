@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 19:52 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 19:53 IST: 19:20 resume session ACTIVE.
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -174,6 +174,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [19:20 run] feat: admin users list shows each user's log count + last logged date (+ test)
 - [19:20 run] Insights Top activities: clicking a row listed every task containing the name ('Lunch with team' under Lunch) -> full-log search gains 'only <name>' (exact, ignores trailing '.'), rows use it; list total = row hours
 - [19:20 run] graphs: server 'only X' (chart) didn't ignore trailing ' .' while the Review list did -> aligned (+ test)
+- [19:20 run] graphs: quoted phrase '"deep work"' - server required the whole task to equal it (chart dropped 'Deep work .') while the list used consecutive words -> server uses the list's rule (+ test)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
