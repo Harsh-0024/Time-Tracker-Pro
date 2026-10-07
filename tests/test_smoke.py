@@ -107,3 +107,11 @@ def test_export_csv_neutralises_formula_cells(db_path, login):
     assert ",=HYPERLINK" not in text
     # numbers (duration) are left alone
     assert ",1.0," in text
+
+
+def test_oversized_request_is_rejected_with_413(app, db_path, login):
+    app.config["MAX_CONTENT_LENGTH"] = 1024
+    client = login(make_user(db_path))
+    resp = client.post("/api/import-csv", data="x" * 4096, content_type="application/json")
+    assert resp.status_code == 413
+    assert resp.is_json and "too large" in resp.get_json()["error"]

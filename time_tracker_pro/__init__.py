@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request, url_for
+from flask import Flask, abort, jsonify, render_template, request, url_for
 
 from .core.time_utils import human_hours
 from .db import init_db
@@ -55,6 +55,8 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         app.config["SESSION_COOKIE_SECURE"] = True
     app.permanent_session_lifetime = timedelta(days=int(os.getenv("SESSION_LIFETIME_DAYS", "30")))
 
+    # Largest legitimate body is the 5MB icon upload / a CSV import; reject anything bigger up front.
+    app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("MAX_CONTENT_LENGTH_MB", "16")) * 1024 * 1024
     app.config["DB_NAME"] = (os.getenv("DB_PATH") or "productivity.db").strip() or "productivity.db"
     app.config["LOCAL_AUTH_BYPASS"] = LOCAL_AUTH_BYPASS
     app.config["LOCAL_AUTH_USER_ID"] = LOCAL_AUTH_USER_ID
@@ -94,6 +96,14 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         except Exception:
             return "1"
 
+    @app.before_request
+    def _reject_oversized_body():
+        # Werkzeug only enforces MAX_CONTENT_LENGTH when the body is read, and some routes read it
+        # inside a broad try/except (turning the 413 into a 500), so check the declared length first.
+        limit = app.config.get("MAX_CONTENT_LENGTH")
+        if limit and request.content_length is not None and request.content_length > limit:
+            abort(413)
+
     @app.after_request
     def _security_headers(response):
         # Cheap hardening that doesn't interfere with the inline scripts/CDN assets.
@@ -106,6 +116,7 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         403: ("Not allowed", "You don't have access to this page."),
         404: ("Page not found", "That page doesn't exist or has moved."),
         405: ("Not allowed", "That action isn't available here."),
+        413: ("Upload too large", "That file or request is too large to process."),
         500: ("Something went wrong", "An unexpected error occurred. Please try again in a moment."),
     }
 
@@ -119,7 +130,7 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         except Exception:  # never let the error page itself fail
             return f"{status} {title}", status
 
-    for _status in (403, 404, 405, 500):
+    for _status in (403, 404, 405, 413, 500):
         app.register_error_handler(_status, lambda exc, _s=_status: _error_response(_s))
 
     @app.context_processor
