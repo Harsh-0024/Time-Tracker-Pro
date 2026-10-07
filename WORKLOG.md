@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 09:14 IST: session active (resumed 06:22).
+- 2026-10-07 09:26 IST: session active (resumed 06:22).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -16,6 +16,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 3. Crashes: graphs 'Review tasks'/Export on an empty list; /api/tasks 500s on odd JSON; ?date=0001/9999 500s.
 4. Races: graphs chart could show the wrong range; dashboard modal could open the wrong card's tasks.
 5. UX: Necessity tag chip was missing from Add task; tabs/modals/week strip fit small screens; 'By weekday' card.
+6. Dark mode: summary badges/progress tracks were light (broken CSS selectors); chips' selected state invisible.
 All 123 tests pass on 3.14 and 3.12. Nothing pushed.
 
 ## Done
@@ -78,6 +79,7 @@ All 123 tests pass on 3.14 and 3.12. Nothing pushed.
 - 'Name .' and 'Name' grouped together in Insights + modal charts (display only)
 - Add-task Necessity chip; full-log quadrant names match the matrix (Growth/Drudgery)
 - Edit-task tag chips; dark-mode selected chips were invisible; Missing-time card dark-mode contrast
+- dark mode: 12 CSS rules never matched (unescaped '#' in .bg-\[#hex\]) -> summary badges/tracks now dark
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
