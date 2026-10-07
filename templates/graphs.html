@@ -628,11 +628,11 @@
         </div>
     </div>
 
-    <div id="graphExportFormatModal" class="fixed inset-0 z-[1300] hidden">
+    <div id="graphExportFormatModal" class="fixed inset-0 z-[1300] hidden" role="dialog" aria-modal="true" aria-labelledby="graphExportFormatTitle">
         <div class="absolute inset-0 bg-slate-900/35 backdrop-blur-sm" data-close-graph-export="true"></div>
         <div class="relative min-h-full flex items-center justify-center px-4 py-8">
             <div class="luxury-card w-full max-w-sm rounded-3xl p-6">
-                <h3 class="text-lg font-semibold text-gray-900">Choose export format</h3>
+                <h3 id="graphExportFormatTitle" class="text-lg font-semibold text-gray-900">Choose export format</h3>
                 <p class="text-xs text-gray-600 mt-1">Download the visible data as CSV or JSON.</p>
                 <div class="mt-5 grid grid-cols-2 gap-3">
                     <button type="button" data-export-format="csv" class="px-4 py-2.5 rounded-full bg-white border border-[rgba(148,126,86,0.35)] text-sm font-semibold text-gray-700 hover:bg-[#F7F1E6]">CSV</button>
@@ -2145,9 +2145,35 @@
                     resolve('csv');
                     return;
                 }
+                const opener = document.activeElement;
                 graphExportFormatModal.classList.remove('hidden');
+                graphExportFormatModal.querySelector('[data-export-format]')?.focus();
+                // Capture phase: Escape must close the picker, not the task modal underneath it.
+                const onKey = (event) => {
+                    if (event.key === 'Escape') {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                        close();
+                        resolve(null);
+                    } else if (event.key === 'Tab') {
+                        event.stopImmediatePropagation();
+                        const items = Array.from(graphExportFormatModal.querySelectorAll('button'));
+                        const first = items[0];
+                        const last = items[items.length - 1];
+                        if (event.shiftKey && document.activeElement === first) {
+                            event.preventDefault();
+                            last.focus();
+                        } else if (!event.shiftKey && document.activeElement === last) {
+                            event.preventDefault();
+                            first.focus();
+                        }
+                    }
+                };
+                document.addEventListener('keydown', onKey, true);
                 const close = () => {
+                    document.removeEventListener('keydown', onKey, true);
                     graphExportFormatModal.classList.add('hidden');
+                    if (opener && document.body.contains(opener)) opener.focus();
                     graphExportFormatModal.querySelectorAll('[data-export-format]').forEach(btn => {
                         btn.onclick = null;
                     });
