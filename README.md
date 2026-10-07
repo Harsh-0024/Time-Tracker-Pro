@@ -14,10 +14,11 @@ Eisenhower matrix (urgent × important).
   - **Insights:** top activities, the day vs your 7-day average, best and worst days, and fully-logged days.
   - **Daily goals:** a Growth target and a Waste limit, with progress and streaks.
   - **Full log modal:** search, sort, export, and create/edit/delete entries (written back to the sheet).
-- **Graphs:** trends for any category, quadrant or search expression over time, with a moving average.
+- **Graphs:** trends for any category, quadrant or search expression over time, with a moving average,
+  goal/limit reference lines, saved views, and a by-weekday breakdown.
 - **Accounts:**
   - Email-verified registration and password or email-code (OTP) login.
-  - "Remember me" sessions, password reset, and login throttling.
+  - "Remember me" sessions, password reset, login throttling, and a resend cooldown on email codes.
 - **Admin:** user list and account removal with an emailed reason. Admins cannot see other users' data.
 - **Interface:** light, dark and system themes; installable as a PWA; keyboard shortcuts (press `?`).
 
@@ -45,6 +46,7 @@ Production uses gunicorn (`Procfile`: `web: gunicorn wsgi:app`) on Python 3.12 (
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SENDER`, `SMTP_USE_TLS` | Email over SMTP. |
 | `BREVO_API_KEY`, `EMAIL_MODE` | Email through the Brevo API instead. |
 | `VERIFICATION_CODE_TTL_MINUTES`, `VERIFICATION_MAX_ATTEMPTS` | Email-code lifetime and attempts (default 10 min / 5). |
+| `VERIFICATION_RESEND_COOLDOWN_SECONDS` | Minimum gap between email codes for the same account and purpose (default 60). |
 | `LOGIN_MAX_FAILURES`, `LOGIN_FAILURE_WINDOW_MINUTES` | Password-login throttling per account (default 10 per 15 min). |
 | `SHEETY_ENDPOINT` | Fallback Sheety URL (single-user setups). Users normally add theirs under Settings → API Keys. |
 | `TIME_TRACKER_API_TOKEN` | Token for scripted access to the JSON API (`X-API-Token` header). |
