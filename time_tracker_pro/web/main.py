@@ -387,6 +387,7 @@ def dashboard():
             goal_progress=goal_progress,
             day_note=period_notes.get(selected_date, "") if period == "day" else None,
             period_notes=period_notes if period != "day" else None,
+            period_notes_json={day.isoformat(): text for day, text in period_notes.items()},
             summary_text=summary_text,
             onboarding=onboarding,
             empty_period=empty_period,

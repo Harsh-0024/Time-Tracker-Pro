@@ -2612,6 +2612,8 @@
         };
 
         const SPECIAL_TAGS = Object.keys(TAG_COLOR_MAP);
+        // Day notes in this week/month ('YYYY-MM-DD' -> text), shown under full-log day headers.
+        const PERIOD_NOTES = {{ period_notes_json | tojson }};
 
         function extractSpecialTags(tag) {
             if (!tag) return [];
@@ -3491,6 +3493,10 @@
                             <h4 class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-600" title="${escapeHtml(lastDay)}">${escapeHtml(friendlyTaskDate(lastDay))}</h4>
                             <span class="text-xs text-gray-500 tabular-nums">${totals.count} ${totals.count === 1 ? 'task' : 'tasks'} · ${hoursToHuman(totals.hours)}</span>
                         </div>`;
+                    const dayNote = PERIOD_NOTES[lastDay];
+                    if (dayNote) {
+                        html += `<p class="px-1 pb-2 -mt-1 text-xs text-gray-600 italic whitespace-pre-line">“${escapeHtml(dayNote)}”</p>`;
+                    }
                 }
                 const dur = Number(task.duration || 0);
                 const durText = hoursToHuman(isNaN(dur) ? 0 : dur);

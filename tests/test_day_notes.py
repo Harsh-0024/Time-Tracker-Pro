@@ -106,3 +106,13 @@ def test_graph_data_includes_notes_in_range(db_path, login):
     client.put("/api/day-notes/2026-06-01", json={"note": "Long ago"})
     data = client.get("/api/graph-data?metric=total&days=30&end=2026-09-20").get_json()
     assert data["notes"] == {"2026-09-15": "Exam prep"}
+
+
+def test_dashboard_embeds_period_notes_safely(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-15", "08:00:00", "2026-09-15", "10:00:00", task="Study", tags="Work", urg=0, imp=1)
+    client = login(uid)
+    client.put("/api/day-notes/2026-09-16", json={"note": "</script><script>alert(1)</script>"})
+    html = client.get("/?date=2026-09-15&period=week").get_data(as_text=True)
+    line = next(l for l in html.splitlines() if "const PERIOD_NOTES" in l)
+    assert "</script>" not in line and "2026-09-16" in line
