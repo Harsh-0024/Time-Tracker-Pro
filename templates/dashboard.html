@@ -2036,7 +2036,6 @@
             const period = window.currentPeriod || 'day';
             const periodMap = { 'day': 'Day', 'week': 'Week', 'month': 'Month' };
             const periodLabel = periodMap[period] || 'Day';
-            console.log('View Full ' + periodLabel + ' clicked');
             window.applyFilter('all', 'Full ' + periodLabel + ' Log', '', 'tags');
         };
 
@@ -2053,7 +2052,6 @@
         window.closeDropdown = function() {};
 
         window.viewMatrixQuadrant = function(quadrant, name) {
-            console.log('Matrix quadrant clicked:', quadrant, name);
             window.applyFilter(quadrant, name, '', 'tags');
         };
 
@@ -2701,18 +2699,19 @@
             window.applyFilter(filterType, title, tagName, chartMode);
         };
 
+        let applyFilterSeq = 0;
         window.applyFilter = function(filterType, title, tagName = '', chartMode = 'auto') {
-            console.log('applyFilter called:', filterType, title, tagName, chartMode);
             window.closeDropdown();
             window.modalTitle = title;
             window.modalTagName = tagName;
             const url = `/api/tasks?date=${window.currentDate}&period=${window.currentPeriod}&filter=${filterType}${tagName ? '&tag=' + encodeURIComponent(tagName) : ''}`;
 
-            console.log('Fetching:', url);
+            // Two quick card clicks: only the latest request may open the modal.
+            const seq = ++applyFilterSeq;
             setGlobalLoading(true);
             fetch(url)
                 .then(r => {
-                    console.log('Response status:', r.status);
+                    if (seq !== applyFilterSeq) return null;
                     if (r.status === 401) {
                         const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
                         window.location.href = `/login?next=${nextUrl}`;
@@ -2724,13 +2723,14 @@
                     return r.json();
                 })
                 .then(data => {
-                    console.log('Data received:', data);
+                    if (seq !== applyFilterSeq || data === null) return;
                     setGlobalLoading(false);
                     window.modalSort = 'time_desc';
                     window.modalSortLabel = 'Time ↓';
                     window.showModal(title, data, filterType, chartMode);
                 })
                 .catch(error => {
+                    if (seq !== applyFilterSeq) return;
                     console.error('Error fetching tasks:', error);
                     const message = getNetworkErrorMessage(error, 'load tasks');
                     setGlobalLoading(false, message);
