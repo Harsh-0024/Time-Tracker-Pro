@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 19:50 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 19:42 IST: 19:20 resume session ACTIVE.
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -165,6 +165,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [19:20 run] feat: phones - swipe the week strip (±1 week, same weekday) or the week/month 'Day by day' chart (±1 period); arrow keys share the same shiftPeriod()
 - [19:20 run] feat: full-log task cards have 'Again' (Add task prefilled with name/tags/priority; focus on End). Phones: card actions on their own row (3 buttons squeezed the times)
 - [19:20 run] chore: removed dead promptAddTaskAfterDelete (blocking confirm) from dashboard + graphs
+- [19:20 run] graphs Review-task cards: actions on their own row on phones (same as dashboard)
+- [19:20 run] config: SESSION_COOKIE_SECURE=0/false no longer enables Secure cookies (+ test)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
@@ -179,6 +181,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (question) DISABLE_CLOUD_SYNC is truthy-checked (sync.py, __init__.py): DISABLE_CLOUD_SYNC=0 or =false DISABLES sync. Not changed: if a deployment sets =0 today, fixing it would switch background sync on. Check your env, then parse it like SESSION_COOKIE_SECURE.
 - (question) graph/full-log search: '-' is the NOT operator even inside words, so 'deep-work' = deep AND NOT work and a date like 2026-10-05 searches '2026 NOT 10 NOT 05'. Quoting ("e-mail") works. Could treat '-' as NOT only after whitespace/start - left as is since it changes query semantics.
 - (question) Full Day Log 'Missing time' for TODAY lists the rest of the day (e.g. '2:00 PM - 12:00 AM') as unlogged, including hours that haven't happened yet. Graphs 'Last 7 days' also includes today's partial day. Both are time-handling, so left for you.
 - (question) Adding a task REQUIRES a connected Sheety account (create_task posts to Sheety first; local-only users get an error). Update/delete of local-only rows work. If you want local-only users to add tasks, create_task needs a local path - left alone since it touches the sync model.
