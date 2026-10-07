@@ -46,6 +46,27 @@ def test_dashboard_renders_with_deltas(db_path, login):
     assert b"share-delta" in resp.data
 
 
+def test_today_insights_framed_as_so_far(db_path, login):
+    from datetime import datetime, timedelta
+
+    uid = make_user(db_path)
+    today = datetime.now().date()
+    for back in range(1, 4):
+        d = (today - timedelta(days=back)).isoformat()
+        add_log(db_path, uid, d, "08:00:00", d, "12:00:00", urg=0, imp=1)
+    t = today.isoformat()
+    add_log(db_path, uid, t, "08:00:00", t, "09:00:00", urg=0, imp=1)
+    client = login(uid)
+
+    html = client.get("/").get_data(as_text=True)
+    assert "Today so far vs your last" in html
+    assert "3.0h to reach your average" in html
+
+    past = (today - timedelta(days=1)).isoformat()
+    html = client.get(f"/?date={past}").get_data(as_text=True)
+    assert "Today so far" not in html
+
+
 def test_default_app_icon_is_a_real_png(app):
     resp = app.test_client().get("/app-icon.png")
     assert resp.status_code == 200

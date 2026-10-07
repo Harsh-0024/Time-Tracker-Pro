@@ -1525,12 +1525,17 @@
                     {% if period == 'day' %}
                         {% if insights.vs_week %}
                         {% set vw = insights.vs_week %}
-                        <h4 class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">vs your last {{ vw.days }} day{{ '' if vw.days == 1 else 's' }}</h4>
+                        <h4 class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">{{ 'Today so far ' if is_today }}vs your last {{ vw.days }} day{{ '' if vw.days == 1 else 's' }}</h4>
                         <div class="insight-stat">
                             <div class="insight-stat-label">Growth</div>
                             <div class="insight-stat-value">{{ vw.growth_hours }}h <span class="insight-stat-sub">avg {{ vw.growth_avg }}h</span></div>
                             {% set diff = (vw.growth_hours - vw.growth_avg) | round(1) %}
+                            {# Today isn't over: a Growth shortfall is still "to go", not a miss. #}
+                            {% if is_today and diff < 0 %}
+                            <div class="insight-note">{{ -diff }}h to reach your average</div>
+                            {% else %}
                             <div class="insight-note {{ 'is-good' if diff > 0 else ('is-bad' if diff < 0 else '') }}">{{ '+' if diff > 0 else '' }}{{ diff }}h vs average</div>
+                            {% endif %}
                         </div>
                         <div class="insight-stat">
                             <div class="insight-stat-label">Waste</div>

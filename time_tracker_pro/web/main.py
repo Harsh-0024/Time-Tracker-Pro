@@ -354,6 +354,7 @@ def dashboard():
             onboarding=onboarding,
             empty_period=empty_period,
             delta_label=_DELTA_LABELS.get(period, "vs previous"),
+            is_today=(period == "day" and selected_date == datetime.now().date()),
         )
     )
     return resp
