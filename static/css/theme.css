@@ -218,7 +218,7 @@
     color: var(--text-secondary) !important;
     box-shadow: inset 0 1px 0 rgba(212,175,55,0.04) !important;
 }
-[data-theme="dark"] .hover\:bg-\[#F7F1E6\]:hover { background: var(--bg-hover) !important; }
+[data-theme="dark"] .hover\:bg-\[\#F7F1E6\]:hover { background: var(--bg-hover) !important; }
 
 /* ── Inputs ── */
 [data-theme="dark"] input,
@@ -309,7 +309,7 @@
 [data-theme="dark"] .dropdown-item { color: var(--text-secondary) !important; }
 [data-theme="dark"] .dropdown-item:hover,
 [data-theme="dark"] .graph-focus-option:hover,
-[data-theme="dark"] .hover\:bg-\[#F7F1E6\] { background: rgba(212,175,55,0.06) !important; }
+[data-theme="dark"] .hover\:bg-\[\#F7F1E6\]:hover { background: rgba(212,175,55,0.06) !important; }
 
 /* ── Graph point detail popup ── */
 [data-theme="dark"] #graphPointDetail {
