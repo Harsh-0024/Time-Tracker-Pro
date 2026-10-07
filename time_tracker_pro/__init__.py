@@ -51,7 +51,8 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
     )
-    if os.getenv("SESSION_COOKIE_SECURE"):
+    # "0"/"false"/"no"/"off" mean off (any non-empty value used to switch it on).
+    if (os.getenv("SESSION_COOKIE_SECURE") or "").strip().lower() not in {"", "0", "false", "no", "off"}:
         app.config["SESSION_COOKIE_SECURE"] = True
     app.permanent_session_lifetime = timedelta(days=int(os.getenv("SESSION_LIFETIME_DAYS", "30")))
 

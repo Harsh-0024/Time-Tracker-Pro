@@ -179,3 +179,12 @@ def test_api_token_header_is_accepted(app, db_path, monkeypatch):
     assert ok.status_code == 200
     bad = client.get("/api/tags", headers={"X-API-Token": "wrong", "X-User-Id": str(uid)})
     assert bad.status_code in (401, 302)
+
+
+def test_session_cookie_secure_flag_parsing(monkeypatch):
+    from time_tracker_pro import create_app
+
+    for value, expected in (("1", True), ("true", True), ("0", False), ("false", False), ("", False)):
+        monkeypatch.setenv("SESSION_COOKIE_SECURE", value)
+        app = create_app({"DB_NAME": ":memory:", "TESTING": True})
+        assert bool(app.config.get("SESSION_COOKIE_SECURE")) is expected, value
