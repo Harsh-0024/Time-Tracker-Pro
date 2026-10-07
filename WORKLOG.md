@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 08:40 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
+- 2026-10-07 08:44 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -98,6 +98,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [08:22 run] dark mode: primary black-pill buttons (Log In, Export, Add task, active toggles) were invisible shapes -> gold/emerald tint + ring
 - [08:22 run] login/forgot/user-ID inputs: autocapitalize/autocorrect off
 - [08:22 run] week strip: all 7 days fit on phones (was 4 + scroll) and at 1024-1279px (7th day was clipped)
+- [08:22 run] 320px: 'View Full Month' header no longer overflows
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -125,6 +126,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 
 ## Dev notes
 - Visual checks without the app server: serve those rendered HTML files with `python3 -m http.server` (symlink static/) and open in the browser pane (mobile/dark via resize_window).
+- Gotcha: when the browser pane is hidden, requestAnimationFrame is paused, so Chart.js defers resizes forever and charts look oversized/overflowing. Not a real bug.
 - JS behaviour checks without a server: render pages via the Flask test client with synthetic data, then load the HTML in jsdom (npm i jsdom in the scratchpad; stub IntersectionObserver/matchMedia/fetch/Chart).
 - Prod runtime is python 3.12 (runtime.txt): also test with ~/.local/bin/python3.12 venv.
 - Test venv: python3 -m venv <scratch>/venv && pip install -r requirements.txt pytest (project venv/ is broken: points at old path)
