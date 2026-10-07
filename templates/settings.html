@@ -1056,9 +1056,21 @@
             });
         }
 
+        // In-page toasts instead of blocking alert() boxes (alert as a fallback).
+        const notifyError = (message) => (window.showErrorToast ? window.showErrorToast(message) : alert(message));
+        const notifySuccess = (message) => (window.showSuccessToast ? window.showSuccessToast(message) : alert(message));
+
         if (newApiAccountForm) {
             newApiAccountForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const saveBtn = document.getElementById('saveApiAccountBtn');
+                // A double click used to save the same account twice.
+                if (saveBtn?.disabled) return;
+                const saveLabel = saveBtn ? saveBtn.textContent : '';
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Saving...';
+                }
                 const formData = {
                     account_email: document.getElementById('newAccountEmail').value.trim(),
                     api_base_url: document.getElementById('newApiBaseUrl').value.trim(),
@@ -1085,9 +1097,14 @@
                     } else {
                         message = `Failed to add API account (HTTP ${response.status})`;
                     }
-                    alert(message);
+                    notifyError(message);
                 } catch (error) {
-                    alert('Error: ' + error.message);
+                    notifyError('Could not reach the server. Check your connection and try again.');
+                } finally {
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = saveLabel;
+                    }
                 }
             });
         }
@@ -1116,9 +1133,9 @@
                     } else {
                         message = `Failed to delete API account (HTTP ${response.status})`;
                     }
-                    alert(message);
+                    notifyError(message);
                 } catch (error) {
-                    alert('Error: ' + error.message);
+                    notifyError('Could not reach the server. Check your connection and try again.');
                 }
             }
 
@@ -1139,15 +1156,17 @@
                     }
 
                     if (response.ok && result?.success) {
-                        alert(`✓ API test successful!\n\nRows found: ${result.row_count || 0}`);
-                        window.location.reload();
+                        const rows = Number(result.row_count || 0);
+                        notifySuccess(`Connection works: ${rows} row${rows === 1 ? '' : 's'} found.`);
+                        // Reload to show the updated status, after the toast has been seen.
+                        setTimeout(() => window.location.reload(), 1500);
                         return;
                     }
 
                     const errorMessage = result?.error || `Test failed (HTTP ${response.status})`;
-                    alert(`✗ API test failed\n\n${errorMessage}`);
+                    notifyError(`Connection test failed: ${errorMessage}`);
                 } catch (error) {
-                    alert('Error: ' + error.message);
+                    notifyError('Could not reach the server. Check your connection and try again.');
                 } finally {
                     btn.textContent = 'Test';
                     btn.disabled = false;

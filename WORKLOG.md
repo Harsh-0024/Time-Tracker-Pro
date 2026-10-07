@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 14:52 IST: resume session ACTIVE (scheduled run, started 14:21).
+- 2026-10-07 14:47 IST: resume session ACTIVE (scheduled run, started 14:21).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -132,6 +132,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [14:21 run] feat: dashboard shortcut N = add a task (opens the full log with the Add-task form focused); listed under '?'
 - [14:21 run] graphs on phones: no way to Settings/Logout (desktop-only group) -> name pill links to Settings like the dashboard; 'Back to Dashboard' reads 'Dashboard' on phones so the row fits 320px
 - [14:21 run] UX: Escape in a task modal with the Add/Edit/Delete panel open closed the whole modal (losing typed input); now it closes the panel first (dashboard + graphs)
+- [14:21 run] settings API Keys: add/delete/test used blocking alert() boxes and Save had no busy state (double click saved the account twice) -> toasts + 'Saving...' guard
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
