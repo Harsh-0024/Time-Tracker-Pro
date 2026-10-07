@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import logging
 import os
 import threading
@@ -111,6 +112,32 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        return response
+
+    _GZIP_MIMETYPES = {"text/html", "application/json", "text/css", "text/javascript", "application/javascript"}
+
+    @app.after_request
+    def _gzip_response(response):
+        # The dashboard page is ~290KB of HTML (~50KB gzipped) and neither Flask nor
+        # gunicorn compresses. Files (send_file/static), streams and tiny bodies are left alone.
+        if os.getenv("DISABLE_GZIP") == "1" or app.config.get("DISABLE_GZIP"):
+            return response
+        if (
+            response.direct_passthrough
+            or response.is_streamed
+            or response.status_code < 200
+            or response.status_code in (204, 304)
+            or "Content-Encoding" in response.headers
+            or response.mimetype not in _GZIP_MIMETYPES
+            or not request.accept_encodings["gzip"]
+        ):
+            return response
+        data = response.get_data()
+        if len(data) < 1024:
+            return response
+        response.set_data(gzip.compress(data, compresslevel=6))
+        response.headers["Content-Encoding"] = "gzip"
+        response.vary.add("Accept-Encoding")
         return response
 
     _ERROR_COPY = {

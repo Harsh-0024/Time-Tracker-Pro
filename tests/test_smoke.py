@@ -191,3 +191,18 @@ def test_session_cookie_secure_flag_parsing(monkeypatch):
         monkeypatch.setenv("SESSION_COOKIE_SECURE", value)
         app = create_app({"DB_NAME": ":memory:", "TESTING": True})
         assert bool(app.config.get("SESSION_COOKIE_SECURE")) is expected, value
+
+
+def test_pages_are_gzipped_when_accepted(client_with_data):
+    import gzip
+
+    plain = client_with_data.get("/settings")
+    assert "Content-Encoding" not in plain.headers
+    zipped = client_with_data.get("/settings", headers={"Accept-Encoding": "gzip, deflate, br"})
+    assert zipped.headers["Content-Encoding"] == "gzip"
+    assert "Accept-Encoding" in zipped.headers.get("Vary", "")
+    assert gzip.decompress(zipped.get_data()) == plain.get_data()
+    # Downloads (send_file) stay as they are.
+    export = client_with_data.get("/api/export-csv", headers={"Accept-Encoding": "gzip"})
+    assert "Content-Encoding" not in export.headers
+    assert export.get_data(as_text=True).startswith("start date")
