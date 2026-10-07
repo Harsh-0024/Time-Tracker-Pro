@@ -298,10 +298,10 @@
                     </div>
                 </div>
 
-                <div class="flex gap-2 mb-4 border-b border-[rgba(148,126,86,0.25)]">
-                    <button type="button" class="profile-tab px-4 py-2 text-sm font-semibold border-b-2 border-gray-900 text-gray-900" data-tab="username">Username</button>
-                    <button type="button" class="profile-tab px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="email">Email</button>
-                    <button type="button" class="profile-tab px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="password">Password</button>
+                <div class="flex gap-1 sm:gap-2 mb-4 border-b border-[rgba(148,126,86,0.25)]" role="tablist" aria-label="Profile settings">
+                    <button type="button" class="profile-tab flex-1 sm:flex-none px-2 sm:px-4 py-2 text-sm font-semibold border-b-2 border-gray-900 text-gray-900" data-tab="username" role="tab" aria-selected="true">Username</button>
+                    <button type="button" class="profile-tab flex-1 sm:flex-none px-2 sm:px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="email" role="tab" aria-selected="false">Email</button>
+                    <button type="button" class="profile-tab flex-1 sm:flex-none px-2 sm:px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="password" role="tab" aria-selected="false">Password</button>
                 </div>
 
                 <div class="profile-tab-content" data-tab-content="username">
@@ -385,7 +385,7 @@
                         <form id="updatePasswordForm" method="POST" action="{{ url_for('auth.update_profile') }}" class="space-y-3">
                             <input type="hidden" name="action" value="update_password" />
                             <div>
-                                <input aria-label="New password (8+ characters)" id="settingsNewPassword" type="password" name="new_password" autocomplete="new-password" minlength="8" placeholder="New password (8+ characters)" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                                <input aria-label="New password (8+ characters)" id="settingsNewPassword" type="password" name="new_password" autocomplete="new-password" minlength="8" placeholder="New password (8+ chars)" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
                                 <div id="passwordStrength" class="mt-2 hidden">
                                     <div class="flex items-center gap-2">
                                         <div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -776,6 +776,7 @@
                 tab.classList.toggle('text-gray-900', isActive);
                 tab.classList.toggle('border-transparent', !isActive);
                 tab.classList.toggle('text-gray-500', !isActive);
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
             });
             profileTabContents.forEach(content => {
                 content.classList.toggle('hidden', content.dataset.tabContent !== tabName);
