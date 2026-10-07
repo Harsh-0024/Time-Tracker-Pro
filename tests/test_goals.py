@@ -135,3 +135,19 @@ def test_goal_calendar_today_is_open_and_day_view_shows_last_7_days(db_path, log
     assert 'title="Tue 15 Sep: below goal (2h)"' in html  # a past day, so a real miss
     assert 'title="Wed 9 Sep: nothing logged"' in html
     assert html.count('class="goal-dot is-') == 14
+
+
+def test_goal_streak_survives_todays_partial_growth(db_path):
+    from time_tracker_pro.services.insights import goal_streaks
+
+    uid = make_user(db_path)
+    for day in ("2026-09-15", "2026-09-16"):
+        add_log(db_path, uid, day, "06:00:00", day, "11:00:00", urg=0, imp=1)  # 5h growth (met)
+    add_log(db_path, uid, "2026-09-17", "06:00:00", "2026-09-17", "07:00:00", urg=0, imp=1)  # 1h so far
+    add_log(db_path, uid, "2026-09-17", "07:00:00", "2026-09-17", "11:00:00", urg=0, imp=0)  # 4h waste
+    df = fetch_local_data(db_path, uid)
+    goals = {"growth_hours": 4.0, "waste_limit_hours": 2.0}
+    # Today (17th) is in progress: Growth keeps yesterday's run, an exceeded Waste limit is final.
+    assert goal_streaks(df, date(2026, 9, 17), goals, today=date(2026, 9, 17)) == {"growth": 2, "waste": 0}
+    # Once the day is over, the shortfall is a miss.
+    assert goal_streaks(df, date(2026, 9, 17), goals, today=date(2026, 9, 18)) == {"growth": 0, "waste": 0}

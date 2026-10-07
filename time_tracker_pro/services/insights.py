@@ -351,13 +351,17 @@ def goal_streaks(
     day: date,
     goals: Dict[str, Optional[float]],
     max_days: int = 366,
+    today: Optional[date] = None,
 ) -> Dict[str, int]:
     """Consecutive days, ending on ``day``, on which each goal was met.
 
     ``day`` itself only breaks a streak once it has data (an unlogged or
-    in-progress day shouldn't zero out yesterday's run). A day with no logs at
+    in-progress day shouldn't zero out yesterday's run). Today's Growth below
+    target doesn't break it either - the day isn't over (same as the goal
+    dots' 'so far'); a Waste limit already exceeded does. A day with no logs at
     all ends the streak.
     """
+    today = today or date.today()
     target = goals.get("growth_hours")
     limit = goals.get("waste_limit_hours")
     streaks: Dict[str, int] = {}
@@ -370,10 +374,10 @@ def goal_streaks(
     growth = _daily_minutes(window, _growth_mask(window)) / 60.0
     waste = _daily_minutes(window, _waste_mask(window)) / 60.0
 
-    def run(is_met) -> int:
+    def run(is_met, open_today: bool = False) -> int:
         count = 0
         current = day
-        if current in logged and not is_met(current):
+        if current in logged and not is_met(current) and not (open_today and current == today):
             return 0
         if current not in logged or not is_met(current):
             current -= timedelta(days=1)
@@ -385,7 +389,7 @@ def goal_streaks(
         return count
 
     if target is not None:
-        streaks["growth"] = run(lambda d: float(growth.get(d, 0.0)) >= target)
+        streaks["growth"] = run(lambda d: float(growth.get(d, 0.0)) >= target, open_today=True)
     if limit is not None:
         streaks["waste"] = run(lambda d: float(waste.get(d, 0.0)) <= limit)
     return streaks
