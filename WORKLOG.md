@@ -118,6 +118,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [12:06 run] a11y: day timeline / day-by-day columns used role=listitem on buttons/links (invalid) -> labelled groups
 - [12:06 run] contrast: dark rose-700/900 text (graphs 'vs avg' delta, waste numbers, load-error card) + settings goal 'h / day' suffix
 - [12:06 run] feat: week/month full log (time sort) groups cards under day headers ('Tue 6 Oct · 17 tasks · 21.5 hr'); other sorts keep per-card dates
+- [12:06 run] feat: same day headers in graphs 'Review tasks'
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync

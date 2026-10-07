@@ -2131,7 +2131,30 @@
                 graphTasksList.innerHTML = '<div class="text-center py-8 text-gray-400">No tasks found</div>';
                 return;
             }
-            const html = filteredTasks.map(task => {
+            // Multi-day lists in time order get a header per day instead of a date on every card.
+            const groupByDay = new Set(filteredTasks.map(t => t.date)).size > 1
+                && String(graphTaskSort || 'time_desc').startsWith('time');
+            const dayTotals = {};
+            if (groupByDay) {
+                filteredTasks.forEach(t => {
+                    const key = String(t.date || '');
+                    const entry = dayTotals[key] || (dayTotals[key] = { count: 0, hours: 0 });
+                    entry.count += 1;
+                    entry.hours += Number(t.duration_hours || 0) || 0;
+                });
+            }
+            let lastDay = null;
+            const html = filteredTasks.map((task, index) => {
+                let dayHeader = '';
+                if (groupByDay && String(task.date || '') !== lastDay) {
+                    lastDay = String(task.date || '');
+                    const totals = dayTotals[lastDay] || { count: 0, hours: 0 };
+                    dayHeader = `
+                        <div class="flex items-baseline justify-between gap-3 px-1 ${index ? 'pt-4' : 'pt-1'} pb-2">
+                            <h4 class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-600" title="${escapeSuggestionHtml(lastDay)}">${escapeSuggestionHtml(friendlyTaskDate(lastDay))}</h4>
+                            <span class="text-xs text-gray-500 tabular-nums">${totals.count} ${totals.count === 1 ? 'task' : 'tasks'} · ${hoursToHuman(totals.hours)}</span>
+                        </div>`;
+                }
                 const dur = Number(task.duration_hours || 0);
                 const durText = hoursToHuman(dur);
                 const badges = [];
@@ -2152,13 +2175,13 @@
                             <button class="px-2.5 py-1 rounded-full border border-red-200 text-[11px] font-semibold text-red-600 hover:bg-white" data-action="delete-task" data-task-id="${taskId}">Delete</button>
                         </div>`
                     : '';
-                return `
+                return `${dayHeader}
                     <div class="luxury-card rounded-2xl p-4 md:p-5 mb-3 shadow-lg">
                         <div class="flex items-center justify-between gap-3">
                             <div class="flex-1 min-w-0">
                                 <div class="font-medium text-gray-900 mb-1 line-clamp-2 break-words">${escapeSuggestionHtml(normalizeGraphTaskName(task.task) || 'Untitled task')}</div>
                                 <div class="flex flex-wrap items-center gap-2 text-[13px] text-gray-600">
-                                    <span class="text-gray-500" title="${escapeSuggestionHtml(task.date)}">${escapeSuggestionHtml(friendlyTaskDate(task.date))}</span>
+                                    ${groupByDay ? '' : `<span class="text-gray-500" title="${escapeSuggestionHtml(task.date)}">${escapeSuggestionHtml(friendlyTaskDate(task.date))}</span>`}
                                     <span class="text-gray-500">${escapeSuggestionHtml(task.start_time)} - ${escapeSuggestionHtml(task.end_time)}</span>
                                     ${tagBadge}
                                     ${badges.join('')}
