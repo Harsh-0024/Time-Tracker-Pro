@@ -224,3 +224,9 @@ def test_manifest_shortcuts(app):
     data = app.test_client().get("/manifest.webmanifest").get_json(force=True)
     urls = [s["url"] for s in data["shortcuts"]]
     assert "/#add-task" in urls and "/graphs" in urls
+
+
+def test_graphs_has_calendar_card(db_path, login):
+    html = login(make_user(db_path)).get("/graphs").get_data(as_text=True)
+    assert 'id="calendarCard"' in html and 'id="calendarGrid"' in html
+    assert "updateCalendarHeatmap(labels, values, valueScale);" in html

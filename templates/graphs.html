@@ -331,6 +331,20 @@
             border-color: rgba(212,175,55,0.20) !important;
             box-shadow: 0 16px 60px rgba(0,0,0,0.85) !important;
         }
+        .calendar-grid, .calendar-months { display: grid; gap: 2px; }
+        .calendar-grid { grid-template-rows: repeat(7, auto); cursor: pointer; }
+        .calendar-months span { min-width: 0; overflow: visible; }
+        .calendar-cell { display: block; aspect-ratio: 1 / 1; border-radius: 2px; background: rgba(148, 126, 86, 0.12); }
+        .calendar-cell.is-legend { width: 10px; height: 10px; }
+        .calendar-cell.is-out { background: transparent; cursor: default; }
+        .calendar-cell[data-level="1"], .calendar-cell[data-level="2"], .calendar-cell[data-level="3"], .calendar-cell[data-level="4"] { background: var(--calendar-color, #10B981); }
+        .calendar-cell[data-level="1"] { opacity: 0.3; }
+        .calendar-cell[data-level="2"] { opacity: 0.5; }
+        .calendar-cell[data-level="3"] { opacity: 0.75; }
+        .calendar-cell:not(.is-out):not(.is-legend):hover { outline: 1.5px solid rgba(17, 24, 39, 0.5); outline-offset: 0; }
+        [data-theme="dark"] .calendar-cell[data-level="0"] { background: rgba(212, 175, 55, 0.08); }
+        [data-theme="dark"] .calendar-cell.is-out { background: transparent; }
+        [data-theme="dark"] .calendar-cell:not(.is-out):not(.is-legend):hover { outline-color: rgba(244, 208, 63, 0.6); }
     </style>
 </head>
 <body class="antialiased">
@@ -506,6 +520,20 @@
             <div id="hourBars" class="grid gap-[2px] md:gap-1 h-20 md:h-24 rounded-lg bg-[rgba(148,126,86,0.10)] px-1 pt-1" style="grid-template-columns: repeat(24, minmax(0, 1fr));" role="list"></div>
             <div class="grid grid-cols-4 mt-1.5 text-[10px] md:text-xs text-gray-500" aria-hidden="true">
                 <span>12a</span><span>6a</span><span>12p</span><span>6p</span>
+            </div>
+        </section>
+
+        <section class="luxury-card rounded-2xl p-4 md:p-6 mt-3 md:mt-4 hidden" id="calendarCard" aria-labelledby="calendarTitle">
+            <div class="flex items-baseline justify-between gap-3 mb-3">
+                <h3 id="calendarTitle" class="text-[10px] md:text-xs uppercase tracking-wider text-gray-500 font-semibold whitespace-nowrap">Calendar</h3>
+                <p class="text-[11px] text-gray-500 text-right" id="calendarCaption"></p>
+            </div>
+            <div id="calendarMonths" class="calendar-months text-[10px] text-gray-500 mb-1" aria-hidden="true"></div>
+            <div id="calendarGrid" class="calendar-grid" role="img"></div>
+            <div class="flex items-center justify-end gap-1 mt-2 text-[10px] text-gray-500" aria-hidden="true">
+                <span class="mr-1">Less</span>
+                <span class="calendar-cell is-legend" data-level="0"></span><span class="calendar-cell is-legend" data-level="1"></span><span class="calendar-cell is-legend" data-level="2"></span><span class="calendar-cell is-legend" data-level="3"></span><span class="calendar-cell is-legend" data-level="4"></span>
+                <span class="ml-1">More</span>
             </div>
         </section>
     </main>
@@ -1035,6 +1063,92 @@
                 }
             }
         }
+
+        // GitHub-style calendar of the plotted days (last 53 weeks; 26 on phones).
+        // Cells are plain spans: one summary label for screen readers, click opens the day.
+        let calendarLast = null;
+        function isoDay(d) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function updateCalendarHeatmap(labels, values, scale) {
+            calendarLast = [labels, values, scale];
+            const card = document.getElementById('calendarCard');
+            const grid = document.getElementById('calendarGrid');
+            const monthsRow = document.getElementById('calendarMonths');
+            const caption = document.getElementById('calendarCaption');
+            if (!card || !grid) return;
+            const byDay = new Map();
+            (Array.isArray(labels) ? labels : []).forEach((label, i) => {
+                const d = parseIsoDate(label);
+                if (d) byDay.set(isoDay(d), Math.max(0, Number(values?.[i]) || 0));
+            });
+            const keys = [...byDay.keys()].sort();
+            if (keys.length < 28) {
+                card.classList.add('hidden');
+                return;
+            }
+            card.classList.remove('hidden');
+            const weeks = isGraphMobile() ? 26 : 53;
+            const first = parseIsoDate(keys[0]);
+            const last = parseIsoDate(keys[keys.length - 1]);
+            const start = new Date(last.getFullYear(), last.getMonth(), last.getDate() - last.getDay() - (weeks - 1) * 7);
+            const firstSunday = new Date(first.getFullYear(), first.getMonth(), first.getDate() - first.getDay());
+            const from = start < firstSunday ? firstSunday : start;
+            const shown = [];
+            for (let d = new Date(from); d <= last; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+                shown.push(d);
+            }
+            const columns = Math.ceil(shown.length / 7) || 1;
+            const shownValues = shown.map(d => byDay.get(isoDay(d)) || 0);
+            const max = Math.max(...shownValues, 0);
+            const level = (v) => (v <= 0 || max <= 0 ? 0 : Math.min(4, Math.ceil((v / max) * 4)));
+            const color = (graphColorScheme && graphColorScheme.primary) || metricColors[currentMetric] || '#111827';
+            card.style.setProperty('--calendar-color', color);
+            grid.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+            monthsRow.style.gridTemplateColumns = grid.style.gridTemplateColumns;
+            const fmt = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+            grid.innerHTML = shown.map((d, i) => {
+                const key = isoDay(d);
+                const inRange = byDay.has(key);
+                const text = `${d.toLocaleDateString(undefined, fmt)}: ${inRange ? formatGraphValue(shownValues[i], scale, 1) : 'outside range'}`;
+                return `<span class="calendar-cell${inRange ? '' : ' is-out'}" data-level="${inRange ? level(shownValues[i]) : 0}" data-day="${inRange ? key : ''}" title="${text}" style="grid-row:${(i % 7) + 1};grid-column:${Math.floor(i / 7) + 1}"></span>`;
+            }).join('');
+            // Month names above the first column that starts in a new month.
+            let lastMonth = -1;
+            monthsRow.innerHTML = Array.from({ length: columns }, (_, c) => {
+                const d = shown[c * 7];
+                if (!d || d.getMonth() === lastMonth) return '<span></span>';
+                const label = c === 0 && d.getDate() > 14 ? '' : d.toLocaleDateString(undefined, { month: 'short' });
+                lastMonth = d.getMonth();
+                return `<span class="whitespace-nowrap overflow-visible">${label}</span>`;
+            }).join('');
+            // Summary: active days and longest run of active days in what's drawn.
+            let active = 0, run = 0, best = 0, counted = 0;
+            shown.forEach((d, i) => {
+                if (!byDay.has(isoDay(d))) return;
+                counted += 1;
+                if (shownValues[i] > 0) { active += 1; run += 1; best = Math.max(best, run); } else { run = 0; }
+            });
+            const summary = `${active} of ${counted} days active · longest run ${best} day${best === 1 ? '' : 's'}`;
+            if (caption) caption.textContent = summary;
+            grid.setAttribute('aria-label', `Calendar of ${counted} days: ${summary}`);
+        }
+
+        (function wireCalendarHeatmap() {
+            const grid = document.getElementById('calendarGrid');
+            if (grid) {
+                grid.addEventListener('click', (event) => {
+                    const cell = event.target.closest('.calendar-cell[data-day]');
+                    if (cell && cell.dataset.day) {
+                        window.location.href = `{{ url_for('main.dashboard') }}?date=${cell.dataset.day}&period=day`;
+                    }
+                });
+            }
+            const mq = window.matchMedia('(max-width: 767px)');
+            const rerender = () => { if (calendarLast) updateCalendarHeatmap(...calendarLast); };
+            if (mq.addEventListener) mq.addEventListener('change', rerender);
+        })();
 
         function formatGraphValue(value, scale, decimals = 1) {
             const num = Number(value) || 0;
@@ -2952,6 +3066,7 @@
             updateRecentAverage(values, avg_hours, valueScale, labels);
             updateWeekdayPattern(labels, values, valueScale);
             updateHourPattern(by_hour);
+            updateCalendarHeatmap(labels, values, valueScale);
             persistGraphState();
 
             const label = metricLabels[metricKey] || 'Total time';
