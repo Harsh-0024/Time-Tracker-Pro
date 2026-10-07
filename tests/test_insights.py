@@ -174,3 +174,42 @@ def test_dashboard_renders_task_suggestions(db_path, login):
     html = login(uid).get("/?date=2026-10-01").get_data(as_text=True)
     assert 'id="taskNameSuggestions"' in html
     assert "Deep </script> work" not in html  # escaped in both the datalist and the JSON
+
+
+def test_week_top_activities_trend_per_logged_day():
+    from datetime import date as _d
+    import pandas as _pd
+
+    def row(day, minutes, task):
+        return {"date": day, "duration": minutes, "urgent": False, "important": True, "task": task}
+
+    df = _pd.DataFrame([
+        row(_d(2026, 9, 28), 120, "Gym"),          # last week: 2 logged days
+        row(_d(2026, 9, 29), 60, "Gym"),
+        row(_d(2026, 9, 29), 60, "Reading"),
+        row(_d(2026, 10, 5), 120, "Gym ."),        # this week so far: 1 logged day
+        row(_d(2026, 10, 5), 60, "Chess"),
+    ])
+    period_df = df[df["date"] >= _d(2026, 10, 4)]
+    ins = build_insights(df, period_df, "week", _d(2026, 10, 4), _d(2026, 10, 10),
+                         today=_d(2026, 10, 7), previous=(_d(2026, 9, 27), _d(2026, 10, 3)))
+    by_name = {t["name"]: t for t in ins["top_activities"]}
+    assert by_name["Gym"]["per_day"] == 2.0 and by_name["Gym"]["prev_per_day"] == 1.5
+    assert by_name["Gym"]["delta_per_day"] == 0.5
+    assert by_name["Chess"]["prev_per_day"] == 0.0  # rendered as 'new'
+    # No previous data -> no trend keys.
+    ins = build_insights(period_df, period_df, "week", _d(2026, 10, 4), _d(2026, 10, 10),
+                         today=_d(2026, 10, 7), previous=(_d(2026, 9, 27), _d(2026, 10, 3)))
+    assert all("delta_per_day" not in t for t in ins["top_activities"])
+
+
+def test_week_dashboard_shows_activity_trend(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-28", "08:00:00", "2026-09-28", "09:00:00", task="Gym", tags="Work")
+    add_log(db_path, uid, "2026-10-05", "08:00:00", "2026-10-05", "10:00:00", task="Gym", tags="Work")
+    add_log(db_path, uid, "2026-10-05", "10:00:00", "2026-10-05", "11:00:00", task="Chess", tags="Soul")
+    html = login(uid).get("/?period=week&date=2026-10-05").get_data(as_text=True)
+    assert "▲</span><span class=\"sr-only\">up</span> 1.0h vs last week" in html
+    assert "new vs last week" in html
+    day_html = login(uid).get("/?period=day&date=2026-10-05").get_data(as_text=True)
+    assert "insight-trend" not in day_html

@@ -50,6 +50,32 @@ def top_activities(period_df: pd.DataFrame, limit: int = 5) -> List[Dict[str, An
     ]
 
 
+def _activity_keys(tasks: pd.Series) -> pd.Series:
+    return tasks.fillna("").astype(str).str.replace(r"[\s.,;:]+$", "", regex=True).str.strip().str.lower()
+
+
+def _add_activity_trends(
+    activities: List[Dict[str, Any]],
+    period_df: pd.DataFrame,
+    days: int,
+    prev_df: pd.DataFrame,
+    prev_days: int,
+) -> None:
+    """Per logged day, how much each top activity changed vs the previous period
+    (same basis as the Daily average comparison, so a half-finished week compares fairly)."""
+    if not activities or not days or not prev_days:
+        return
+    current = period_df.groupby(_activity_keys(period_df["task"]))["duration"].sum()
+    previous = prev_df.groupby(_activity_keys(prev_df["task"]))["duration"].sum()
+    for item in activities:
+        key = re.sub(r"[\s.,;:]+$", "", item["name"]).strip().lower()
+        now_per_day = float(current.get(key, 0.0)) / days / 60.0
+        prev_per_day = float(previous.get(key, 0.0)) / prev_days / 60.0
+        item["per_day"] = round_half_up(now_per_day, 1)
+        item["prev_per_day"] = round_half_up(prev_per_day, 1)
+        item["delta_per_day"] = round_half_up(now_per_day - prev_per_day, 1)
+
+
 def task_name_suggestions(df: pd.DataFrame, limit: int = 60, recent: int = 1500) -> List[Dict[str, Any]]:
     """Most-used task names among the latest ``recent`` logs, each with the tags and
     priority of its newest entry (Add task autocompletes and pre-fills from these)."""
@@ -181,6 +207,7 @@ def build_insights(
                 "waste_delta": round_half_up(float(waste.sum()) / logged_days / 60.0 - prev_waste, 1),
                 "days": prev_days,
             }
+            _add_activity_trends(insights["top_activities"], period_df, logged_days, prev_df, prev_days)
     return insights
 
 

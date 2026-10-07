@@ -1489,6 +1489,15 @@
                                 <span class="shrink-0 text-gray-500 tabular-nums"><span class="js-hover-hours" data-hours="{{ item.hours }}">{{ item.hours }}h</span> · {{ item.share }}%</span>
                             </div>
                             <div class="insight-bar mt-1.5" aria-hidden="true"><span style="width: {{ item.bar }}%"></span></div>
+                            {% if item.delta_per_day is defined %}
+                            <div class="insight-trend mt-1 text-[11px] text-gray-500 tabular-nums" title="Per logged day: {{ item.per_day }}h this {{ period }}, {{ item.prev_per_day }}h last {{ period }}">
+                                {{ item.per_day }}h/day ·
+                                {% if item.prev_per_day == 0 -%}new vs last {{ period }}
+                                {%- elif item.delta_per_day == 0 -%}same as last {{ period }}
+                                {%- else -%}<span aria-hidden="true">{{ '▲' if item.delta_per_day > 0 else '▼' }}</span><span class="sr-only">{{ 'up' if item.delta_per_day > 0 else 'down' }}</span> {{ item.delta_per_day | abs }}h vs last {{ period }}
+                                {%- endif %}
+                            </div>
+                            {% endif %}
                             </button>
                         </li>
                         {% endfor %}
