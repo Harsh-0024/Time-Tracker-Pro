@@ -76,7 +76,13 @@ def fetch_local_data(db_name: str, user_id: int) -> pd.DataFrame:
     start = _combine_datetimes(df["start_date"], df["start_time"])
     end = _combine_datetimes(df["end_date"], df["end_time"])
     duration_minutes = ((end - start).dt.total_seconds() / 60.0).clip(lower=0.0)
-    special_tags = [filter_special_tags(raw) for raw in df["tags"]]
+    # Only a handful of distinct tag strings exist, so parse each once (was ~40% of this function).
+    parsed_tags: Dict[Any, List[str]] = {}
+    special_tags = []
+    for raw in df["tags"]:
+        if raw not in parsed_tags:
+            parsed_tags[raw] = filter_special_tags(raw)
+        special_tags.append(list(parsed_tags[raw]))
 
     final_rows: Dict[str, List[Any]] = {
         "id": list(df["id"]),
