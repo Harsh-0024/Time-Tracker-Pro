@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 08:22 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
+- 2026-10-07 08:45 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -82,6 +82,10 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - dark mode: 12 CSS rules never matched (unescaped '#' in .bg-\[#hex\]) -> summary badges/tracks now dark
 - a11y: theme buttons + Day/Week/Month aria-pressed; calendar arrows labelled
 - styled 403/404/405/500 pages (JSON for /api/*)
+- [08:22 run] CSV export: cells starting with = + - @ quote-prefixed (spreadsheet formula injection)
+- [08:22 run] toasts render text by default (server errors/account emails were innerHTML); html opt-in
+- [08:22 run] 16MB request body cap (MAX_CONTENT_LENGTH_MB) + 413 page/JSON
+- [08:22 run] non-ASCII API token -> 401 (was 500)
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -95,6 +99,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (question) /sync-now and /hard-reset are GET with side effects; SameSite=Lax lets another site trigger a forced Sheety sync via a top-level link. Low impact (quota). Consider POST.
+- (note) a dev server with LOCAL_AUTH_BYPASS was blocked by the session's permission classifier; verification done via pytest/Flask test client.
 - (question) ~174 distinct task names are stored with a trailing ' .' (e.g. 'Instagram .' x396 vs 'Instagram' x14) -
   looks like the parser keeps the sentence-ending dot. I only merged them for display; the parser is yours.
 - (question) forgot-password / login-OTP say "No account found" -> account enumeration. Kept for UX; consider generic copy.
