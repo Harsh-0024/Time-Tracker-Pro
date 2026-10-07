@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 22:24 IST: 22:20 resume session ACTIVE (started 22:21). (Prev heartbeat said 22:35 - typo, it finished 21:36.)
+- 2026-10-07 22:45 IST: 22:20 resume session ACTIVE.
 
 ## 21:20 run summary - most important first
 1. Feature: Insights 'Top activities' now show a trend per activity (week/month: per-day change vs last period; day: 'usually Xh/day').
@@ -225,6 +225,9 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [21:20 run] fix(login): '#add-task' survives a login (login page appends a simple #hash to 'next'; was lost so an expired session + PWA shortcut landed on the plain dashboard). jsdom-verified (+ test)
 - [21:20 run] feat: dashboard shortcut C = Copy summary (in '?' help)
 - [21:20 run] README: activity trends, Copy summary, PWA shortcuts. Tests also pass on python 3.12 (187)
+- [22:20 run] feat: week/month 'Goals this week/month' show one dot per day under each goal (met = green, below goal = amber, over Waste limit = red, nothing logged = dashed, not started = faint); dots link to that day; tooltips/labels give hours (+ test). Browser-checked light/dark
+- [22:20 run] BUG: Settings > Update Profile showed NEITHER 'Current password' nor 'Email code' on load (setAuthMode for the Password form hid the User ID form's fields) -> each form's switch only touches its own fields; aria-pressed on toggles. Browser-verified
+- [22:20 run] SECURITY: Settings mirrored the typed NEW PASSWORD + confirmation into sessionStorage in plaintext (to survive the 'Send code' reload). 'Send code' (User ID/Password forms) now posts in the background (/profile/request-otp returns JSON for Accept: application/json; toast + focus the code box), nothing is stored, stale keys purged on load; falls back to a normal submit if the fetch fails (+ tests)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
