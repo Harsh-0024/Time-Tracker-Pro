@@ -387,7 +387,7 @@ def profile_request_otp():
         if (row_value(user, "email") or "").strip().lower() == new_email:
             session["profile_error"] = "New email matches your current email."
             return redirect(url_for("main.settings"))
-        existing = get_user_by_email(db_name, new_email)
+        existing = get_user_by_email(db_name, new_email) or get_user_by_username_or_id_or_email(db_name, new_email)
         if existing and int(existing["id"]) != int(user["id"]):
             session["profile_error"] = "That email is already in use."
             return redirect(url_for("main.settings"))
@@ -525,7 +525,7 @@ def update_profile():
         if not old_code or not new_code:
             session["profile_error"] = "Enter both verification codes."
             return redirect(url_for("main.settings"))
-        existing = get_user_by_email(db_name, new_email)
+        existing = get_user_by_email(db_name, new_email) or get_user_by_username_or_id_or_email(db_name, new_email)
         if existing and int(existing["id"]) != int(user["id"]):
             session["profile_error"] = "That email is already in use."
             return redirect(url_for("main.settings"))
