@@ -3918,8 +3918,10 @@
                     if (!el) return;
                     if (k === id) {
                         el.className = 'flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-gray-900 bg-slate-100';
+                        el.setAttribute('aria-current', 'true');
                     } else {
                         el.className = 'flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-gray-600';
+                        el.removeAttribute('aria-current');
                     }
                 });
             }
@@ -3995,16 +3997,33 @@
                 { id: 'insights', btn: 'navInsights' }
             ].map(({ id, btn }) => ({ el: document.getElementById(id), btn }));
 
-            const io = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const t = observerTargets.find(x => x.el === entry.target);
-                        if (t) setActiveNav(t.btn);
-                    }
+            // Scroll spy: the active section is the last one whose top has passed
+            // 35% of the viewport; at the very bottom, the last section wins (it may
+            // never reach that line). A visibility-ratio observer missed sections
+            // taller than the screen (Matrix, Insights on phones).
+            let navSpyQueued = false;
+            function updateNavFromScroll() {
+                navSpyQueued = false;
+                const present = observerTargets.filter(t => t.el && t.el.offsetParent !== null);
+                if (!present.length) return;
+                const line = window.innerHeight * 0.35;
+                let current = present[0];
+                present.forEach(t => {
+                    if (t.el.getBoundingClientRect().top <= line) current = t;
                 });
-            }, { root: null, threshold: 0.4 });
-
-            observerTargets.forEach(t => { if (t.el) io.observe(t.el); });
+                const doc = document.documentElement;
+                if (window.innerHeight + window.scrollY >= doc.scrollHeight - 4 && window.scrollY > 0) {
+                    current = present[present.length - 1];
+                }
+                setActiveNav(current.btn);
+            }
+            window.addEventListener('scroll', () => {
+                if (navSpyQueued) return;
+                navSpyQueued = true;
+                requestAnimationFrame(updateNavFromScroll);
+            }, { passive: true });
+            window.addEventListener('resize', () => updateNavFromScroll());
+            updateNavFromScroll();
 
             document.addEventListener('click', (e) => {
                 if (!e.target.closest('.dropdown')) {

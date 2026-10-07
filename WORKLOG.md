@@ -124,6 +124,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [14:21 run] BUG: X-API-Token header auth never matched (dict(request.headers) spells it 'X-Api-Token'); only ?token= worked
 - [14:21 run] SECURITY: /sync-now, /hard-reset refuse cookie-session GET (405); dashboard POSTs; API-token GET still OK
 - [14:21 run] UX: global error boundary - offline/network failures showed a red toast per request and, after 3, a full-screen 'unstable' overlay; now one connection hint; also removed beacon to non-existent /api/log-error
+- [14:21 run] phones: bottom nav highlighted the wrong section (Insights never lit, 'Tags' shown while reading Insights) - IntersectionObserver threshold 0.4 can't fire for sections taller than ~2.5 screens; replaced by a scroll-position spy (+ aria-current)
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
