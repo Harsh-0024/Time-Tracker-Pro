@@ -110,6 +110,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [12:06 run] reset-password: visible 8-char hint (was placeholder only) + live 'do not match' check; register hints tied via aria-describedby
 - [12:06 run] settings: Sheety summary reads 'No accounts yet' / 'N saved · none active' instead of 'No active account · Priority -'
 - [12:06 run] full-log modal stat tiles: quadrant explainer moved to a sub-line shown from sm up (wrapped to 5 lines on phones)
+- [12:06 run] task lists (dashboard full log, graphs Review tasks): dates read 'Wed 7 Oct' (locale-aware; ISO in tooltip) instead of '2026-10-07'
+- [12:06 run] graphs Review-tasks pie: slice colours picked for distinct hues (green schemes coloured the top 3 slices green)
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync

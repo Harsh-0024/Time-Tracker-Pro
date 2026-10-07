@@ -1731,7 +1731,32 @@
             const entries = Object.entries(taskGroups).sort((a, b) => b[1] - a[1]);
             const baseColor = (graphColorScheme && graphColorScheme.primary) || metricColors[currentMetric] || '#111827';
             const accentColor = (graphColorScheme && graphColorScheme.secondary) || null;
-            const palette = [baseColor, accentColor].filter(Boolean).concat(['#16A34A', '#A16207', '#7C3AED', '#0EA5A4', '#9F1239', '#9CA3AF', '#F59E0B']);
+            // Neighbouring slices must be distinguishable: the fallback list starts with a green, so a
+            // green scheme used to colour the top three slices green. Keep a colour only if its hue is
+            // far enough from every colour already picked (greys always pass).
+            const hexHue = (hex) => {
+                const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+                if (!m) return null;
+                const n = parseInt(m[1], 16);
+                const r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+                const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+                if (d < 0.08) return null;
+                const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+                return (h * 60 + 360) % 360;
+            };
+            const palette = [];
+            [baseColor, accentColor, '#16A34A', '#A16207', '#7C3AED', '#0EA5A4', '#9F1239', '#2563EB', '#F59E0B', '#9CA3AF']
+                .filter(Boolean)
+                .forEach(color => {
+                    const hue = hexHue(color);
+                    const clash = hue !== null && palette.some(picked => {
+                        const other = hexHue(picked);
+                        if (other === null) return false;
+                        const diff = Math.abs(hue - other);
+                        return Math.min(diff, 360 - diff) < 30;
+                    });
+                    if (!clash && !palette.includes(color)) palette.push(color);
+                });
             const allEntries = entries.map(([key, value]) => ({
                 key,
                 label: taskDisplayNames[key] || key,
@@ -2133,7 +2158,7 @@
                             <div class="flex-1 min-w-0">
                                 <div class="font-medium text-gray-900 mb-1 line-clamp-2 break-words">${escapeSuggestionHtml(normalizeGraphTaskName(task.task) || 'Untitled task')}</div>
                                 <div class="flex flex-wrap items-center gap-2 text-[13px] text-gray-600">
-                                    <span class="text-gray-500">${escapeSuggestionHtml(task.date)}</span>
+                                    <span class="text-gray-500" title="${escapeSuggestionHtml(task.date)}">${escapeSuggestionHtml(friendlyTaskDate(task.date))}</span>
                                     <span class="text-gray-500">${escapeSuggestionHtml(task.start_time)} - ${escapeSuggestionHtml(task.end_time)}</span>
                                     ${tagBadge}
                                     ${badges.join('')}
@@ -2342,6 +2367,17 @@
             const search = String(suggestion?.search || '').trim();
             if (!search) return focus;
             return `${focus} and (${search})`;
+        }
+
+        // 'YYYY-MM-DD' -> 'Wed, Oct 7' for display (built from parts so it never shifts a day via UTC).
+        function friendlyTaskDate(value) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || '').trim());
+            if (!m) return String(value || '');
+            const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+            if (isNaN(d.getTime())) return String(value || '');
+            const opts = { weekday: 'short', month: 'short', day: 'numeric' };
+            if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+            return d.toLocaleDateString(undefined, opts);
         }
 
         function escapeSuggestionHtml(value) {
