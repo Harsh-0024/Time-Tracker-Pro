@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 22:40 IST: 22:20 resume session ACTIVE.
+- 2026-10-07 22:42 IST: 22:20 resume session ACTIVE.
 
 ## 21:20 run summary - most important first
 1. Feature: Insights 'Top activities' now show a trend per activity (week/month: per-day change vs last period; day: 'usually Xh/day').
@@ -238,6 +238,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [22:20 run] offline page follows the app's Appearance choice (ttp-theme), not just the OS
 - [22:20 run] a11y: goal dots out of the Tab order (month view = 62 tab stops); labels kept for screen readers
 - [22:20 run] touch: calendar cells and goal dots - first tap shows the day's value (calendar caption / caption under goals), second tap opens it; mouse clicks open directly. Calendar empty range -> 'Nothing logged in this range'
+- [22:20 run] BUG: the day-view '🔥 N-day Growth streak' disappeared as soon as anything was logged today below the target (goal_streaks returned 0 for a logged-but-unmet day even when it's today). Today's Growth no longer breaks the run (matches its docstring intent and the dots' 'so far'); an exceeded Waste limit still does; past days unchanged (+ test). Display-only; flag if you see this as time handling and want it reverted (dd18141)
+- [22:20 run] feat: streak lines show the best run in the last 366 days ('🔥 3-day Growth streak · best 12', or 'Best Growth streak: 12 days' when there's no current run); same for Waste (+ tests)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
