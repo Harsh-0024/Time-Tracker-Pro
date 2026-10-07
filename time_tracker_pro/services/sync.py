@@ -1383,6 +1383,34 @@ def _rewrite_sheet_rows(
         )
         return None
 
+    # Defined before the tail-safe branch below, which also deletes rows.
+    def _delete_row(row_id: int) -> bool:
+        try:
+            if cleanup_service is not None:
+                success, _, error = cleanup_service.make_request_bypass_outbox("DELETE", str(row_id), None)
+                if not success and error and error.startswith("HTTP 404"):
+                    return True
+                if not success:
+                    logger.warning("Failed to delete sheet row id=%s error=%s", row_id, error)
+                    return False
+                return True
+            if cleanup_url:
+                url = f"{cleanup_url.rstrip('/')}/{row_id}"
+                response = requests.delete(url, headers=cleanup_headers, timeout=15)
+                if response.status_code in (200, 204, 404):
+                    return True
+                if response.status_code not in (200, 204, 404):
+                    logger.warning(
+                        "Failed to delete sheet row id=%s status=%s",
+                        row_id,
+                        response.status_code,
+                    )
+                    return False
+        except Exception as exc:
+            logger.warning("Error deleting sheet row id=%s error=%s", row_id, exc)
+            return False
+        return False
+
     if tail_rows and baseline_rows:
         ordered_baseline_ids: List[int] = []
         original_by_id: Dict[int, Dict[str, Any]] = {}
@@ -1477,33 +1505,6 @@ def _rewrite_sheet_rows(
             )
 
         return updated_rows
-
-    def _delete_row(row_id: int) -> bool:
-        try:
-            if cleanup_service is not None:
-                success, _, error = cleanup_service.make_request_bypass_outbox("DELETE", str(row_id), None)
-                if not success and error and error.startswith("HTTP 404"):
-                    return True
-                if not success:
-                    logger.warning("Failed to delete sheet row id=%s error=%s", row_id, error)
-                    return False
-                return True
-            if cleanup_url:
-                url = f"{cleanup_url.rstrip('/')}/{row_id}"
-                response = requests.delete(url, headers=cleanup_headers, timeout=15)
-                if response.status_code in (200, 204, 404):
-                    return True
-                if response.status_code not in (200, 204, 404):
-                    logger.warning(
-                        "Failed to delete sheet row id=%s status=%s",
-                        row_id,
-                        response.status_code,
-                    )
-                    return False
-        except Exception as exc:
-            logger.warning("Error deleting sheet row id=%s error=%s", row_id, exc)
-            return False
-        return False
 
     updated_rows: List[Dict[str, Any]] = []
     created_row_ids: List[int] = []
