@@ -1701,7 +1701,11 @@
                 <form id="taskCreateForm" class="mt-4 grid gap-4 md:grid-cols-2">
                     <div class="md:col-span-2">
                         <label for="createTaskName" class="block text-xs font-semibold text-gray-600 mb-1">Task name</label>
-                        <input id="createTaskName" type="text" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-300" required />
+                        <input id="createTaskName" type="text" list="taskNameSuggestions" autocomplete="off" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-300" required />
+                        <datalist id="taskNameSuggestions">
+                            {% for item in task_suggestions or [] %}<option value="{{ item.name }}"></option>{% endfor %}
+                        </datalist>
+                        <script type="application/json" id="taskSuggestionData">{{ (task_suggestions or []) | tojson }}</script>
                     </div>
                     <div>
                         <label for="createTaskDate" class="block text-xs font-semibold text-gray-600 mb-1">Date</label>
@@ -2039,6 +2043,42 @@
                 chip.classList.toggle('border-slate-200', !active);
             });
         }
+
+        // Picking a known name from the autocomplete fills in its usual tags and
+        // priority, but only while those are still untouched.
+        (function bindTaskNameSuggestions() {
+            const nameInput = document.getElementById('createTaskName');
+            const dataEl = document.getElementById('taskSuggestionData');
+            if (!nameInput || !dataEl) return;
+            let byName = {};
+            try {
+                (JSON.parse(dataEl.textContent || '[]') || []).forEach(item => {
+                    byName[String(item.name || '').trim().toLowerCase()] = item;
+                });
+            } catch (e) {
+                byName = {};
+            }
+            const apply = () => {
+                const item = byName[String(nameInput.value || '').trim().toLowerCase()];
+                if (!item) return;
+                const tagInput = document.getElementById('createTaskTags');
+                const importantInput = document.getElementById('createTaskImportant');
+                const urgentInput = document.getElementById('createTaskUrgent');
+                const untouched = tagInput && !tagInput.value.trim()
+                    && !(importantInput && importantInput.checked) && !(urgentInput && urgentInput.checked);
+                if (!untouched) return;
+                tagInput.value = item.tags || '';
+                if (importantInput) importantInput.checked = Boolean(item.important);
+                if (urgentInput) urgentInput.checked = Boolean(item.urgent);
+                updateCreateTagChipStyles();
+                updateCreatePriorityChips();
+            };
+            nameInput.addEventListener('change', apply);
+            // Choosing from the list (not typing) fires input without a typing inputType.
+            nameInput.addEventListener('input', (event) => {
+                if (!event.inputType || event.inputType === 'insertReplacementText') apply();
+            });
+        })();
 
         function updateCreatePriorityChips() {
             const importantInput = document.getElementById('createTaskImportant');

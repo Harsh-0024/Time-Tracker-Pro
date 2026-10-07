@@ -28,6 +28,7 @@ from ..services.insights import (
     build_goal_progress,
     build_insights,
     goal_streaks,
+    task_name_suggestions,
 )
 from ..core.numbers import round_half_up
 from ..services.matrix import get_matrix_stats
@@ -357,6 +358,7 @@ def dashboard():
             sync_stats=sync_stats or {},
             matrix_deltas=matrix_deltas,
             insights=insights,
+            task_suggestions=task_name_suggestions(df),
             day_timeline=day_timeline,
             daily_breakdown=daily_breakdown,
             logged_coverage=logged_coverage,

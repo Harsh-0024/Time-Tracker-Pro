@@ -50,6 +50,34 @@ def top_activities(period_df: pd.DataFrame, limit: int = 5) -> List[Dict[str, An
     ]
 
 
+def task_name_suggestions(df: pd.DataFrame, limit: int = 60, recent: int = 1500) -> List[Dict[str, Any]]:
+    """Most-used task names among the latest ``recent`` logs, each with the tags and
+    priority of its newest entry (Add task autocompletes and pre-fills from these)."""
+    if df.empty or "task" not in df.columns:
+        return []
+    latest = df.sort_values("start_datetime").tail(recent) if "start_datetime" in df.columns else df.tail(recent)
+    names = latest["task"].fillna("").astype(str).str.replace(r"[\s.,;:]+$", "", regex=True).str.strip()
+    latest = latest.assign(_name=names, _key=names.str.lower())
+    latest = latest[latest["_key"] != ""]
+    if latest.empty:
+        return []
+    counts = latest.groupby("_key").size().sort_values(ascending=False).head(limit)
+    newest = latest.groupby("_key").tail(1).set_index("_key")
+    result = []
+    for key in counts.index:
+        row = newest.loc[key]
+        tags = row.get("special_tags") if isinstance(row.get("special_tags"), list) else []
+        result.append(
+            {
+                "name": str(row["_name"]),
+                "tags": ", ".join(tags),
+                "important": bool(row.get("important")),
+                "urgent": bool(row.get("urgent")),
+            }
+        )
+    return result
+
+
 def _daily_minutes(df: pd.DataFrame, mask: Optional[pd.Series] = None) -> pd.Series:
     data = df if mask is None else df[mask]
     if data.empty:

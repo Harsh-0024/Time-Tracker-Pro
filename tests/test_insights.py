@@ -150,3 +150,27 @@ def test_week_daily_average_compares_with_previous_week():
     ins = build_insights(period_df, period_df, "week", _d(2026, 10, 4), _d(2026, 10, 10),
                          today=_d(2026, 10, 7), previous=(_d(2026, 9, 27), _d(2026, 10, 3)))
     assert "prev" not in ins["daily_avg"]
+
+
+def test_task_name_suggestions(db_path):
+    from conftest import add_log, make_user
+    from time_tracker_pro.repositories.logs import fetch_local_data
+    from time_tracker_pro.services.insights import task_name_suggestions
+
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-10-01", "08:00:00", "2026-10-01", "09:00:00", task="Gym", tags="Work", urg=1, imp=0)
+    add_log(db_path, uid, "2026-10-02", "08:00:00", "2026-10-02", "09:00:00", task="gym .", tags="Soul", urg=0, imp=1)
+    add_log(db_path, uid, "2026-10-03", "08:00:00", "2026-10-03", "09:00:00", task="Read", tags="Rest")
+    out = task_name_suggestions(fetch_local_data(db_path, uid))
+    assert [s["name"] for s in out] == ["gym", "Read"]  # most used first; newest spelling
+    assert out[0] == {"name": "gym", "tags": "Soul", "important": True, "urgent": False}  # newest entry's tags
+
+
+def test_dashboard_renders_task_suggestions(db_path, login):
+    from conftest import add_log, make_user
+
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-10-01", "08:00:00", "2026-10-01", "09:00:00", task="Deep </script> work", tags="Work")
+    html = login(uid).get("/?date=2026-10-01").get_data(as_text=True)
+    assert 'id="taskNameSuggestions"' in html
+    assert "Deep </script> work" not in html  # escaped in both the datalist and the JSON
