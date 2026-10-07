@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 22:35 IST: 21:20 resume session finished (idle - next scheduled run may continue).
+- 2026-10-07 22:24 IST: 22:20 resume session ACTIVE (started 22:21). (Prev heartbeat said 22:35 - typo, it finished 21:36.)
 
 ## 21:20 run summary - most important first
 1. Feature: Insights 'Top activities' now show a trend per activity (week/month: per-day change vs last period; day: 'usually Xh/day').
