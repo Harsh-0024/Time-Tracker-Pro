@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 14:43 IST: 14:21 resume session finished (idle; next scheduled run may continue).
+- 2026-10-07 16:36 IST: 16:20 resume session ACTIVE (another run should exit).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -133,6 +133,10 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [14:21 run] graphs on phones: no way to Settings/Logout (desktop-only group) -> name pill links to Settings like the dashboard; 'Back to Dashboard' reads 'Dashboard' on phones so the row fits 320px
 - [14:21 run] UX: Escape in a task modal with the Add/Edit/Delete panel open closed the whole modal (losing typed input); now it closes the panel first (dashboard + graphs)
 - [14:21 run] settings API Keys: add/delete/test used blocking alert() boxes and Save had no busy state (double click saved the account twice) -> toasts + 'Saving...' guard
+- [16:20 run] dashboard: day-view summary caption said 'October 2026 · Day view totals.' -> names the day; Top-category card no longer prints its % twice
+- [16:20 run] settings/admin: Logout was the black primary CTA -> secondary pill; settings 'Back' -> 'Dashboard'
+- [16:20 run] Insights on today: 'Today so far vs your last 7 days'; Growth shortfall reads 'Xh to reach your average' (not a red miss mid-day)
+- [16:20 run] BUG: Back after 'Log in via OTP' restored the login page from bfcache with disabled buttons + the hidden action=login_otp, so 'Log In' then sent an OTP. _form_busy.html (markFormBusy + pageshow restore) on all auth forms + settings. Settings email/OTP busy handlers never ran (selectors matched endpoint names, not URLs) and labelled the wrong button.
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
