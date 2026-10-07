@@ -79,7 +79,7 @@ def _row_end_date(row) -> str:
 
 
 SearchExpr = Tuple[str, Any]
-SEARCH_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|\(|\)|,|\+|\-|\*|\bAND\b|\bOR\b|\bNOT\b|[^\s()+*\-()]+', re.IGNORECASE)
+SEARCH_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|\(|\)|,|\+|\-|\*|\bAND\b|\bOR\b|\bNOT\b|[^\s()+*\-,]+', re.IGNORECASE)
 
 
 def parse_graph_search(raw: str) -> Optional[SearchExpr]:

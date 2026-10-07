@@ -2865,7 +2865,7 @@
                 });
         };
 
-        const MODAL_QUERY_TOKEN_RE = /"[^"]*"|'[^']*'|\(|\)|,|\+|\-|\*|\bAND\b|\bOR\b|\bNOT\b|[^\s()+*\-()]+/gi;
+        const MODAL_QUERY_TOKEN_RE = /"[^"]*"|'[^']*'|\(|\)|,|\+|\-|\*|\bAND\b|\bOR\b|\bNOT\b|[^\s()+*\-,]+/gi;
 
         function tokenizeModalQuery(raw) {
             const cleaned = String(raw || '').trim();

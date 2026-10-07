@@ -1381,7 +1381,7 @@
             };
         }
 
-        const GRAPH_QUERY_TOKEN_RE = /"[^"]*"|'[^']*'|\(|\)|,|\+|\-|\*|\bAND\b|\bOR\b|\bNOT\b|[^\s()+*\-()]+/gi;
+        const GRAPH_QUERY_TOKEN_RE = /"[^"]*"|'[^']*'|\(|\)|,|\+|\-|\*|\bAND\b|\bOR\b|\bNOT\b|[^\s()+*\-,]+/gi;
 
         function tokenizeGraphQuery(raw) {
             const cleaned = String(raw || '').trim();
