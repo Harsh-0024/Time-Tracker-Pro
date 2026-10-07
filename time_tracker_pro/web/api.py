@@ -1670,6 +1670,16 @@ def get_tasks():
             "total": 0,
         }
 
+    # Day view: how far into this day logs from earlier days reach (e.g. 23:30-01:00
+    # started yesterday), so the full log's "Missing time" doesn't count it as a gap.
+    carry_in_minutes = 0
+    if period == "day" and "end_datetime" in df.columns:
+        day_start = pd.Timestamp(start_date)
+        carried = df[(df["start_datetime"] < day_start) & (df["end_datetime"] > day_start)]
+        if not carried.empty:
+            reach = (carried["end_datetime"].max() - day_start).total_seconds() / 60.0
+            carry_in_minutes = int(min(reach, 24 * 60))
+
     return jsonify(
         {
             "tasks": tasks,
@@ -1678,6 +1688,7 @@ def get_tasks():
             "period_minutes": period_minutes,
             "period_matrix_minutes": period_matrix_minutes,
             "count": len(tasks),
+            "carry_in_minutes": carry_in_minutes,
         }
     )
 

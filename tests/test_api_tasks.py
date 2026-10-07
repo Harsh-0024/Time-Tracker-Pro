@@ -230,3 +230,15 @@ def test_edit_still_refuses_to_reshape_an_unsynced_overlapping_log(db_path, logi
     add_log(db_path, uid, "2026-10-07", "10:00:00", "2026-10-07", "11:00:00", task="Unsynced", sheety_id=None)
     resp = login(uid).put("/api/tasks/7?by=sheety", json={"task": "Edit me", "date": "2026-10-07", "start_time": "09:00", "duration": 1.5})
     assert resp.status_code == 400 and "must be linked to Sheety" in resp.get_json()["error"]
+
+
+def test_tasks_day_reports_carry_in_from_previous_evening(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-10-06", "23:30:00", "2026-10-07", "01:00:00", task="Late reading")
+    add_log(db_path, uid, "2026-10-07", "23:00:00", "2026-10-08", "00:30:00", task="Tonight")
+    client = login(uid)
+    oct7 = client.get("/api/tasks?date=2026-10-07&period=day").get_json()
+    assert oct7["carry_in_minutes"] == 60
+    assert [t["task"] for t in oct7["tasks"]] == ["Tonight"]
+    assert client.get("/api/tasks?date=2026-10-08&period=day").get_json()["carry_in_minutes"] == 30
+    assert client.get("/api/tasks?date=2026-10-06&period=day").get_json()["carry_in_minutes"] == 0

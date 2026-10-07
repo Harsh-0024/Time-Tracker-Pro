@@ -3534,13 +3534,18 @@
                     const start = window.timeStringToMinutes(task.start_time);
                     const end = window.timeStringToMinutes(task.end_time);
                     if (start == null || end == null || start === end) return;
-                    if (end > start) {
+                    const overnight = task.end_date && task.date && String(task.end_date) !== String(task.date);
+                    if (end > start && !overnight) {
                         intervals.push({ start, end });
-                    } else if (end < start) {
+                    } else {
+                        // Runs past midnight: it covers the rest of *this* day only. Its
+                        // early-morning part belongs to tomorrow, not to this morning.
                         intervals.push({ start, end: 24 * 60 });
-                        intervals.push({ start: 0, end });
                     }
                 });
+                // Logs that started the evening before and run into this day.
+                const carryIn = Number(data.carry_in_minutes) || 0;
+                if (carryIn > 0) intervals.push({ start: 0, end: Math.min(carryIn, 24 * 60) });
                 intervals.sort((a, b) => a.start - b.start);
 
                 const merged = [];
