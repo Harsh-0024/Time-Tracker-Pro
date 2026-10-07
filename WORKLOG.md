@@ -130,6 +130,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [14:21 run] BUG: creating a task while a sheet rewrite was in progress (Sheety write queued, no row id) saved the row and then 500'd (int(None)) -> user would re-add = duplicate. Now 200 + queued flag. No-Sheety error copy now says where to connect a sheet.
 - [14:21 run] api: absurd task durations (1e19) overflowed datetime -> 500; now 400 above a 1-year sanity bound (24h cap question still open). JSON/query fuzz of all write endpoints: 0 server errors now
 - [14:21 run] feat: dashboard shortcut N = add a task (opens the full log with the Add-task form focused); listed under '?'
+- [14:21 run] graphs on phones: no way to Settings/Logout (desktop-only group) -> name pill links to Settings like the dashboard; 'Back to Dashboard' reads 'Dashboard' on phones so the row fits 320px
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
