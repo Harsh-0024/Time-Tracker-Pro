@@ -133,6 +133,16 @@
     </main>
     <script>
         const loginForm = document.querySelector('form[method="POST"]');
+        // Keep an in-page target such as '#add-task' (the installed app's shortcut) across login:
+        // the fragment never reaches the server, so add it to the 'next' path.
+        (() => {
+            const nextField = loginForm?.querySelector('input[name="next"]');
+            const hash = window.location.hash;
+            if (nextField && /^#[A-Za-z0-9_-]{1,40}$/.test(hash)) {
+                const base = nextField.value || '/';
+                if (base.startsWith('/') && !base.includes('#')) nextField.value = base + hash;
+            }
+        })();
         const passwordInput = document.getElementById('loginPassword');
         const loginBtn = document.getElementById('loginBtn');
         

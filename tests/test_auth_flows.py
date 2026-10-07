@@ -384,3 +384,10 @@ def test_logged_in_user_on_login_page_follows_next(db_path, login):
     assert resp.status_code == 302 and resp.headers["Location"].endswith("/graphs")
     resp = client.get("/login?next=//evil.example")
     assert resp.status_code == 302 and resp.headers["Location"].endswith("/")
+
+
+def test_login_next_may_carry_a_fragment(app, db_path):
+    from time_tracker_pro.web.utils import safe_next_url
+
+    assert safe_next_url("/#add-task") == "/#add-task"
+    assert safe_next_url("//evil.com#x") is None
