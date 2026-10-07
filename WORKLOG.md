@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 22:15 IST: 21:20 resume session ACTIVE.
+- 2026-10-07 22:30 IST: 21:20 resume session ACTIVE.
 
 ## 19:20 run summary - most important first
 1. SECURITY: verification/welcome emails injected the registrant's name as raw HTML (phishing via someone else's address). Escaped.
@@ -213,6 +213,9 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [21:20 run] feat(PWA): manifest shortcuts - long-press the installed icon for Add task / This week / Graphs; '/#add-task' opens the full log with Add task focused (shared with the N shortcut; hash cleared). jsdom-verified (+ test)
 - [21:20 run] a11y: graphs export-format picker -> dialog role/label, focus to CSV, Escape closes only the picker, Tab trap, focus returns (jsdom-verified). axe (structural rules) on dashboard (incl. Add-task open), graphs, settings, login, register, forgot: no other findings
 - [21:20 run] feat: dashboard 'Copy summary' (next to Export Summary) copies a plain-text recap of the day/week/month: logged hours + %, four quadrants, top activities, daily avg vs last period / vs recent days, best day, longest growth block, goals. services/summary.py, built from the page's own numbers; clipboard fallback + error toast; hidden for empty periods; 'Copy' on phones. jsdom-verified (+ tests incl. </script> in task names)
+- [21:20 run] fix(login): '#add-task' survives a login (login page appends a simple #hash to 'next'; was lost so an expired session + PWA shortcut landed on the plain dashboard). jsdom-verified (+ test)
+- [21:20 run] feat: dashboard shortcut C = Copy summary (in '?' help)
+- [21:20 run] README: activity trends, Copy summary, PWA shortcuts. Tests also pass on python 3.12 (187)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
