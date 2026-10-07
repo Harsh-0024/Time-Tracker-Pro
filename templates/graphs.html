@@ -3688,8 +3688,15 @@
             if (graphTaskModal && graphTaskModal.classList.contains('active')) return;
             const key = event.key.toLowerCase();
             const rangePills = Array.from(document.querySelectorAll('.range-pill'));
+            const reviewBtn = document.getElementById('reviewGraphTasks');
+            const canReview = reviewBtn && !reviewBtn.classList.contains('hidden') && !reviewBtn.disabled;
             if (key === 'd') {
                 window.location.href = dashboardUrl;
+            } else if (key === 's') {
+                window.location.href = "{{ url_for('main.settings') }}";
+            } else if (key === 'r' && canReview) {
+                event.preventDefault();
+                reviewBtn.click();
             } else if (key === 'a' && adminUrl) {
                 window.location.href = adminUrl;
             } else if (key === '/') {
@@ -3712,8 +3719,10 @@
                         <div class="text-xs uppercase tracking-[0.2em] text-white/80 font-semibold">Keyboard Shortcuts</div>
                         <div class="space-y-2 text-sm">
                             ${row(['/'], 'Search activities')}
+                            ${canReview ? row(['R'], 'Review tasks') : ''}
                             ${row([`1–${rangePills.length}`], 'Time range (7 days … All)')}
                             ${row(['D'], 'Dashboard')}
+                            ${row(['S'], 'Settings')}
                             ${adminUrl ? row(['A'], 'Admin') : ''}
                         </div>
                     </div>
