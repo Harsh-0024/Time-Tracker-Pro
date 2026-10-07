@@ -267,6 +267,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (question, 22:20 run) Installed app / long-lived tab: the dashboard is server-rendered for the day it was loaded. Reopen the app the next morning (page still in memory) and it shows yesterday as 'today' (Today button hidden, 'Today so far' copy) until you pull to sync/reload. A visibilitychange handler that reloads when the local date changed (or after ~30 min hidden) would fix it. Not done: day rollover is time handling.
 - (note) Chart.js (pinned 4.5.1 on jsdelivr) could get an SRI integrity hash, but cdn.tailwindcss.com (unpinnable, loaded on every page) makes that moot until Tailwind is compiled locally.
 - (question) DISABLE_CLOUD_SYNC is truthy-checked (sync.py, __init__.py): DISABLE_CLOUD_SYNC=0 or =false DISABLES sync. Not changed: if a deployment sets =0 today, fixing it would switch background sync on. Check your env, then parse it like SESSION_COOKIE_SECURE.
 - (question) graph/full-log search: '-' is the NOT operator even inside words, so 'deep-work' = deep AND NOT work and a date like 2026-10-05 searches '2026 NOT 10 NOT 05'. Quoting ("e-mail") works. Could treat '-' as NOT only after whitespace/start - left as is since it changes query semantics.
