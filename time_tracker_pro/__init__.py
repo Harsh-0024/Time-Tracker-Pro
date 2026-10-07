@@ -114,6 +114,28 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         return response
 
+    # Static files: url_for('static', ...) gets ?v=<mtime>, and versioned requests are
+    # cached for a year (a changed file gets a new URL). Unversioned ones keep the
+    # default (revalidate every time).
+    static_root = Path(static_folder)
+
+    @app.url_defaults
+    def _static_version(endpoint, values):
+        if endpoint == "static" and "filename" in values and "v" not in values:
+            try:
+                values["v"] = int((static_root / values["filename"]).stat().st_mtime)
+            except (OSError, TypeError, ValueError):
+                pass
+
+    _default_max_age = app.get_send_file_max_age
+
+    def _send_file_max_age(filename):
+        if request.endpoint == "static" and request.args.get("v"):
+            return 365 * 24 * 3600
+        return _default_max_age(filename)
+
+    app.get_send_file_max_age = _send_file_max_age
+
     _GZIP_MIMETYPES = {"text/html", "application/json", "text/css", "text/javascript", "application/javascript"}
 
     @app.after_request

@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#F7F1E6">
     <link rel="icon" href="{{ pwa_icon_url | default('/app-icon.png') }}" type="image/png">
     <title>{{ title }} - Time Tracker Pro</title>
-    <script src="/static/js/theme.js"></script>
-    <link rel="stylesheet" href="/static/css/theme.css">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>

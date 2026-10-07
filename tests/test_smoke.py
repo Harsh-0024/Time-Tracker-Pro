@@ -206,3 +206,15 @@ def test_pages_are_gzipped_when_accepted(client_with_data):
     export = client_with_data.get("/api/export-csv", headers={"Accept-Encoding": "gzip"})
     assert "Content-Encoding" not in export.headers
     assert export.get_data(as_text=True).startswith("start date")
+
+
+def test_static_urls_are_versioned_and_long_cached(client_with_data):
+    import re
+
+    html = client_with_data.get("/settings").get_data(as_text=True)
+    match = re.search(r'/static/js/theme\.js\?v=(\d+)', html)
+    assert match, "static URLs carry ?v=<mtime>"
+    versioned = client_with_data.get(f"/static/js/theme.js?v={match.group(1)}")
+    assert "max-age=31536000" in versioned.headers.get("Cache-Control", "")
+    plain = client_with_data.get("/static/js/theme.js")
+    assert "max-age=31536000" not in plain.headers.get("Cache-Control", "")

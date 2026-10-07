@@ -12,8 +12,8 @@
     <link rel="icon" href="{{ pwa_icon_url }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ pwa_icon_url }}">
     <title>Register - Time Tracker Pro</title>
-    <script src="/static/js/theme.js"></script>
-    <link rel="stylesheet" href="/static/css/theme.css">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
