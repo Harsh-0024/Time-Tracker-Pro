@@ -32,6 +32,7 @@ from ..services.insights import (
 )
 from ..core.numbers import round_half_up
 from ..services.matrix import get_matrix_stats
+from ..services.summary import build_period_summary_text
 from ..services.sync import get_last_sync_stats, sync_cloud_data, sync_status_payload
 from .decorators import admin_required, login_required
 from .utils import get_current_user_id, request_date_param
@@ -335,6 +336,15 @@ def dashboard():
     else:
         period_label = selected_date.strftime("%B %Y")
 
+    summary_title = (
+        f"{selected_date.strftime('%a')} {selected_date.day} {selected_date.strftime('%b %Y')}"
+        if period == "day"
+        else period_label
+    )
+    summary_text = build_period_summary_text(
+        summary_title, period, matrix, logged_coverage, insights, goal_progress
+    )
+
     user_row = get_user_by_id(db_name, user_id)
     is_admin = _is_admin(user_row)
     current_user = {
@@ -369,6 +379,7 @@ def dashboard():
             daily_breakdown=daily_breakdown,
             logged_coverage=logged_coverage,
             goal_progress=goal_progress,
+            summary_text=summary_text,
             onboarding=onboarding,
             empty_period=empty_period,
             delta_label=_DELTA_LABELS.get(period, "vs previous"),

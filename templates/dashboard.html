@@ -1197,6 +1197,11 @@
         </div>
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Summary</h2>
+            <div class="flex items-center gap-2">
+            {% if summary_text %}
+            <button type="button" id="copySummaryBtn" class="px-3 py-1.5 rounded-full bg-white border border-[rgba(148,126,86,0.35)] text-gray-700 text-xs font-semibold hover:bg-[#F7F1E6] transition-all" aria-label="Copy summary" title="Copy a plain-text recap of this {{ period }} (for a journal, note or message)"><span class="sm:hidden">Copy</span><span class="hidden sm:inline">Copy summary</span></button>
+            <script type="application/json" id="periodSummaryText">{{ summary_text | tojson }}</script>
+            {% endif %}
             <button
                 id="exportSummaryBtn"
                 class="px-3 py-1.5 rounded-full bg-white border border-[rgba(148,126,86,0.35)] text-gray-700 text-xs font-semibold hover:bg-[#F7F1E6] transition-all"
@@ -1225,6 +1230,7 @@
             >
                 Export Summary
             </button>
+            </div>
         </div>
         <div class="hidden md:grid grid-cols-3 gap-4 lg:gap-6 mb-12">
             <div class="luxury-card rounded-2xl p-6 lg:p-8 flex flex-col justify-between cursor-pointer summary-card" data-filter="all" data-title="Full {{ period | title }} Log" data-chart="tasks" role="button" tabindex="0">
@@ -5131,6 +5137,39 @@
                 titleBtn.addEventListener('click', () => runManualSync());
             }
 
+            const copySummaryBtn = document.getElementById('copySummaryBtn');
+            if (copySummaryBtn) {
+                copySummaryBtn.addEventListener('click', async () => {
+                    let text = '';
+                    try {
+                        text = JSON.parse(document.getElementById('periodSummaryText')?.textContent || '""');
+                    } catch (_) { /* fall through to the error toast */ }
+                    if (!text) {
+                        if (window.showWarningToast) window.showWarningToast('No logs to summarise for this period');
+                        return;
+                    }
+                    try {
+                        await navigator.clipboard.writeText(text);
+                    } catch (_) {
+                        // Older browsers / non-secure origins: hidden textarea + execCommand.
+                        const area = document.createElement('textarea');
+                        area.value = text;
+                        area.setAttribute('readonly', '');
+                        area.style.position = 'fixed';
+                        area.style.opacity = '0';
+                        document.body.appendChild(area);
+                        area.select();
+                        let ok = false;
+                        try { ok = document.execCommand('copy'); } catch (__) { ok = false; }
+                        area.remove();
+                        if (!ok) {
+                            if (window.showErrorToast) window.showErrorToast('Could not copy - your browser blocked clipboard access');
+                            return;
+                        }
+                    }
+                    if (window.showSuccessToast) window.showSuccessToast('Summary copied');
+                });
+            }
             const exportSummaryBtn = document.getElementById('exportSummaryBtn');
             if (exportSummaryBtn) {
                 exportSummaryBtn.addEventListener('click', async () => {
