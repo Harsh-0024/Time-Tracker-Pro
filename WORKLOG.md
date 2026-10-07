@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 08:06 IST: session active (resumed 06:22).
+- 2026-10-07 08:18 IST: session active (resumed 06:22).
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -61,6 +61,8 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - feat: graphs 'By weekday' card (avg per weekday for focus/range)
 - week strip fits 7 days at md; admin pages keep next= on login redirect (and POSTs no longer bounce to a 405)
 - admin delete-user: no default selection + named confirm
+- auth: user ID format rule (no '@'/spaces, 3-32) on register+change; email can't equal another's user ID;
+  identifier lookup prefers email owner; friendlier email-failure copy (no 'Check SMTP settings')
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
