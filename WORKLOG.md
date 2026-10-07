@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 19:21 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 19:40 IST: 19:20 resume session ACTIVE.
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -156,6 +156,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [16:20 run] a11y: toasts announced (polite live region, errors role=alert); toast colours deepened so white text >= 4.5:1 (success/warning were 2.5/2.2:1); error-boundary overlay is a labelled alertdialog with focus on Reload
 - [16:20 run] privacy: Settings > API Keys URL placeholder showed a real-looking Sheety project ID (1a861cfa...) to every user -> 'your-project-id'; bearer token input masked with Show/Hide
 - [16:20 run] feat: 'Missing time' gap chips are buttons that open Add task prefilled with the gap (end left blank when the gap runs to midnight). Not browser-verified yet (needs a Sheety account to submit).
+- [19:20 run] dashboard: Top category % came from rounded per-tag hours (same 4.5h Waste read 43.3% vs 43.9% on Dominant quadrant) -> raw minutes (+ test)
+- [19:20 run] feat: week/month Insights 'Daily average' shows 'vs last week: +0.4h growth · −0.8h waste' (per logged day; hidden when previous period empty) (+ test)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
