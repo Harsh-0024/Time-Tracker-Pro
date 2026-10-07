@@ -1939,10 +1939,7 @@
                 }
                 return true;
             });
-            if (!filteredTasks.length) {
-                graphTasksList.innerHTML = '<div class="text-center py-8 text-gray-400">No tasks found</div>';
-                return;
-            }
+            if (!filteredTasks.length) return [];
             const sortKey = graphTaskSort || 'time_desc';
             if (sortKey === 'time_desc') {
                 filteredTasks.sort((a, b) => {
@@ -2057,6 +2054,10 @@
         function renderGraphTaskList() {
             if (!graphTasksList) return;
             const filteredTasks = getVisibleGraphTasks();
+            if (!filteredTasks.length) {
+                graphTasksList.innerHTML = '<div class="text-center py-8 text-gray-400">No tasks found</div>';
+                return;
+            }
             const html = filteredTasks.map(task => {
                 const dur = Number(task.duration_hours || 0);
                 const durText = hoursToHuman(dur);
