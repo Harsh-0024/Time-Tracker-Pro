@@ -4028,9 +4028,16 @@
             };
             showSheetyNotice(window.syncStats);
             let shortcutToast = null;
+            const isDialogOpen = () => {
+                if (document.getElementById('taskModal')?.classList.contains('active')) return true;
+                const exportModal = document.getElementById('exportFormatModal');
+                return Boolean(exportModal && !exportModal.classList.contains('hidden'));
+            };
             document.addEventListener('keydown', (event) => {
                 const tag = event.target?.tagName;
-                if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
+                if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
+                // Page shortcuts would navigate away underneath an open dialog.
+                if (isDialogOpen()) return;
                 const key = event.key.toLowerCase();
                 if (event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
                     event.preventDefault();
