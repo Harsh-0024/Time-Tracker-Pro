@@ -3760,6 +3760,10 @@
                     return visibleItems.concat(hiddenItems);
                 };
 
+                // Toggleable legend entries are buttons (keyboard + screen readers); 'Other' stays a span.
+                const legendTag = (item) => item.disabled
+                    ? 'span'
+                    : `button type="button" aria-pressed="${item.hidden ? 'false' : 'true'}" title="${item.hidden ? 'Show' : 'Hide'} ${escapeHtml(item.label)}"`;
                 const mobileLegendEl = document.getElementById('mobileModalLegend');
                 const updateMobileLegend = (chart) => {
                     if (mobileLegendEl && showMobileLegend) {
@@ -3770,10 +3774,10 @@
                             const textDecoration = isHidden ? 'line-through' : 'none';
                             const opacity = isHidden ? '0.5' : '1';
                             const cursor = item.disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-70';
-                            return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeHtml(item.key)}" style="opacity:${opacity}">
+                            return `<${legendTag(item)} class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeHtml(item.key)}" style="opacity:${opacity}">
                                 <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
                                 <span style="text-decoration:${textDecoration}">${escapeHtml(item.label)}</span>
-                            </span>`;
+                            </${item.disabled ? 'span' : 'button'}>`;
                         }).join('');
                     } else if (mobileLegendEl) {
                         mobileLegendEl.innerHTML = '';
@@ -3795,10 +3799,10 @@
                         const textDecoration = isHidden ? 'line-through' : 'none';
                         const opacity = isHidden ? '0.5' : '1';
                         const cursor = item.disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-70';
-                        return `<span class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeHtml(item.key)}" style="opacity:${opacity}">
+                        return `<${legendTag(item)} class="inline-flex items-center gap-1 ${cursor} transition-opacity" data-legend-key="${escapeHtml(item.key)}" style="opacity:${opacity}">
                             <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
                             <span style="text-decoration:${textDecoration}" class="max-w-[160px] truncate">${escapeHtml(item.label)}</span>
-                        </span>`;
+                        </${item.disabled ? 'span' : 'button'}>`;
                     }).join('');
                 };
 
@@ -3910,6 +3914,9 @@
                     updateMobileLegend(chart);
                     updateDesktopLegend(chart);
                     window.renderModalTasks();
+                    // The legend was re-rendered: keep keyboard focus on the entry just toggled.
+                    const again = Array.from(e.currentTarget.querySelectorAll('button[data-legend-key]')).find(el => el.dataset.legendKey === key);
+                    if (again) again.focus();
                 };
                 if (mobileLegendEl) {
                     mobileLegendEl.addEventListener('click', legendClickHandler);
