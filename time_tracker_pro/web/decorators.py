@@ -97,6 +97,13 @@ def resolve_request_user_id(headers: Dict[str, str]) -> Optional[int]:
     return None
 
 
+def _login_redirect():
+    """Send to /login, coming back here afterwards (GET only: a POST target can't be revisited)."""
+    if request.method != "GET":
+        return redirect(url_for("auth.login"))
+    return redirect(url_for("auth.login", next=safe_next_url((request.full_path or request.path).rstrip("?"))))
+
+
 def login_required(fn: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -128,7 +135,7 @@ def login_required(fn: Callable[..., Any]) -> Callable[..., Any]:
             return redirect(url_for("auth.register"))
         if request.path.startswith("/api/"):
             return jsonify({"error": "Unauthorized"}), 401
-        return redirect(url_for("auth.login", next=safe_next_url((request.full_path or request.path).rstrip("?"))))
+        return _login_redirect()
 
     return wrapper
 
@@ -138,12 +145,12 @@ def admin_required(fn: Callable[..., Any]) -> Callable[..., Any]:
     def wrapper(*args, **kwargs):
         uid = get_current_user_id()
         if uid is None:
-            return redirect(url_for("auth.login"))
+            return _login_redirect()
         db_name = current_app.config["DB_NAME"]
         user = get_user_by_id(db_name, int(uid))
         if not user:
             session.clear()
-            return redirect(url_for("auth.login"))
+            return _login_redirect()
         if not int(row_value(user, "is_verified") or 0):
             session.clear()
             session["pending_user_id"] = int(uid)

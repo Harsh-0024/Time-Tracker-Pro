@@ -76,3 +76,11 @@ def test_login_redirect_next_has_no_dangling_question_mark(app, db_path):
     client = app.test_client()
     assert client.get("/graphs").headers["Location"].endswith("next=/graphs")
     assert client.get("/?period=week").headers["Location"].endswith("next=/?period%3Dweek")
+
+
+def test_admin_page_login_redirect_comes_back(app, db_path):
+    make_user(db_path)
+    client = app.test_client()
+    assert client.get("/admin/users").headers["Location"].endswith("next=/admin/users")
+    # POST-only targets just go to /login
+    assert client.post("/admin/delete-user").headers["Location"].endswith("/login")
