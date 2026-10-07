@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#F7CF6B">
+    <title>Offline · Time Tracker Pro</title>
+    <style>
+        /* Self-contained: this page is shown when nothing else can load. */
+        :root { color-scheme: light dark; --bg: #F7F1E6; --card: #FFFDF8; --text: #1F2937; --muted: #6B7280; --line: rgba(148, 126, 86, 0.35); --accent: #F5B826; }
+        @media (prefers-color-scheme: dark) {
+            :root { --bg: #0D0B07; --card: #17130C; --text: #F3EBD9; --muted: #A8997A; --line: rgba(212, 175, 55, 0.25); --accent: #D4AF37; }
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px;
+               background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; }
+        main { width: 100%; max-width: 380px; text-align: center; background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 32px 24px; }
+        .icon { width: 48px; height: 48px; margin: 0 auto 16px; color: var(--accent); }
+        h1 { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
+        p { margin: 0 0 24px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+        button { font: inherit; font-weight: 600; font-size: 15px; padding: 12px 28px; border-radius: 999px; border: 0; cursor: pointer;
+                 background: #111827; color: #FCD34D; }
+        @media (prefers-color-scheme: dark) { button { background: rgba(212, 175, 55, 0.18); color: #F4D03F; box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.45); } }
+        button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    </style>
+</head>
+<body>
+    <main>
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M8.5 16.4a5 5 0 017 0M5.1 13a10 10 0 015.2-2.8M18.9 13a10 10 0 00-2.4-1.8M1.7 9.6a15 15 0 015.6-3.3M22.3 9.6A15 15 0 0012 5.5M12 20h.01" />
+        </svg>
+        <h1>You're offline</h1>
+        <p>Time Tracker Pro needs a connection to load your logs. Check your Wi-Fi or mobile data and try again.</p>
+        <button type="button" id="retry" autofocus>Try again</button>
+    </main>
+    <script>
+        document.getElementById('retry').addEventListener('click', () => window.location.reload());
+        // Come back by itself when the connection returns.
+        window.addEventListener('online', () => window.location.reload());
+    </script>
+</body>
+</html>

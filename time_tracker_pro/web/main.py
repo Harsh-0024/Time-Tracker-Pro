@@ -451,6 +451,21 @@ def app_icon():
     return send_file(BytesIO(_DEFAULT_ICON_BYTES), mimetype="image/png")
 
 
+@bp.route("/sw.js", endpoint="service_worker")
+def service_worker():
+    # Served from the root so its scope covers the whole app; always revalidated
+    # so a new version is picked up on the next visit.
+    resp = send_file(Path(current_app.static_folder or "") / "js" / "sw.js", mimetype="text/javascript", max_age=0)
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
+@bp.route("/offline", endpoint="offline")
+def offline():
+    # Cached by the service worker and shown when a page can't be reached.
+    return render_template("offline.html")
+
+
 @bp.route("/favicon.ico", endpoint="favicon")
 def favicon():
     # Browsers request this regardless of <link rel="icon">; avoid a 404 on every page.

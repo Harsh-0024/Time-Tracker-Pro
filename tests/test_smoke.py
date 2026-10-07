@@ -230,3 +230,16 @@ def test_graphs_has_calendar_card(db_path, login):
     html = login(make_user(db_path)).get("/graphs").get_data(as_text=True)
     assert 'id="calendarCard"' in html and 'id="calendarGrid"' in html
     assert "updateCalendarHeatmap(labels, values, valueScale);" in html
+
+
+def test_service_worker_and_offline_page_are_public(app):
+    client = app.test_client()
+    resp = client.get("/sw.js")
+    assert resp.status_code == 200
+    assert resp.mimetype == "text/javascript" and resp.headers["Cache-Control"] == "no-cache"
+    body = resp.get_data(as_text=True)
+    assert "const OFFLINE_URL = '/offline';" in body and "mode !== 'navigate'" in body
+    resp = client.get("/offline")
+    assert resp.status_code == 200 and "You're offline" in resp.get_data(as_text=True)
+    # Every page that links the manifest registers the worker.
+    assert "js/pwa.js" in client.get("/login").get_data(as_text=True)
