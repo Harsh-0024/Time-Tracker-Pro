@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 08:46 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
+- 2026-10-07 08:48 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -100,6 +100,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [08:22 run] week strip: all 7 days fit on phones (was 4 + scroll) and at 1024-1279px (7th day was clipped)
 - [08:22 run] 320px: 'View Full Month' header no longer overflows
 - [08:22 run] SECURITY: password-reset session now expires after the code TTL (was unlimited); verify/reset pages show the configured TTL
+- [08:22 run] settings: wrong current password -> 'Current password is incorrect.'
+- [08:22 run] input caps: graph search history (200 chars, 1000 rows/user), Sheety account fields, name 80 / email 254 / password 1024 (no slow hash on huge passwords)
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -113,6 +115,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (question) Settings profile changes check the current password with no attempt throttling (needs a logged-in session to abuse). Could reuse login_failures keyed per user.
+- (question) /sync-status answers anonymous callers with config booleans (sheety configured, db exists). Harmless-ish; could 401.
 - (question) /sync-now and /hard-reset are GET with side effects; SameSite=Lax lets another site trigger a forced Sheety sync via a top-level link. Low impact (quota). Consider POST.
 - (note) a dev server with LOCAL_AUTH_BYPASS was blocked by the session's permission classifier; verification done via pytest/Flask test client.
 - (question) ~174 distinct task names are stored with a trailing ' .' (e.g. 'Instagram .' x396 vs 'Instagram' x14) -
