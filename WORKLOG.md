@@ -7,7 +7,16 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 22:30 IST: 21:20 resume session ACTIVE.
+- 2026-10-07 22:35 IST: 21:20 resume session finished (idle - next scheduled run may continue).
+
+## 21:20 run summary - most important first
+1. Feature: Insights 'Top activities' now show a trend per activity (week/month: per-day change vs last period; day: 'usually Xh/day').
+2. Feature: 'Copy summary' button (+ C shortcut) copies a plain-text recap of the period.
+3. Feature: installed-app icon shortcuts (Add task / This week / Graphs) via /#add-task deep link, which also survives a login.
+4. Fixes: Daily Goals kept typed values on error; graphs export picker is a proper keyboard dialog; friendlier login error.
+5. Audits with no findings: eslint over all inline JS, axe structural rules on 7 pages, None/nan sweep over 27 period/date combos.
+Note: starting a dev server in the browser pane was declined (unattended), and copying the demo DB was blocked - all checks used synthetic data via the Flask test client + jsdom.
+All tests pass (187, py3.14 + 3.12). Nothing pushed.
 
 ## 19:20 run summary - most important first
 1. SECURITY: verification/welcome emails injected the registrant's name as raw HTML (phishing via someone else's address). Escaped.
