@@ -9,6 +9,16 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 ## Status / last heartbeat
 - 2026-10-07 19:58 IST: 19:20 resume session ACTIVE.
 
+## 19:20 run summary - most important first
+1. SECURITY: verification/welcome emails injected the registrant's name as raw HTML (phishing via someone else's address). Escaped.
+2. BUG: search 'sleep, rest' (graphs placeholder example) matched nothing; graphs chart vs Review list disagreed for 'only X' and quoted phrases ("Deep work ." rows). All aligned + tests.
+3. BUG: stale session (browser update changes UA) made /login drop ?next= -> you landed on the dashboard. Fixed.
+4. UX: Insights Top-activity rows now list exactly what they counted; Settings export toasts for empty range/errors instead of raw JSON / empty file.
+5. Features: week/month 'vs last week/month' daily averages; graphs 'By time of day' card; 'Again' on task cards; swipe week strip / day-by-day chart on phones; admin log counts.
+6. Perf: graph search ~10x faster (vectorised, equivalence-tested); task lists/exports iterate records (~300ms saved at 22k logs).
+7. a11y: skip links, date-picker + graphs focus-menu keyboard support.
+All tests pass (170). Nothing pushed.
+
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
 2. Security/privacy: Sheety URL must be public https (SSRF); email masked when a code is requested by user ID;
