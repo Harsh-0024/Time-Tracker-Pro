@@ -49,6 +49,19 @@ def _combine_datetimes(dates: pd.Series, times: pd.Series) -> pd.Series:
     return parsed
 
 
+def _clock_labels(values: pd.Series) -> List[Any]:
+    """Same as ``list(values.dt.strftime("%I:%M %p"))``, but each distinct clock time
+    (at most 1440) is formatted once - per-row strftime was ~40% of a dashboard request.
+    """
+    if values.empty or values.isna().any():
+        return list(values.dt.strftime("%I:%M %p"))
+    minutes = (values.dt.hour * 60 + values.dt.minute).tolist()
+    distinct = sorted(set(minutes))
+    samples = pd.Series(pd.Timestamp(2000, 1, 1) + pd.to_timedelta(distinct, unit="m"))
+    labels = dict(zip(distinct, samples.dt.strftime("%I:%M %p")))
+    return [labels[m] for m in minutes]
+
+
 def _clean_sheety_id(value: Any):
     if isinstance(value, float) and pd.isna(value):
         return None
@@ -88,8 +101,8 @@ def fetch_local_data(db_name: str, user_id: int) -> pd.DataFrame:
         "id": list(df["id"]),
         "sheety_id": [_clean_sheety_id(v) for v in df["sheety_id"]] if "sheety_id" in df.columns else [None] * len(df),
         "date": list(start.dt.date),
-        "start_time": list(start.dt.strftime("%I:%M %p")),
-        "end_time": list(end.dt.strftime("%I:%M %p")),
+        "start_time": _clock_labels(start),
+        "end_time": _clock_labels(end),
         "start_datetime": list(start),
         "end_datetime": list(end),
         "task": list(df["task"]),

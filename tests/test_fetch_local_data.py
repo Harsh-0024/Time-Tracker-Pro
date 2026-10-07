@@ -100,3 +100,15 @@ def test_matches_reference_when_all_rows_synced(db_path):
 def test_empty(db_path):
     uid = make_user(db_path)
     assert fetch_local_data(db_path, uid).empty
+
+
+def test_clock_labels_match_strftime_for_every_minute():
+    from time_tracker_pro.repositories.logs import _clock_labels
+
+    base = pd.Timestamp(2026, 10, 7)
+    values = pd.Series([base + pd.Timedelta(minutes=m, seconds=m % 60) for m in range(1440)]
+                       + [pd.Timestamp(1999, 12, 31, 23, 59, 59), pd.Timestamp(2030, 1, 1, 0, 0)])
+    assert _clock_labels(values) == list(values.dt.strftime("%I:%M %p"))
+    with_nat = pd.Series([base, pd.NaT])
+    assert _clock_labels(with_nat)[0] == "12:00 AM"
+    assert _clock_labels(pd.Series([], dtype="datetime64[ns]")) == []
