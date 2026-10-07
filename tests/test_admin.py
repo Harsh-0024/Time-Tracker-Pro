@@ -57,3 +57,25 @@ def test_session_of_deleted_user_is_dropped(db_path, login):
     with client.session_transaction() as sess:
         assert "user_id" not in sess
     assert keep  # other accounts unaffected
+
+
+def test_app_icon_upload_rejects_non_png_bytes(app, db_path, login):
+    import io
+
+    admin = make_user(db_path, role="admin")
+    client = login(admin)
+    jpeg = io.BytesIO(b"\xff\xd8\xff\xe0" + b"0" * 64)
+    resp = client.post(
+        "/admin/app-icon",
+        data={"icon": (jpeg, "icon.png", "image/png")},
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 302
+    assert "error=" in resp.headers["Location"]
+    png = io.BytesIO(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
+    resp = client.post(
+        "/admin/app-icon",
+        data={"icon": (png, "icon.png", "image/png")},
+        content_type="multipart/form-data",
+    )
+    assert "success=" in resp.headers["Location"]

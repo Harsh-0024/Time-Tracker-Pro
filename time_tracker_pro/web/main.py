@@ -147,6 +147,9 @@ def update_app_icon():
     data = file.read()
     if not data:
         return redirect(url_for("admin.admin_users", error="Uploaded icon file was empty."))
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        # The mimetype comes from the browser; check the bytes (a renamed JPEG breaks PWA installs).
+        return redirect(url_for("admin.admin_users", error="Icon must be a PNG file."))
     if len(data) > 5 * 1024 * 1024:
         return redirect(url_for("admin.admin_users", error="Icon is too large (max 5MB)."))
     icon_path = _icon_storage_path()
