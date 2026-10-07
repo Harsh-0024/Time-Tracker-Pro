@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 07:52 IST: session active (resumed 06:22).
+- 2026-10-07 08:06 IST: session active (resumed 06:22).
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -59,6 +59,8 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - graphs: 'Review tasks'/Export crashed on empty task list
 - matrix Total card: '% of <period> logged' (was constant 100%); close buttons named
 - feat: graphs 'By weekday' card (avg per weekday for focus/range)
+- week strip fits 7 days at md; admin pages keep next= on login redirect (and POSTs no longer bounce to a 405)
+- admin delete-user: no default selection + named confirm
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -72,6 +74,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (question) manifest declares the icon as 512x512 PNG; the uploaded one is a 394x394 JPEG. Uploads are now PNG-checked; re-upload a real 512 PNG.
 - (question) /api/import-csv REPLACES all of a user's logs with the CSV contents (by design?). A 1-row CSV
   would wipe thousands of rows. No UI calls it today. Consider append/merge or a confirm flag.
 - (question) /api/tasks has no upper bound on duration (e.g. 500h accepted if it overlaps nothing). Cap at 24h? Left for owner.
