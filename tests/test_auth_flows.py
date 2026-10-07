@@ -263,3 +263,31 @@ def test_profile_change_with_wrong_password_says_so(db_path, login):
     client.post("/profile/update", data={"action": "update_username", "new_name": "Al"})
     with client.session_transaction() as sess:
         assert sess.get("profile_error") == "Provide your current password or a verification code."
+
+
+def test_register_and_profile_length_caps(app, db_path, login, monkeypatch):
+    client = app.test_client()
+    base = {"email": "long@example.com", "user_id": "longname", "password": "password123", "confirm_password": "password123"}
+    html = client.post("/register", data={**base, "name": "N" * 81}).get_data(as_text=True)
+    assert "Name must be at most 80 characters." in html
+    huge = "p" * 1025
+    html = client.post("/register", data={**base, "name": "Ok", "password": huge, "confirm_password": huge}).get_data(as_text=True)
+    assert "at most 1024 characters" in html
+
+    uid = make_user(db_path)
+    _set_password(db_path, uid, "password123")
+    c = login(uid)
+    c.post("/profile/update", data={"action": "update_username", "new_name": "N" * 81, "current_password": "password123"})
+    with c.session_transaction() as sess:
+        assert sess.get("profile_error") == "Name must be at most 80 characters."
+
+
+def test_login_with_huge_password_is_rejected_without_hashing(app, db_path, monkeypatch):
+    import time_tracker_pro.web.auth as auth_module
+
+    uid = make_user(db_path)
+    _set_password(db_path, uid, "password123")
+    called = []
+    monkeypatch.setattr(auth_module, "check_password_hash", lambda *a: called.append(1) or False)
+    html = app.test_client().post("/login", data={"identifier": "alice", "password": "x" * 5000}).get_data(as_text=True)
+    assert "Invalid credentials." in html and not called

@@ -44,6 +44,10 @@ logger = logging.getLogger(__name__)
 
 _PROFILE_OTP_PURPOSES = {"change_password", "change_username"}
 MIN_PASSWORD_LENGTH = 8
+# Hashing is deliberately slow; a multi-MB "password" would burn CPU on every attempt.
+MAX_PASSWORD_LENGTH = 1024
+MAX_NAME_LENGTH = 80
+MAX_EMAIL_LENGTH = 254
 # Login accepts a username, user ID or email in one box, so IDs must never look like an email
 # (an ID of "someone@x.com" would shadow that person's email login).
 USER_ID_RE = re.compile(r"^[A-Za-z0-9._-]{3,32}$")
@@ -107,7 +111,7 @@ def login():
                 error = "Invalid credentials."
             else:
                 pw_hash = row_value(user, "password_hash") or ""
-                if not check_password_hash(pw_hash, password):
+                if len(password) > MAX_PASSWORD_LENGTH or not check_password_hash(pw_hash, password):
                     record_failure(db_name, identifier)
                     error = "Invalid credentials."
                 elif not int(row_value(user, "is_verified") or 0):
@@ -202,7 +206,11 @@ def register():
             error = "Passwords do not match."
         elif len(password) < MIN_PASSWORD_LENGTH:
             error = f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
-        elif "@" not in email or "." not in email:
+        elif len(password) > MAX_PASSWORD_LENGTH:
+            error = f"Password must be at most {MAX_PASSWORD_LENGTH} characters."
+        elif len(name) > MAX_NAME_LENGTH:
+            error = f"Name must be at most {MAX_NAME_LENGTH} characters."
+        elif len(email) > MAX_EMAIL_LENGTH or "@" not in email or "." not in email:
             error = "Please provide a valid email address."
         elif not USER_ID_RE.match(public_user_id):
             error = USER_ID_RULE
@@ -371,6 +379,8 @@ def reset_password():
         confirm_password = request.form.get("confirm_password") or ""
         if not new_password or len(new_password) < MIN_PASSWORD_LENGTH:
             error = f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
+        elif len(new_password) > MAX_PASSWORD_LENGTH:
+            error = f"Password must be at most {MAX_PASSWORD_LENGTH} characters."
         elif new_password != confirm_password:
             error = "Passwords do not match."
         else:
@@ -412,7 +422,7 @@ def profile_request_otp():
     purpose = (request.form.get("purpose") or "").strip()
     if purpose == "change_email":
         new_email = (request.form.get("new_email") or "").strip().lower()
-        if not new_email or "@" not in new_email:
+        if not new_email or "@" not in new_email or len(new_email) > MAX_EMAIL_LENGTH:
             session["profile_error"] = "Please provide a valid new email address."
             return redirect(url_for("main.settings"))
         if (row_value(user, "email") or "").strip().lower() == new_email:
@@ -465,7 +475,7 @@ def update_profile():
     def confirm_with_password_or_otp(purpose: str) -> Tuple[bool, str]:
         if current_password:
             pw_hash = row_value(user, "password_hash") or ""
-            if check_password_hash(pw_hash, current_password):
+            if len(current_password) <= MAX_PASSWORD_LENGTH and check_password_hash(pw_hash, current_password):
                 return True, ""
         if otp_code:
             return verify_email_code(db_name, int(user["id"]), otp_code, purpose=purpose)
@@ -478,6 +488,9 @@ def update_profile():
         new_name = (request.form.get("new_name") or "").strip()
         if not new_user_id and not new_name:
             session["profile_error"] = "Please enter a new user ID or name."
+            return redirect(url_for("main.settings"))
+        if len(new_name) > MAX_NAME_LENGTH:
+            session["profile_error"] = f"Name must be at most {MAX_NAME_LENGTH} characters."
             return redirect(url_for("main.settings"))
         if new_user_id and not USER_ID_RE.match(new_user_id):
             session["profile_error"] = USER_ID_RULE
@@ -521,6 +534,9 @@ def update_profile():
         if not new_password or len(new_password) < MIN_PASSWORD_LENGTH:
             session["profile_error"] = f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
             return redirect(url_for("main.settings"))
+        if len(new_password) > MAX_PASSWORD_LENGTH:
+            session["profile_error"] = f"Password must be at most {MAX_PASSWORD_LENGTH} characters."
+            return redirect(url_for("main.settings"))
         if new_password != confirm_password:
             session["profile_error"] = "Passwords do not match."
             return redirect(url_for("main.settings"))
@@ -549,7 +565,7 @@ def update_profile():
         old_code = (request.form.get("old_email_code") or "").strip()
         new_code = (request.form.get("new_email_code") or "").strip()
         pending_email = (session.get("pending_email_new") or "").strip().lower()
-        if not new_email or "@" not in new_email:
+        if not new_email or "@" not in new_email or len(new_email) > MAX_EMAIL_LENGTH:
             session["profile_error"] = "Please provide a valid new email address."
             return redirect(url_for("main.settings"))
         if not pending_email or pending_email != new_email:
