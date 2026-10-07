@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 19:58 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 20:01 IST: 19:20 resume session ACTIVE.
 
 ## 19:20 run summary - most important first
 1. SECURITY: verification/welcome emails injected the registrant's name as raw HTML (phishing via someone else's address). Escaped.
@@ -15,7 +15,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 3. BUG: stale session (browser update changes UA) made /login drop ?next= -> you landed on the dashboard. Fixed.
 4. UX: Insights Top-activity rows now list exactly what they counted; Settings export toasts for empty range/errors instead of raw JSON / empty file.
 5. Features: week/month 'vs last week/month' daily averages; graphs 'By time of day' card; 'Again' on task cards; swipe week strip / day-by-day chart on phones; admin log counts.
-6. Perf: graph search ~10x faster (vectorised, equivalence-tested); task lists/exports iterate records (~300ms saved at 22k logs).
+6. Perf: responses gzipped (dashboard 292KB -> 53KB); graph search ~10x faster (vectorised, equivalence-tested); task lists/exports iterate records (~300ms saved at 22k logs).
 7. a11y: skip links, date-picker + graphs focus-menu keyboard support.
 All tests pass (170). Nothing pushed.
 
@@ -191,6 +191,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [19:20 run] graphs shortcuts: R = Review tasks, S = Settings
 - [19:20 run] SECURITY: verification + welcome emails put the registrant's free-text name into HTML unescaped -> anyone could register with someone else's address and a name like <a href=evil>Secure your account</a> (phishing inside a genuine app email). Escaped (+ test)
 - [19:20 run] fuzz: 3,920 graph-data param combos incl. overnight/zero/negative logs - 0 errors, by_hour always 24 non-negative
+- [19:20 run] perf: app gzips HTML/JSON/CSS/JS (dashboard 292KB -> 53KB per load; files/static/streams untouched; DISABLE_GZIP=1 to opt out; README/.env.example) (+ test, 3.12 ok)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
