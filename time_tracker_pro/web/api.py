@@ -259,8 +259,7 @@ def graph_only_matches(row: pd.Series, term: str) -> bool:
     clean = str(term or "").strip().lower()
     if not clean:
         return False
-    task_value = re.sub(r"\s+", " ", str(row.get("task") or "").strip().lower())
-    return clean == task_value
+    return clean == _activity_name(row.get("task"))
 
 
 def graph_row_matches(row: pd.Series, expr: Optional[SearchExpr]) -> bool:
@@ -278,6 +277,12 @@ def graph_row_matches(row: pd.Series, expr: Optional[SearchExpr]) -> bool:
     if op == "or":
         return graph_row_matches(row, expr[1]) or graph_row_matches(row, expr[2])
     return True
+
+
+def _activity_name(value: Any) -> str:
+    """Task name as one activity: case/spacing-insensitive, without a stray trailing
+    '.'/',' from the sheet ("Instagram ." == "Instagram"), like the graphs page."""
+    return re.sub(r"[\s.,;:]+$", "", _norm_text(value)).strip()
 
 
 def _norm_text(value: Any) -> str:
@@ -343,9 +348,10 @@ def graph_search_mask(df: pd.DataFrame, expr: Optional[SearchExpr], _cache: Opti
         clean = str(expr[1] or "").strip().lower()
         if not clean:
             return pd.Series(False, index=df.index)
-        if "task_text" not in cache:
-            _term_mask(df, "_", cache)
-        return cache["task_text"] == clean
+        if "activity" not in cache:
+            tasks = df["task"] if "task" in df.columns else pd.Series(None, index=df.index)
+            cache["activity"] = tasks.map(_activity_name)
+        return cache["activity"] == clean
     if op == "not":
         return ~graph_search_mask(df, expr[1], cache) if expr[1] else pd.Series(True, index=df.index)
     if op == "and":

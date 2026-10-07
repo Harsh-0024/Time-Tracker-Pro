@@ -55,3 +55,12 @@ def test_graph_data_by_hour(db_path, login):
     assert sum(by_hour) == 105.0
     empty = login(uid).get("/api/graph-data?days=2&end=2026-09-01").get_json()
     assert empty["by_hour"] == [0] * 24
+
+
+def test_only_ignores_trailing_sheet_punctuation(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-10-01", "08:00:00", "2026-10-01", "09:00:00", task="Instagram .", tags="Waste")
+    add_log(db_path, uid, "2026-10-01", "09:00:00", "2026-10-01", "10:00:00", task="Instagram", tags="Waste")
+    add_log(db_path, uid, "2026-10-01", "10:00:00", "2026-10-01", "11:00:00", task="Instagram reels", tags="Waste")
+    data = login(uid).get("/api/graph-data?days=3&end=2026-10-02&search=only instagram&include_tasks=1").get_json()
+    assert sorted(t["task"] for t in data["tasks"]) == ["Instagram", "Instagram ."]
