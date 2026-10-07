@@ -2938,7 +2938,7 @@
             };
             const getKey = (task) => {
                 if (filterType === 'tag') {
-                    let key = String(task.task || '').trim();
+                    let key = String(task.task || '').replace(/[\s.,;:]+$/, '').trim();
                     if (!key || /^(undefined|null|none|nan)$/i.test(key)) key = 'Unspecified';
                     return key;
                 }
@@ -3474,7 +3474,7 @@
 
                 const modalFallbackLabel = window.modalFilterType === 'tag' ? 'Unspecified' : 'Waste';
                 const normalizeModalLabel = (value) => {
-                    const s = String(value ?? '').trim();
+                    const s = String(value ?? '').replace(/[\s.,;:]+$/, '').trim();
                     if (!s || /^(undefined|null|none|nan)$/i.test(s)) return modalFallbackLabel;
                     return s;
                 };

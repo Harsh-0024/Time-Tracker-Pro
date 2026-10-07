@@ -1300,7 +1300,8 @@
         }
 
         function normalizeGraphTaskName(value) {
-            const raw = String(value || '').trim();
+            // "Instagram ." and "Instagram" are the same activity (stray sheet punctuation).
+            const raw = String(value || '').replace(/[\s.,;:]+$/, '').trim();
             if (!raw || /^(undefined|null|none|nan)$/i.test(raw)) {
                 return 'Untitled';
             }
