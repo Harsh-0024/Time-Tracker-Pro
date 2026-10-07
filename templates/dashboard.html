@@ -1396,7 +1396,7 @@
                         {% else %}
                         <div class="text-center py-12">
                             <div class="text-5xl text-gray-200 mb-3">∅</div>
-                            <p class="text-sm text-gray-400">No data for<br>{{ selected_date }}</p>
+                            <p class="text-sm text-gray-400">No data for<br>{% if period == 'week' %}this week{% elif period == 'month' %}{{ selected_date.strftime('%B %Y') }}{% else %}{{ selected_date.strftime('%b') }} {{ selected_date.day }}, {{ selected_date.year }}{% endif %}</p>
                         </div>
                         {% endif %}
                     </div>
