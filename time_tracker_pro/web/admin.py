@@ -26,7 +26,12 @@ def admin_users():
         "display_name": display_name(admin_row),
         "role": (row_value(admin_row, "role") if admin_row else "admin"),
     }
-    users = list_users(db_name)
+    users = []
+    for row in list_users(db_name):
+        user = dict(row)
+        if is_admin_email(user.get("email")):
+            user["role"] = "admin"  # same rule as login/admin_required, so the list doesn't offer to delete them
+        users.append(user)
     return render_template(
         "admin_users.html",
         users=users,

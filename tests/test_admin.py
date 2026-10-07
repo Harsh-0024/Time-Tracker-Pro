@@ -89,3 +89,13 @@ def test_admin_cannot_delete_admin_listed_in_admin_emails(db_path, login, monkey
     assert "cannot+delete+another+admin" in resp.headers["Location"]
     import sqlite3
     assert sqlite3.connect(db_path).execute("SELECT COUNT(*) FROM users WHERE id = ?", (boss,)).fetchone()[0] == 1
+
+
+def test_admin_list_shows_email_admins_as_admin(db_path, login, monkeypatch):
+    monkeypatch.setenv("ADMIN_EMAILS", "boss@example.com")
+    admin = make_user(db_path, username="root", email="root@example.com", role="admin")
+    boss = make_user(db_path, username="boss", email="boss@example.com", role="user")
+    plain = make_user(db_path, username="pleb", email="pleb@example.com", role="user")
+    html = login(admin).get("/admin/users").get_data(as_text=True)
+    assert f'name="user_id" value="{plain}"' in html
+    assert f'name="user_id" value="{boss}"' not in html
