@@ -2425,7 +2425,8 @@
                         <div class="flex items-baseline justify-between gap-3 px-1 ${index ? 'pt-4' : 'pt-1'} pb-2">
                             <h4 class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-600" title="${escapeSuggestionHtml(lastDay)}">${escapeSuggestionHtml(friendlyTaskDate(lastDay))}</h4>
                             <span class="text-xs text-gray-500 tabular-nums">${totals.count} ${totals.count === 1 ? 'task' : 'tasks'} · ${hoursToHuman(totals.hours)}</span>
-                        </div>`;
+                        </div>${graphNotes[lastDay] ? `
+                        <p class="px-1 pb-2 -mt-1 text-xs text-gray-600 italic whitespace-pre-line">“${escapeSuggestionHtml(graphNotes[lastDay])}”</p>` : ''}`;
                 }
                 const dur = Number(task.duration_hours || 0);
                 const durText = hoursToHuman(dur);
