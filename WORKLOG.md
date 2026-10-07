@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 22:33 IST: 22:20 resume session ACTIVE.
+- 2026-10-07 22:37 IST: 22:20 resume session ACTIVE.
 
 ## 21:20 run summary - most important first
 1. Feature: Insights 'Top activities' now show a trend per activity (week/month: per-day change vs last period; day: 'usually Xh/day').
@@ -234,6 +234,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [22:20 run] BUG: forgot-password ('Email or user ID') turned a user ID into '<id>@gmail.com' on blur -> only a trailing '@' is completed (as on login). Browser-verified
 - [22:20 run] login: Enter in the password field used form.submit() (no busy state, double Enter = double POST, no validation) -> requestSubmit(Log In). Browser-verified
 - [22:20 run] README: goal dots, calendar heatmap
+- [22:20 run] feat(PWA): offline page. Minimal service worker (/sw.js, root scope, Cache-Control no-cache) handles ONLY page navigations: network (with navigation preload), and on failure a cached self-contained /offline page ('You're offline' · Try again · auto-reload when back online; light/dark via OS). Nothing else is cached -> no stale pages/data after deploys. Registered by static/js/pwa.js on every page linking the manifest. Verified via route tests + node harness of the worker (online/preload/offline/API untouched/old caches purged); the browser pane refuses SW registration so not exercised live. To remove: delete the pwa.js script tags - an installed worker keeps only serving the offline fallback. Tests pass on 3.14 + 3.12 (193)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
