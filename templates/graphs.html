@@ -3450,14 +3450,44 @@
         if (navTags) navTags.onclick = () => { window.location.href = `${dashboardUrl}#tags`; };
         if (navGraphs) navGraphs.onclick = () => { window.location.href = "{{ url_for('main.graphs') }}"; };
 
+        let graphShortcutToast = null;
         document.addEventListener('keydown', (event) => {
             const tag = event.target?.tagName;
             if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
             if (event.metaKey || event.ctrlKey || event.altKey) return;
-            if (event.key.toLowerCase() === 'd') {
+            if (graphTaskModal && graphTaskModal.classList.contains('active')) return;
+            const key = event.key.toLowerCase();
+            const rangePills = Array.from(document.querySelectorAll('.range-pill'));
+            if (key === 'd') {
                 window.location.href = dashboardUrl;
-            } else if (event.key.toLowerCase() === 'a' && adminUrl) {
+            } else if (key === 'a' && adminUrl) {
                 window.location.href = adminUrl;
+            } else if (key === '/') {
+                event.preventDefault();
+                graphSearchInput?.focus();
+            } else if (/^[1-9]$/.test(key) && rangePills[Number(key) - 1]) {
+                event.preventDefault();
+                rangePills[Number(key) - 1].click();
+            } else if (key === '?') {
+                event.preventDefault();
+                if (graphShortcutToast && document.body.contains(graphShortcutToast) && graphShortcutToast.__removeToast) {
+                    graphShortcutToast.__removeToast();
+                    graphShortcutToast = null;
+                    return;
+                }
+                if (!window.showToast) return;
+                const row = (keys, label) => `<div class="flex items-center gap-2">${keys.map(k => `<kbd class="toast-kbd">${k}</kbd>`).join('')}<span class="toast-kbd-label">${label}</span></div>`;
+                graphShortcutToast = window.showToast(`
+                    <div class="space-y-3">
+                        <div class="text-xs uppercase tracking-[0.2em] text-white/80 font-semibold">Keyboard Shortcuts</div>
+                        <div class="space-y-2 text-sm">
+                            ${row(['/'], 'Search activities')}
+                            ${row([`1–${rangePills.length}`], 'Time range (7 days … All)')}
+                            ${row(['D'], 'Dashboard')}
+                            ${adminUrl ? row(['A'], 'Admin') : ''}
+                        </div>
+                    </div>
+                `, 'shortcut', 7000);
             }
         });
 
