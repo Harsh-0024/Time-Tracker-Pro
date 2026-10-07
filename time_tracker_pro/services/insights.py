@@ -25,7 +25,8 @@ def top_activities(period_df: pd.DataFrame, limit: int = 5) -> List[Dict[str, An
     """Largest tasks by total time, grouping names case-insensitively."""
     if period_df.empty:
         return []
-    names = period_df["task"].fillna("").astype(str).str.strip()
+    # Sheet entries often end in a stray " ." ("Instagram ." vs "Instagram"): same activity.
+    names = period_df["task"].fillna("").astype(str).str.replace(r"[\s.,;:]+$", "", regex=True).str.strip()
     work = pd.DataFrame({"key": names.str.lower(), "name": names, "minutes": period_df["duration"]})
     work = work[work["key"] != ""]
     if work.empty:

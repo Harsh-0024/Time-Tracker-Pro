@@ -21,6 +21,15 @@ def test_top_activities_groups_case_insensitively(db_path):
     assert tops[1]["share"] == round(2 / 9 * 100, 1)
 
 
+def test_top_activities_ignores_trailing_punctuation(db_path):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "00:00:00", "2026-09-20", "02:00:00", task="Instagram .")
+    add_log(db_path, uid, "2026-09-20", "02:00:00", "2026-09-20", "03:00:00", task="Instagram .")
+    add_log(db_path, uid, "2026-09-20", "03:00:00", "2026-09-20", "04:00:00", task="Instagram")
+    tops = top_activities(_df(db_path, uid))
+    assert [(t["name"], t["hours"]) for t in tops] == [("Instagram", 4.0)]
+
+
 def test_day_insights_compare_with_previous_week(db_path):
     uid = make_user(db_path)
     # Two previous days with 2h growth each, today 4h growth.
