@@ -14,12 +14,12 @@ Eisenhower matrix (urgent × important).
   - **Insights:** top activities (each with its change vs the previous period, or vs your usual day), the day vs your
     7-day average (week/month: vs the previous period), best and worst days, and fully-logged days.
   - **Copy summary:** a plain-text recap of the period for a journal or message; **Export Summary** downloads its rows.
-  - **Daily goals:** a Growth target and a Waste limit, with progress and streaks.
+  - **Daily goals:** a Growth target and a Waste limit, with progress, streaks, and a met/missed dot per day.
   - **Full log modal:** search (`gym, reading` · `only lunch` · `-waste`), sort, export, and create/edit/delete entries
     (written back to the sheet), with task-name autocomplete, "Again" to re-log a task, and tap-a-gap to fill missing time.
   - On phones, swipe the week strip or the day-by-day chart to move between periods.
 - **Graphs:** trends for any category, quadrant or search expression over time, with a moving average,
-  goal/limit reference lines, saved views, and by-weekday and by-time-of-day breakdowns.
+  goal/limit reference lines, saved views, by-weekday and by-time-of-day breakdowns, and a calendar heatmap.
 - **Accounts:**
   - Email-verified registration and password or email-code (OTP) login.
   - "Remember me" sessions, password reset, login throttling, and a resend cooldown on email codes.
