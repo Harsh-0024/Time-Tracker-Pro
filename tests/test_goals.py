@@ -113,7 +113,7 @@ def test_goal_calendar_week(db_path, login):
     upsert_user_goals(db_path, uid, 4.0, 3.0)
     html = login(uid).get("/?date=2026-09-15&period=week").get_data(as_text=True)
     assert 'aria-label="Growth goal by day"' in html and 'aria-label="Waste limit by day"' in html
-    assert 'href="/?date=2026-09-14&period=day" title="Mon 14 Sep: goal met (5h)"' in html
+    assert 'href="/?date=2026-09-14&period=day" tabindex="-1" title="Mon 14 Sep: goal met (5h)"' in html
     assert 'title="Tue 15 Sep: over limit (6h)"' in html
     assert html.count('class="goal-dot is-') == 14
 

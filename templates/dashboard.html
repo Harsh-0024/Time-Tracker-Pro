@@ -440,8 +440,7 @@
         .goal-dot { width: 12px; height: 12px; border-radius: 999px; flex: none; box-sizing: border-box; }
         .goal-dots.is-month .goal-dot { width: 9px; height: 9px; }
         a.goal-dot { transition: transform 0.15s ease; }
-        a.goal-dot:hover, a.goal-dot:focus-visible { transform: scale(1.35); }
-        a.goal-dot:focus-visible { outline: 2px solid #B8860B; outline-offset: 2px; }
+        a.goal-dot:hover { transform: scale(1.35); }
         .goal-dot.is-met { background: #10B981; }
         .goal-dot.is-missed { background: #F5B826; }
         .goal-dots[aria-label^="Waste"] .goal-dot.is-missed { background: #E11D48; }
@@ -1546,7 +1545,7 @@
 {% macro goal_dots(calendar, key, label, verb_met, verb_missed) %}
                             <div class="goal-dots{{ ' is-month' if calendar|length > 7 }}" role="group" aria-label="{{ label }}">
                             {% for c in calendar %}{% set st = c[key] %}{% set tip = c.date.strftime('%a %-d %b') ~ ': ' ~ ({'met': verb_met ~ ' (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'missed': verb_missed ~ ' (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'open': 'so far (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'none': 'nothing logged', 'future': 'not yet'}[st]) %}
-                                {% if st in ('met', 'missed', 'open') %}<a class="goal-dot is-{{ st }}" href="/?date={{ c.date }}&period=day" title="{{ tip }}" aria-label="{{ tip }}"></a>{% else %}<span class="goal-dot is-{{ st }}" title="{{ tip }}" role="img" aria-label="{{ tip }}"></span>{% endif %}
+                                {% if st in ('met', 'missed', 'open') %}<a class="goal-dot is-{{ st }}" href="/?date={{ c.date }}&period=day" tabindex="-1" title="{{ tip }}" aria-label="{{ tip }}"></a>{% else %}<span class="goal-dot is-{{ st }}" title="{{ tip }}" role="img" aria-label="{{ tip }}"></span>{% endif %}
                             {% endfor %}
                             </div>
 {% endmacro %}
