@@ -8,7 +8,7 @@ import time
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
-from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from ..core.admins import is_admin_email
@@ -426,6 +426,16 @@ def reset_password():
 @bp.route("/profile/request-otp", methods=["POST"], endpoint="profile_request_otp")
 @login_required
 def profile_request_otp():
+    response = _profile_request_otp()
+    if request.accept_mimetypes.best == "application/json":
+        # Settings sends codes in the background so typed fields aren't lost.
+        error = session.pop("profile_error", None)
+        message = session.pop("profile_success", None)
+        return jsonify({"ok": not error, "message": error or message}), (400 if error else 200)
+    return response
+
+
+def _profile_request_otp():
     db_name = current_app.config["DB_NAME"]
     user_id = int(session.get("user_id") or 0)
     user = get_user_by_id(db_name, user_id)

@@ -693,23 +693,56 @@
             });
         }
 
-        const profileFields = [
-            { id: 'settingsNewName', key: 'settings.new_name' },
-            { id: 'settingsNewUserId', key: 'settings.new_user_id' },
-            { id: 'settingsNewPassword', key: 'settings.new_password' },
-            { id: 'settingsConfirmPassword', key: 'settings.confirm_password' },
-            { id: 'settingsUsernameOtp', key: 'settings.username_otp' },
-            { id: 'settingsPasswordOtp', key: 'settings.password_otp' }
-        ];
-        profileFields.forEach(field => {
-            const el = document.getElementById(field.id);
-            if (!el) return;
-            const stored = sessionStorage.getItem(field.key);
-            if (stored) {
-                el.value = stored;
-            }
-            el.addEventListener('input', () => {
-                sessionStorage.setItem(field.key, el.value);
+        try {
+            // Older versions kept typed values (incl. new passwords) in sessionStorage.
+            ['settings.new_name', 'settings.new_user_id', 'settings.new_password',
+             'settings.confirm_password', 'settings.username_otp', 'settings.password_otp']
+                .forEach(key => sessionStorage.removeItem(key));
+        } catch (err) { /* storage blocked */ }
+
+        // 'Send code' for the User ID / Password forms posts in the background, so
+        // what's typed (incl. the new password) stays put without being stashed in
+        // storage. Falls back to a normal submit if the request can't be made.
+        ['usernameOtpForm', 'passwordOtpForm'].forEach(formId => {
+            const form = document.getElementById(formId);
+            if (!form) return;
+            form.addEventListener('submit', async (e) => {
+                if (form.dataset.fallback === '1') return;
+                e.preventDefault();
+                const btn = e.submitter || document.querySelector(`button[form="${formId}"]`);
+                if (!btn || btn.disabled) return;
+                const idle = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = 'Sending...';
+                let data = null;
+                try {
+                    const resp = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin'
+                    });
+                    if ((resp.headers.get('Content-Type') || '').includes('application/json')) {
+                        data = await resp.json();
+                    }
+                } catch (err) {
+                    data = null;
+                }
+                btn.disabled = false;
+                btn.textContent = idle;
+                if (!data) {
+                    // Session expired or offline: let the browser handle it normally.
+                    form.dataset.fallback = '1';
+                    form.requestSubmit ? form.requestSubmit(btn) : form.submit();
+                    return;
+                }
+                if (window.showToast) {
+                    window.showToast(data.message || (data.ok ? 'Verification code sent.' : 'Could not send the code.'), data.ok ? 'success' : 'error');
+                }
+                if (data.ok) {
+                    const codeInput = btn.parentElement && btn.parentElement.querySelector('input[name="otp_code"]');
+                    if (codeInput) codeInput.focus();
+                }
             });
         });
 
@@ -739,16 +772,10 @@
                 if (btn && !btn.disabled) {
                     markFormBusy(btn, 'Updating...');
                 }
-                sessionStorage.removeItem('settings.new_name');
-                sessionStorage.removeItem('settings.new_user_id');
-                sessionStorage.removeItem('settings.new_password');
-                sessionStorage.removeItem('settings.confirm_password');
-                sessionStorage.removeItem('settings.username_otp');
-                sessionStorage.removeItem('settings.password_otp');
             });
         });
 
-        const emailForms = document.querySelectorAll('form[action="{{ url_for('auth.profile_request_otp') }}"], form[action="{{ url_for('auth.update_profile') }}"]');
+        const emailForms = document.querySelectorAll('form[action="{{ url_for('auth.profile_request_otp') }}"]:not(#usernameOtpForm):not(#passwordOtpForm), form[action="{{ url_for('auth.update_profile') }}"]');
         emailForms.forEach(form => {
             form.addEventListener('submit', (e) => {
                 const btn = e.submitter || form.querySelector('button[type="submit"]');
@@ -792,12 +819,16 @@
         const authToggles = document.querySelectorAll('.profile-auth-toggle');
         const authFields = document.querySelectorAll('.profile-auth-field');
         const setAuthMode = (target, mode) => {
+            // Only touch this form's fields/toggles (the User ID and Password forms
+            // each have their own password/OTP switch).
             authFields.forEach(field => {
-                const matches = field.dataset.target === target && field.dataset.mode === mode;
-                field.classList.toggle('hidden', !matches);
+                if (field.dataset.target !== target) return;
+                field.classList.toggle('hidden', field.dataset.mode !== mode);
             });
             authToggles.forEach(btn => {
-                const isActive = btn.dataset.target === target && btn.dataset.mode === mode;
+                if (btn.dataset.target !== target) return;
+                const isActive = btn.dataset.mode === mode;
+                btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
                 btn.classList.toggle('bg-gray-900', isActive);
                 btn.classList.toggle('text-amber-300', isActive);
                 btn.classList.toggle('border-gray-900', isActive);

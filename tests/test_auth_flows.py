@@ -391,3 +391,30 @@ def test_login_next_may_carry_a_fragment(app, db_path):
 
     assert safe_next_url("/#add-task") == "/#add-task"
     assert safe_next_url("//evil.com#x") is None
+
+
+def test_profile_request_otp_answers_json_for_background_requests(app, db_path, login, monkeypatch):
+    import time_tracker_pro.web.auth as auth_mod
+
+    uid = make_user(db_path)
+    client = login(uid)
+    monkeypatch.setattr(auth_mod, "send_verification_email", lambda *a, **k: True)
+    resp = client.post("/profile/request-otp", data={"purpose": "change_password"},
+                       headers={"Accept": "application/json"})
+    assert resp.status_code == 200 and resp.get_json() == {"ok": True, "message": "Verification code sent."}
+    with client.session_transaction() as sess:
+        assert "profile_success" not in sess  # not shown again on the next page load
+
+    monkeypatch.setattr(auth_mod, "send_verification_email", lambda *a, **k: False)
+    resp = client.post("/profile/request-otp", data={"purpose": "change_password"},
+                       headers={"Accept": "application/json"})
+    assert resp.status_code == 400 and resp.get_json()["ok"] is False
+
+    # A plain form post still redirects back to Settings.
+    resp = client.post("/profile/request-otp", data={"purpose": "bogus"})
+    assert resp.status_code == 302 and resp.headers["Location"].endswith("/settings")
+
+
+def test_settings_does_not_store_passwords_in_session_storage(db_path, login):
+    html = login(make_user(db_path)).get("/settings").get_data(as_text=True)
+    assert "sessionStorage.setItem" not in html
