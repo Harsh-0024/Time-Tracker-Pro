@@ -637,6 +637,9 @@
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
         }
+        @media (min-width: 768px) and (max-width: 1023.98px) {
+            .primary-cta { padding: 0.8rem 1.25rem; }
+        }
         .primary-cta:hover {
             transform: translateY(-1px);
             box-shadow: 0 20px 34px rgba(185, 132, 40, 0.48);
@@ -967,9 +970,9 @@
                 </div>
             </div>
             <div class="flex flex-col gap-4 mb-6 md:mb-8 md:flex-row md:items-center md:justify-between">
-                <div class="min-w-0 flex items-start justify-between gap-4 md:block md:w-[240px] md:flex-none">
+                <div class="min-w-0 flex items-start justify-between gap-4 md:block {{ 'md:w-[212px] lg:w-[248px] xl:w-[300px] md:flex-none' if period == 'day' else 'md:flex-1' }}">
                     <div class="min-w-0">
-                        <h2 class="{{ 'text-2xl md:text-3xl' if period == 'week' else ('text-2xl sm:text-3xl md:text-4xl' if period == 'month' else 'text-3xl md:text-4xl') }} font-light text-gray-900 mb-1 md:mb-2 tracking-tight">{{ current_month }}</h2>
+                        <h2 class="{{ 'text-2xl md:text-3xl' if period == 'week' else ('text-2xl sm:text-3xl md:text-4xl' if period == 'month' else 'text-3xl md:text-[28px] lg:text-[32px] xl:text-4xl') }} font-light text-gray-900 mb-1 md:mb-2 tracking-tight">{{ current_month }}</h2>
                         <p class="text-gray-700 md:text-gray-500 text-sm">Where did your {{ period if period in ["week", "month"] else "day" }} go?</p>
                     </div>
                     {% set full_label = period|capitalize if period in ['week', 'month'] else 'Day' %}
@@ -980,7 +983,7 @@
 
                 {% if period == 'day' %}
                 <div class="md:flex-1 md:min-w-0 md:flex md:justify-center">
-                    <div id="weekScroller" class="flex justify-between gap-1.5 sm:gap-3 overflow-x-auto pt-1 pb-4 px-1 scroll-smooth scroll-px-6 md:justify-start md:gap-2 lg:gap-4 md:pb-3 md:max-w-[560px]">
+                    <div id="weekScroller" class="flex justify-between gap-1.5 sm:gap-3 overflow-x-auto pt-1 pb-4 px-1 scroll-smooth scroll-px-6 md:justify-start md:gap-1.5 lg:gap-4 md:pb-3 md:max-w-[560px]">
                         {% for day in week_days %}
                         <a href="/?date={{ day.full_str }}&period={{ period }}" class="flex flex-col items-center flex-1 min-w-0 md:flex-none md:min-w-[44px] lg:min-w-[48px] xl:min-w-[56px] group" {% if day.is_selected %}data-selected-day="true"{% endif %}>
                             <span class="text-xs font-medium uppercase mb-3 tracking-wider
@@ -1006,8 +1009,8 @@
                 {% endif %}
 
                 <div class="hidden md:flex items-center gap-2 md:gap-4 shrink-0 lg:w-[240px] md:justify-end">
-                    <button id="viewFullBtn" onclick="viewFullDay()" class="primary-cta hidden md:inline-flex">
-                        View Full {{ full_label }}
+                    <button id="viewFullBtn" onclick="viewFullDay()" class="primary-cta hidden md:inline-flex" aria-label="View full {{ full_label|lower }} log">
+                        {% if period == 'day' %}{# Tablets: the week strip needs the room. #}<span class="lg:hidden">Full Day</span><span class="hidden lg:inline">View Full Day</span>{% else %}View Full {{ full_label }}{% endif %}
                     </button>
                 </div>
             </div>
@@ -4687,9 +4690,7 @@
             const period = window.currentPeriod || 'day';
             const periodMap = { 'day': 'Day', 'week': 'Week', 'month': 'Month' };
             const periodLabel = periodMap[period] || 'Day';
-            const viewFullBtn = document.getElementById('viewFullBtn');
             const viewFullBtnMobile = document.getElementById('viewFullBtnMobile');
-            if (viewFullBtn) viewFullBtn.textContent = 'View Full ' + periodLabel;
             // Phones: shorter label so long month names ('September 2026') stay on one line.
             if (viewFullBtnMobile) {
                 viewFullBtnMobile.textContent = 'Full ' + periodLabel;
