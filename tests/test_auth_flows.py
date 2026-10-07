@@ -156,3 +156,17 @@ def test_profile_user_id_change_enforces_format(db_path, login):
     client.post("/profile/update", data={"action": "update_username", "new_user_id": "a@b.co", "current_password": "password123"})
     with client.session_transaction() as sess:
         assert sess.get("profile_error", "").startswith("User ID must be 3-32")
+
+
+def test_identifier_lookup_prefers_the_email_owner(db_path):
+    import sqlite3
+
+    from time_tracker_pro.repositories.users import get_user_by_username_or_id_or_email
+
+    squatter = make_user(db_path, username="sq", email="sq@example.com")
+    owner = make_user(db_path, username="owner", email="owner@example.com")
+    conn = sqlite3.connect(db_path)
+    conn.execute("UPDATE users SET user_id = 'owner@example.com' WHERE id = ?", (squatter,))
+    conn.commit()
+    conn.close()
+    assert get_user_by_username_or_id_or_email(db_path, "OWNER@example.com")["id"] == owner

@@ -73,8 +73,9 @@ def get_user_by_username_or_id_or_email(db_name: str, identifier: str) -> Option
         WHERE lower(username) = lower(?)
            OR lower(user_id) = lower(?)
            OR lower(email) = lower(?)
+        ORDER BY CASE WHEN lower(email) = lower(?) THEN 0 ELSE 1 END, id
         """,
-        (value, value, value),
+        (value, value, value, value),
     ).fetchone()
     conn.close()
     return row
