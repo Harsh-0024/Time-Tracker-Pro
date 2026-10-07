@@ -47,7 +47,17 @@
             if (errorDet) errorDet.textContent = details;
         }
         
+        // Noise that isn't an app bug: cross-origin script errors (extensions, CDN
+        // scripts) carry no details, and ResizeObserver loop warnings are benign.
+        function isIgnorable(error) {
+            const msg = String((error && error.message) || error || '');
+            return msg === 'Script error.' || msg.startsWith('ResizeObserver loop');
+        }
+
         function handleError(error, source) {
+            if (pageUnloading || isIgnorable(error)) return;
+            if (error && error.__boundaryReported) return;
+            try { if (error && typeof error === 'object') error.__boundaryReported = true; } catch (e) {}
             errorCount++;
             
             if (errorResetTimer) clearTimeout(errorResetTimer);
@@ -56,22 +66,6 @@
             }, ERROR_RESET_TIME);
             
             console.error(`[Error Boundary] ${source}:`, error);
-            
-            // Log to server if available
-            try {
-                if (navigator.sendBeacon) {
-                    const data = JSON.stringify({
-                        message: error.message || String(error),
-                        stack: error.stack || '',
-                        source: source,
-                        url: window.location.href,
-                        timestamp: new Date().toISOString()
-                    });
-                    navigator.sendBeacon('/api/log-error', data);
-                }
-            } catch (e) {
-                // Ignore logging errors
-            }
             
             if (errorCount >= MAX_ERRORS) {
                 showErrorUI(
@@ -113,11 +107,28 @@
             handleError(event.reason || new Error('Unhandled promise rejection'), 'unhandledrejection');
         });
         
-        // Wrap fetch to catch network errors
+        // Requests still in flight when the page is left reject with a network
+        // error; that's not something to report.
+        let pageUnloading = false;
+        window.addEventListener('pagehide', () => { pageUnloading = true; });
+        window.addEventListener('pageshow', () => { pageUnloading = false; });
+
+        // Network failures: callers show their own error/retry states, so only
+        // add one short connection hint (at most every 15s). They don't count
+        // towards the full-screen "unstable" overlay - being offline isn't a crash.
+        let lastNetworkToastAt = 0;
         const originalFetch = window.fetch;
         window.fetch = function(...args) {
             return originalFetch.apply(this, args).catch(error => {
-                handleError(error, 'fetch');
+                const aborted = error && error.name === 'AbortError';
+                try { if (error && typeof error === 'object') error.__boundaryReported = true; } catch (e) {}
+                if (!aborted && !pageUnloading && Date.now() - lastNetworkToastAt > 15000) {
+                    lastNetworkToastAt = Date.now();
+                    console.warn('[Error Boundary] fetch failed:', error);
+                    showErrorToast(navigator.onLine === false
+                        ? "You're offline. Changes and refreshes will work once you reconnect."
+                        : "Couldn't reach the server. Check your connection and try again.");
+                }
                 throw error;
             });
         };
