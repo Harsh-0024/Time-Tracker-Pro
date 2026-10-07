@@ -2211,9 +2211,10 @@
                             </div>
                             <div class="shrink-0 flex flex-col items-end gap-2">
                                 <span class="inline-flex px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-semibold text-gray-700 js-hover-hours hover-swap" data-hours="${dur}">${durText}</span>
-                                ${actionButtons}
+                                ${actionButtons ? `<div class="hidden sm:block">${actionButtons}</div>` : ''}
                             </div>
                         </div>
+                        ${actionButtons ? `<div class="sm:hidden mt-3 flex justify-end">${actionButtons}</div>` : ''}
                     </div>
                 `;
             });
