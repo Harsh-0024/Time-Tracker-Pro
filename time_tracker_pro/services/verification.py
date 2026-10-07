@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 LOG_VERIFICATION_CODES_ENV = "LOG_VERIFICATION_CODES"
 VERIFICATION_CODE_TTL_MINUTES = int(os.getenv("VERIFICATION_CODE_TTL_MINUTES", "10"))
 VERIFICATION_MAX_ATTEMPTS = int(os.getenv("VERIFICATION_MAX_ATTEMPTS", "5"))
+# Login-by-OTP, forgot-password and Resend can be triggered by anyone who knows a user ID;
+# without a gap that's an inbox flood (and each new code resets the attempt counter).
+VERIFICATION_RESEND_COOLDOWN_SECONDS = int(os.getenv("VERIFICATION_RESEND_COOLDOWN_SECONDS", "60"))
 
 
 def create_verification_code(db_name: str, user_id: int, purpose: str = "verify_email") -> str:
@@ -64,6 +67,33 @@ def has_active_verification(db_name: str, user_id: int, purpose: str = "verify_e
     except Exception:
         return False
     return datetime.now(timezone.utc) <= expires_at
+
+
+def seconds_until_resend_allowed(db_name: str, user_id: int, purpose: str = "verify_email") -> int:
+    """0 if a new code may be sent now, else how many seconds to wait. Derived from the
+    newest unconsumed code's expiry (issued at = expires_at - TTL)."""
+    conn = get_db_connection(db_name)
+    row = conn.execute(
+        """
+        SELECT expires_at, verified_at FROM email_verifications
+        WHERE user_id = ? AND purpose = ?
+        ORDER BY id DESC LIMIT 1
+        """,
+        (int(user_id), purpose),
+    ).fetchone()
+    conn.close()
+    if not row or row["verified_at"]:
+        return 0
+    try:
+        expires_at = datetime.fromisoformat(row["expires_at"])
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+    except Exception:
+        return 0
+    issued_at = expires_at - timedelta(minutes=VERIFICATION_CODE_TTL_MINUTES)
+    elapsed = (datetime.now(timezone.utc) - issued_at).total_seconds()
+    remaining = VERIFICATION_RESEND_COOLDOWN_SECONDS - elapsed
+    return int(remaining) + 1 if remaining > 0 else 0
 
 
 def _verification_copy(purpose: str) -> Tuple[str, str]:

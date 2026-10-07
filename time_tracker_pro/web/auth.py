@@ -27,6 +27,7 @@ from ..repositories.settings import get_user_settings
 from ..services.verification import (
     consume_verification,
     has_active_verification,
+    seconds_until_resend_allowed,
     send_verification_email,
     verify_email_code,
 )
@@ -45,6 +46,7 @@ MIN_PASSWORD_LENGTH = 8
 # (an ID of "someone@x.com" would shadow that person's email login).
 USER_ID_RE = re.compile(r"^[A-Za-z0-9._-]{3,32}$")
 USER_ID_RULE = "User ID must be 3-32 letters, numbers, dots, dashes or underscores."
+RECENT_CODE_MESSAGE = "We sent you a code less than a minute ago. Check your inbox (and spam)."
 
 
 def _ua_hash(value: str) -> str:
@@ -82,7 +84,9 @@ def login():
                     session["pending_user_id"] = int(row_value(user, "id"))
                     session["pending_remember"] = remember
                     session["pending_verification_purpose"] = "login_otp"
-                    if send_verification_email(db_name, user, purpose="login_otp"):
+                    if seconds_until_resend_allowed(db_name, int(row_value(user, "id")), "login_otp"):
+                        session["verification_success"] = RECENT_CODE_MESSAGE
+                    elif send_verification_email(db_name, user, purpose="login_otp"):
                         target_email = mask_email(row_value(user, "email"))
                         session["verification_success"] = (
                             f"Verification code sent to {target_email}." if target_email else "Verification code sent."
@@ -160,6 +164,9 @@ def forgot_password():
                 session.clear()
                 session["pending_user_id"] = int(row_value(user, "id"))
                 session["pending_verification_purpose"] = "forgot_password"
+                if seconds_until_resend_allowed(db_name, int(row_value(user, "id")), "forgot_password"):
+                    session["verification_success"] = RECENT_CODE_MESSAGE
+                    return redirect(url_for("auth.verify_email"))
                 if send_verification_email(db_name, user, purpose="forgot_password"):
                     target_email = mask_email(row_value(user, "email"))
                     session["verification_success"] = (
@@ -273,7 +280,10 @@ def verify_email():
 
     if request.method == "POST":
         if request.form.get("action") == "resend":
-            if send_verification_email(db_name, user, purpose=purpose):
+            wait = seconds_until_resend_allowed(db_name, int(user["id"]), purpose)
+            if wait:
+                error = f"Please wait {wait} seconds before requesting another code."
+            elif send_verification_email(db_name, user, purpose=purpose):
                 success = "Verification code resent."
             else:
                 error = "We couldn't send the email right now. Please try again in a few minutes."

@@ -189,3 +189,24 @@ def test_forgot_password_by_user_id_does_not_reveal_email(app, db_path, monkeypa
     resp = client.post("/forgot-password", data={"identifier": "alice"}, follow_redirects=True)
     assert b"alice.secret@example.com" not in resp.data
     assert "a•••t@example.com".encode() in resp.data
+
+
+def test_resend_cooldown_blocks_rapid_otp_emails(app, db_path, monkeypatch):
+    import time_tracker_pro.services.verification as ver
+    import time_tracker_pro.web.auth as auth_mod
+
+    sent = []
+    monkeypatch.setattr(ver, "send_email", lambda *a, **k: sent.append(a[0]) or True)
+    make_user(db_path, username="alice", email="alice@example.com")
+    client = app.test_client()
+
+    client.post("/login", data={"identifier": "alice", "action": "login_otp"})
+    client.post("/login", data={"identifier": "alice", "action": "login_otp"})
+    assert len(sent) == 1
+    resp = client.post("/verify-email", data={"action": "resend"})
+    assert b"Please wait" in resp.data
+    assert len(sent) == 1
+
+    monkeypatch.setattr(ver, "VERIFICATION_RESEND_COOLDOWN_SECONDS", 0)
+    client.post("/verify-email", data={"action": "resend"})
+    assert len(sent) == 2
