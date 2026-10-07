@@ -119,3 +119,18 @@ def test_sheety_account_url_must_be_public_https(db_path, login):
         assert resp.status_code == 400, bad
     resp = client.post("/api/sheety-accounts", json={"api_base_url": "https://api.sheety.co/abc/timeLogs/sheet1"})
     assert resp.status_code == 201
+
+
+def test_import_csv_without_valid_rows_keeps_existing_logs(db_path, login):
+    import sqlite3
+
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "09:00:00", "2026-09-20", "10:00:00", task="Keep me")
+    client = login(uid)
+    for csv_data in ("a,b\n1,2", "5", "Log Entry\n\n"):
+        resp = client.post("/api/import-csv", json={"csv_data": csv_data})
+        assert resp.status_code in (400, 500), csv_data
+    conn = sqlite3.connect(db_path)
+    count = conn.execute("SELECT COUNT(*) FROM logs WHERE user_id = ?", (uid,)).fetchone()[0]
+    conn.close()
+    assert count == 1

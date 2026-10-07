@@ -108,4 +108,8 @@ def import_csv_content(db_name: str, user_id: int, csv_content: str) -> int:
         else:
             final_rows.append(p)
 
+    # replace_logs_for_user deletes first; if nothing here is insertable (whole minutes > 0),
+    # a malformed upload would wipe the user's logs and put nothing back.
+    if not any((p["end_dt"] - p["start_dt"]).total_seconds() >= 60 for p in final_rows):
+        return 0
     return replace_logs_for_user(db_name, int(user_id), final_rows)

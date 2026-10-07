@@ -1572,6 +1572,10 @@ def import_csv():
             return jsonify({"status": "error", "message": "Missing 'csv_data' field"}), 400
 
         inserted_count = import_csv_content(db_name, int(user_id), str(csv_content))
+        if not inserted_count:
+            return jsonify(
+                {"status": "error", "message": "No valid log rows found in CSV; nothing was changed."}
+            ), 400
         return jsonify(
             {
                 "status": "success",
