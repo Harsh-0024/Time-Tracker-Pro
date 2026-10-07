@@ -632,6 +632,26 @@ def delete_graph_view_route(view_id: int):
     return jsonify({"success": True})
 
 
+@bp.route("/api/day-notes/<day>", methods=["PUT"], endpoint="put_day_note")
+@api_or_login_required
+def put_day_note(day: str):
+    """Save (or, when empty, delete) the user's note for one day."""
+    from ..repositories.day_notes import clean_note, set_day_note
+
+    db_name = current_app.config["DB_NAME"]
+    user_id = int(getattr(g, "user_id", 0) or 0)
+    try:
+        note_day = datetime.strptime(day, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"error": "Use a YYYY-MM-DD date."}), 400
+    try:
+        note = clean_note(_text(_json_body().get("note")))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    set_day_note(db_name, user_id, note_day, note)
+    return jsonify({"day": note_day.isoformat(), "note": note})
+
+
 @bp.route("/api/graph-search-suggestions", endpoint="graph_search_suggestions")
 @api_or_login_required
 def graph_search_suggestions():

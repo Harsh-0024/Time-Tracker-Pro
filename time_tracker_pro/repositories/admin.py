@@ -37,6 +37,7 @@ _USER_OWNED_TABLES = (
     "sheety_outbox",
     "sheet_rewrite_state",
     "user_goals",
+    "day_notes",
 )
 
 

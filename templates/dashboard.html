@@ -1548,6 +1548,86 @@
                         </li>
                         {% endfor %}
                     </ol>
+                    {% if period == 'day' %}
+                    <div class="mt-5 pt-4 border-t border-[rgba(148,126,86,0.18)]">
+                        <div class="flex items-baseline justify-between gap-3 mb-2">
+                            <label for="dayNoteInput" class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">Note</label>
+                            <span id="dayNoteStatus" class="text-[11px] text-gray-400" aria-live="polite"></span>
+                        </div>
+                        <textarea id="dayNoteInput" rows="2" maxlength="1000" data-day="{{ selected_date }}" placeholder="How did the day go? Only you can see this." class="day-note-input w-full px-3.5 py-2.5 rounded-xl bg-white/80 border border-[rgba(148,126,86,0.3)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm text-gray-800 resize-none">{{ day_note or '' }}</textarea>
+                    </div>
+                    <script>
+                        // Day note: saved as you type (debounced), on blur, and when leaving the page.
+                        (function () {
+                            const input = document.getElementById('dayNoteInput');
+                            const status = document.getElementById('dayNoteStatus');
+                            if (!input) return;
+                            const url = `/api/day-notes/${encodeURIComponent(input.dataset.day)}`;
+                            let saved = input.value;
+                            let timer = null;
+                            let inFlight = null;
+                            const setStatus = (text) => { if (status) status.textContent = text; };
+                            const grow = () => {
+                                input.style.height = 'auto';
+                                input.style.height = `${Math.min(input.scrollHeight + 2, 320)}px`;
+                            };
+                            const save = async (keepalive = false) => {
+                                clearTimeout(timer);
+                                const value = input.value;
+                                if (value.trim() === saved.trim()) { setStatus(saved.trim() ? 'Saved' : ''); return; }
+                                if (inFlight && !keepalive) { await inFlight.catch(() => {}); }
+                                setStatus('Saving…');
+                                inFlight = fetch(url, {
+                                    method: 'PUT',
+                                    credentials: 'same-origin',
+                                    keepalive,
+                                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                    body: JSON.stringify({ note: value })
+                                }).then(async (resp) => {
+                                    const data = await resp.json().catch(() => ({}));
+                                    if (resp.status === 401) throw new Error('Session expired - log in again to save.');
+                                    if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+                                    saved = value;
+                                    setStatus(input.value === value ? (value.trim() ? 'Saved' : '') : 'Saving…');
+                                }).catch((err) => {
+                                    setStatus("Couldn't save");
+                                    if (!keepalive && window.showErrorToast) window.showErrorToast(err.message && !/^HTTP/.test(err.message) ? err.message : "Couldn't save the note. Check your connection and try again.");
+                                });
+                                return inFlight;
+                            };
+                            input.addEventListener('input', () => {
+                                grow();
+                                setStatus('');
+                                clearTimeout(timer);
+                                timer = setTimeout(() => save(), 900);
+                            });
+                            input.addEventListener('blur', () => save());
+                            input.addEventListener('keydown', (event) => {
+                                if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                                    event.preventDefault();
+                                    input.blur();
+                                } else if (event.key === 'Escape') {
+                                    event.stopPropagation();
+                                    input.blur();
+                                }
+                            });
+                            window.addEventListener('pagehide', () => { if (input.value.trim() !== saved.trim()) save(true); });
+                            grow();
+                        })();
+                    </script>
+                    {% elif period_notes %}
+                    <div class="mt-5 pt-4 border-t border-[rgba(148,126,86,0.18)]">
+                        <h4 class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase mb-3">Notes</h4>
+                        <ul class="space-y-2.5">
+                            {% for note_day, note_text in period_notes | dictsort %}
+                            <li class="text-sm">
+                                <a href="/?date={{ note_day }}&period=day" class="font-medium text-gray-800 hover:underline underline-offset-2">{{ note_day.strftime('%a %-d %b') }}</a>
+                                <span class="text-gray-600 whitespace-pre-line"> · {{ note_text | truncate(200) }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <div class="luxury-card rounded-2xl p-5 md:p-6 flex flex-col gap-4">

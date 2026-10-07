@@ -18,6 +18,7 @@ from ..core.dates import get_period_range, parse_period_param
 from ..core.rows import display_name, row_value
 from ..core.tags import primary_special_tag
 from ..repositories.app_settings import get_app_setting, upsert_app_setting
+from ..repositories.day_notes import get_day_notes
 from ..repositories.goals import get_user_goals, parse_goal_hours, upsert_user_goals
 from ..repositories.logs import fetch_local_data, get_first_log_date
 from ..repositories.settings import get_user_settings, upsert_user_settings
@@ -345,8 +346,9 @@ def dashboard():
         if period == "day"
         else period_label
     )
+    period_notes = get_day_notes(db_name, user_id, start_date, end_date)
     summary_text = build_period_summary_text(
-        summary_title, period, matrix, logged_coverage, insights, goal_progress
+        summary_title, period, matrix, logged_coverage, insights, goal_progress, notes=period_notes
     )
 
     user_row = get_user_by_id(db_name, user_id)
@@ -383,6 +385,8 @@ def dashboard():
             daily_breakdown=daily_breakdown,
             logged_coverage=logged_coverage,
             goal_progress=goal_progress,
+            day_note=period_notes.get(selected_date, "") if period == "day" else None,
+            period_notes=period_notes if period != "day" else None,
             summary_text=summary_text,
             onboarding=onboarding,
             empty_period=empty_period,

@@ -31,6 +31,7 @@ def build_period_summary_text(
     logged_coverage: Optional[float],
     insights: Optional[Dict[str, Any]],
     goal_progress: Optional[Dict[str, Any]] = None,
+    notes: Optional[Dict[Any, str]] = None,
 ) -> str:
     total = float(matrix.get("total_hours") or 0.0)
     if total <= 0:
@@ -100,4 +101,11 @@ def build_period_summary_text(
     if extra:
         lines.append("")
         lines.extend(extra)
+    if notes:
+        lines.append("")
+        if period == "day":
+            lines.append(f"Note: {next(iter(notes.values()))}")
+        else:
+            lines.append("Notes:")
+            lines.extend(f"- {_day(day)}: {text}" for day, text in sorted(notes.items()))
     return "\n".join(lines)

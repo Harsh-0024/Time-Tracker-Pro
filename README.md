@@ -14,6 +14,7 @@ Eisenhower matrix (urgent × important).
   - **Insights:** top activities (each with its change vs the previous period, or vs your usual day), the day vs your
     7-day average (week/month: vs the previous period), best and worst days, and fully-logged days.
   - **Copy summary:** a plain-text recap of the period for a journal or message; **Export Summary** downloads its rows.
+  - **Day notes:** a private line or two about the day (autosaved); week/month views list them, and Copy summary includes them.
   - **Daily goals:** a Growth target and a Waste limit, with progress, streaks, and a met/missed dot per day.
   - **Full log modal:** search (`gym, reading` · `only lunch` · `-waste`), sort, export, and create/edit/delete entries
     (written back to the sheet), with task-name autocomplete, "Again" to re-log a task, and tap-a-gap to fill missing time.
