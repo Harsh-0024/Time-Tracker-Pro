@@ -878,10 +878,10 @@
                 </div>
                 <div class="flex items-center gap-2 md:flex-wrap md:justify-end md:gap-x-3 md:gap-y-2 lg:flex-nowrap lg:gap-4">
                     <!-- Period Selector -->
-                    <div class="period-selector hidden md:flex">
-                        <button class="period-btn {% if period == 'day' %}active{% endif %}" onclick="changePeriod('day')">Day</button>
-                        <button class="period-btn {% if period == 'week' %}active{% endif %}" onclick="changePeriod('week')">Week</button>
-                        <button class="period-btn {% if period == 'month' %}active{% endif %}" onclick="changePeriod('month')">Month</button>
+                    <div class="period-selector hidden md:flex" role="group" aria-label="Period">
+                        <button type="button" class="period-btn {% if period == 'day' %}active{% endif %}" aria-pressed="{{ 'true' if period == 'day' else 'false' }}" onclick="changePeriod('day')">Day</button>
+                        <button type="button" class="period-btn {% if period == 'week' %}active{% endif %}" aria-pressed="{{ 'true' if period == 'week' else 'false' }}" onclick="changePeriod('week')">Week</button>
+                        <button type="button" class="period-btn {% if period == 'month' %}active{% endif %}" aria-pressed="{{ 'true' if period == 'month' else 'false' }}" onclick="changePeriod('month')">Month</button>
                     </div>
                     <div id="datePicker" class="relative flex-1 md:flex-none flex flex-wrap md:flex-nowrap items-center gap-2">
                         <button type="button" onclick="toggleDatePicker()" class="flex-1 md:w-auto inline-flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 rounded-full bg-white/80 border border-[rgba(148,126,86,0.35)] text-xs md:text-sm text-gray-700 shadow-sm hover:bg-[#F7F1E6] transition-all duration-200">
@@ -898,9 +898,9 @@
                         </button>
                         <div id="dateDropdown" class="hidden mt-3 w-full sm:w-72 md:w-72 rounded-2xl bg-[#FEFCF8] border border-[rgba(148,126,86,0.35)] shadow-2xl shadow-[rgba(15,23,42,0.18)] p-4 z-[90] md:absolute md:left-auto md:right-0 md:translate-x-0">
                             <div class="flex items-center justify-between mb-4 text-sm text-gray-700">
-                                <button type="button" onclick="navigateMonth(-1)" class="px-2 py-1 rounded-full hover:bg-[#F5EDE1]">&lsaquo;</button>
+                                <button type="button" onclick="navigateMonth(-1)" aria-label="Previous month" class="px-2 py-1 rounded-full hover:bg-[#F5EDE1]">&lsaquo;</button>
                                 <div id="dateDropdownLabel" class="font-medium"></div>
-                                <button type="button" onclick="navigateMonth(1)" class="px-2 py-1 rounded-full hover:bg-[#F5EDE1]">&rsaquo;</button>
+                                <button type="button" onclick="navigateMonth(1)" aria-label="Next month" class="px-2 py-1 rounded-full hover:bg-[#F5EDE1]">&rsaquo;</button>
                             </div>
                             <div class="grid grid-cols-7 gap-1 text-[11px] text-gray-400 mb-1">
                                 <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
@@ -933,16 +933,16 @@
         <!-- Month Header & Controls -->
         <div class="mb-10 md:mb-12" id="monthHeader">
             <div class="md:hidden mb-6">
-                <div class="flex w-full bg-white/80 border border-[rgba(148,126,86,0.35)] rounded-full p-1 shadow-sm">
-                    <button onclick="changePeriod('day')" class="flex-1 py-2 rounded-full text-sm font-medium transition
+                <div class="flex w-full bg-white/80 border border-[rgba(148,126,86,0.35)] rounded-full p-1 shadow-sm" role="group" aria-label="Period">
+                    <button type="button" aria-pressed="{{ 'true' if period == 'day' else 'false' }}" onclick="changePeriod('day')" class="flex-1 py-2 rounded-full text-sm font-medium transition
                         {% if period == 'day' %} bg-amber-400 text-gray-900 shadow {% else %} text-gray-600 hover:bg-slate-50 {% endif %}">
                         Day
                     </button>
-                    <button onclick="changePeriod('week')" class="flex-1 py-2 rounded-full text-sm font-medium transition
+                    <button type="button" aria-pressed="{{ 'true' if period == 'week' else 'false' }}" onclick="changePeriod('week')" class="flex-1 py-2 rounded-full text-sm font-medium transition
                         {% if period == 'week' %} bg-amber-400 text-gray-900 shadow {% else %} text-gray-600 hover:bg-slate-50 {% endif %}">
                         Week
                     </button>
-                    <button onclick="changePeriod('month')" class="flex-1 py-2 rounded-full text-sm font-medium transition
+                    <button type="button" aria-pressed="{{ 'true' if period == 'month' else 'false' }}" onclick="changePeriod('month')" class="flex-1 py-2 rounded-full text-sm font-medium transition
                         {% if period == 'month' %} bg-amber-400 text-gray-900 shadow {% else %} text-gray-600 hover:bg-slate-50 {% endif %}">
                         Month
                     </button>
