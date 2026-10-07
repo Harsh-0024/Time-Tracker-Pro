@@ -328,6 +328,10 @@
         .daily-col-label { text-align: center; font-size: 10px; color: #9CA3AF; font-variant-numeric: tabular-nums; }
         .daily-col.is-selected .daily-col-label { color: #111827; font-weight: 700; }
         .daily-columns.is-month .daily-col-label { font-size: 9px; }
+        .daily-col-hours { text-align: center; font-size: 11px; line-height: 1; color: #6B7280; font-variant-numeric: tabular-nums; margin-top: -2px; }
+        .daily-col.is-selected .daily-col-hours { color: #111827; font-weight: 600; }
+        [data-theme="dark"] .daily-col-hours { color: #A89A78; }
+        [data-theme="dark"] .daily-col.is-selected .daily-col-hours { color: #EDE6D3; }
         @media (max-width: 640px) {
             .daily-columns.is-month .daily-col:nth-child(odd):not(.is-selected) .daily-col-label { visibility: hidden; }
         }
@@ -1091,6 +1095,7 @@
                         {% for seg in day.segments %}<span style="height: {{ seg.pct }}%; background: {{ seg.color }};"></span>{% endfor %}
                     </span>
                     <span class="daily-col-label">{{ day.date.strftime('%a')[0] if period == 'week' else day.date.day }}</span>
+                    {% if period == 'week' %}<span class="daily-col-hours" aria-hidden="true">{{ ('%gh' | format(day.total)) if day.total else '–' }}</span>{% endif %}
                 </a>
                 {% endfor %}
             </div>
