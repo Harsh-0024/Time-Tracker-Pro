@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 09:36 IST: session active (resumed 06:22).
+- 2026-10-07 09:45 IST: session ended cleanly (06:22-09:45); next run can resume from the TODO queue.
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -17,7 +17,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 4. Races: graphs chart could show the wrong range; dashboard modal could open the wrong card's tasks.
 5. UX: Necessity tag chip was missing from Add task; tabs/modals/week strip fit small screens; 'By weekday' card.
 6. Dark mode: summary badges/progress tracks were light (broken CSS selectors); chips' selected state invisible.
-All 123 tests pass on 3.14 and 3.12. Nothing pushed.
+Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12). Nothing pushed.
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -81,6 +81,7 @@ All 123 tests pass on 3.14 and 3.12. Nothing pushed.
 - Edit-task tag chips; dark-mode selected chips were invisible; Missing-time card dark-mode contrast
 - dark mode: 12 CSS rules never matched (unescaped '#' in .bg-\[#hex\]) -> summary badges/tracks now dark
 - a11y: theme buttons + Day/Week/Month aria-pressed; calendar arrows labelled
+- styled 403/404/405/500 pages (JSON for /api/*)
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
