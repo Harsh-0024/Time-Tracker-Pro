@@ -178,3 +178,15 @@ def test_absurd_duration_is_400_not_500(db_path, login):
         assert created.status_code == 400, created.data
         updated = client.put("/api/tasks/7?by=sheety", json=body)
         assert updated.status_code == 400, updated.data
+
+
+def test_task_payloads_carry_end_date_for_overnight_logs(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "23:00:00", "2026-09-21", "07:00:00", task="Sleep", tags="Necessity")
+    client = login(uid)
+
+    tasks = client.get("/api/tasks?date=2026-09-20&period=day").get_json()["tasks"]
+    assert [(t["date"], t["end_date"]) for t in tasks] == [("2026-09-20", "2026-09-21")]
+
+    graph = client.get("/api/graph-data?days=all&include_tasks=1&end=2026-09-21").get_json()
+    assert [(t["date"], t["end_date"]) for t in graph["tasks"]] == [("2026-09-20", "2026-09-21")]

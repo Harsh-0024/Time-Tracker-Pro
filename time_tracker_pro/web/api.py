@@ -68,6 +68,16 @@ def _api_url_error(url: str) -> Optional[str]:
         return "API base URL must be a public address"
     return None
 
+
+def _row_end_date(row) -> str:
+    """Calendar date a log ends on (differs from 'date' for overnight logs)."""
+    end = row.get("end_datetime")
+    try:
+        return end.strftime("%Y-%m-%d") if end is not None and not pd.isna(end) else str(row.get("date") or "")
+    except (AttributeError, ValueError):
+        return str(row.get("date") or "")
+
+
 SearchExpr = Tuple[str, Any]
 SEARCH_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|\(|\)|,|\+|\-|\*|\bAND\b|\bOR\b|\bNOT\b|[^\s()+*\-()]+', re.IGNORECASE)
 
@@ -420,6 +430,7 @@ def graph_data():
                     "sheety_id": _optional_int(row.get("sheety_id")),
                     "task": row.get("task") or "",
                     "date": str(row.get("date") or ""),
+                    "end_date": _row_end_date(row),
                     "start_time": row.get("start_time") or "",
                     "end_time": row.get("end_time") or "",
                     "duration_minutes": minutes,
@@ -1474,6 +1485,7 @@ def get_tasks():
                     "start_time": row["start_time"],
                     "end_time": row["end_time"],
                     "date": str(row["date"]),
+                    "end_date": _row_end_date(row),
                     "duration": float(round(row["duration"] / 60.0, 2)),
                     "tag": row["tag"],
                     "urgent": bool(row["urgent"]),

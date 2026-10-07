@@ -2100,7 +2100,7 @@
             const rows = visibleTasks.map(task => ({
                 'start date': String(task.date || ''),
                 'start time': String(task.start_time || ''),
-                'end date': String(task.date || ''),
+                'end date': String(task.end_date || task.date || ''),
                 'end time': String(task.end_time || ''),
                 'task': normalizeGraphTaskName(task.task),
                 'duration': Number(task.duration_hours || 0),
