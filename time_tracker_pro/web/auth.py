@@ -469,6 +469,8 @@ def update_profile():
                 return True, ""
         if otp_code:
             return verify_email_code(db_name, int(user["id"]), otp_code, purpose=purpose)
+        if current_password:
+            return False, "Current password is incorrect."
         return False, "Provide your current password or a verification code."
 
     if action == "update_username":

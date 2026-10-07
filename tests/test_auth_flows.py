@@ -251,3 +251,15 @@ def test_reset_session_without_start_time_is_rejected(app, db_path):
     with client.session_transaction() as sess:
         sess["password_reset_user_id"] = uid
     assert client.get("/reset-password").headers["Location"].endswith("/forgot-password")
+
+
+def test_profile_change_with_wrong_password_says_so(db_path, login):
+    uid = make_user(db_path)
+    _set_password(db_path, uid, "password123")
+    client = login(uid)
+    client.post("/profile/update", data={"action": "update_username", "new_name": "Al", "current_password": "nope-nope"})
+    with client.session_transaction() as sess:
+        assert sess.get("profile_error") == "Current password is incorrect."
+    client.post("/profile/update", data={"action": "update_username", "new_name": "Al"})
+    with client.session_transaction() as sess:
+        assert sess.get("profile_error") == "Provide your current password or a verification code."
