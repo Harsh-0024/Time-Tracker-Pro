@@ -79,3 +79,13 @@ def test_app_icon_upload_rejects_non_png_bytes(app, db_path, login):
         content_type="multipart/form-data",
     )
     assert "success=" in resp.headers["Location"]
+
+
+def test_admin_cannot_delete_admin_listed_in_admin_emails(db_path, login, monkeypatch):
+    monkeypatch.setenv("ADMIN_EMAILS", "boss@example.com")
+    admin = make_user(db_path, username="root", email="root@example.com", role="admin")
+    boss = make_user(db_path, username="boss", email="boss@example.com", role="user")
+    resp = login(admin).post("/admin/delete-user", data={"user_id": str(boss), "message": "bye"})
+    assert "cannot+delete+another+admin" in resp.headers["Location"]
+    import sqlite3
+    assert sqlite3.connect(db_path).execute("SELECT COUNT(*) FROM users WHERE id = ?", (boss,)).fetchone()[0] == 1

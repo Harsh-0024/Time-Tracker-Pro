@@ -4,6 +4,7 @@ from typing import Optional
 
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 
+from ..core.admins import is_admin_email
 from ..core.rows import display_name, row_value
 from ..repositories.admin import delete_user_cascade, list_users
 from ..repositories.users import get_user_by_id
@@ -59,7 +60,7 @@ def admin_delete_user():
     user = get_user_by_id(db_name, target_id_int)
     if not user:
         return redirect(url_for("admin.admin_users", error="User not found."))
-    if (row_value(user, "role") or "user") == "admin":
+    if (row_value(user, "role") or "user") == "admin" or is_admin_email(row_value(user, "email")):
         return redirect(url_for("admin.admin_users", error="You cannot delete another admin."))
 
     delete_user_cascade(db_name, target_id_int)
