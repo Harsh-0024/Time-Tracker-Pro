@@ -1728,8 +1728,9 @@ def download_db():
                     exc,
                 )
         return send_file(db_name, as_attachment=True)
-    except Exception as exc:
-        return f"Error downloading DB: {exc}", 500
+    except Exception:
+        logger.exception("DB download failed")
+        return "Error downloading DB", 500
 
 
 @bp.route("/sync-status", endpoint="sync_status")
