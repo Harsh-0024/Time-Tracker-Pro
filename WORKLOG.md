@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 09:26 IST: session active (resumed 06:22).
+- 2026-10-07 09:36 IST: session active (resumed 06:22).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -80,6 +80,7 @@ All 123 tests pass on 3.14 and 3.12. Nothing pushed.
 - Add-task Necessity chip; full-log quadrant names match the matrix (Growth/Drudgery)
 - Edit-task tag chips; dark-mode selected chips were invisible; Missing-time card dark-mode contrast
 - dark mode: 12 CSS rules never matched (unescaped '#' in .bg-\[#hex\]) -> summary badges/tracks now dark
+- a11y: theme buttons + Day/Week/Month aria-pressed; calendar arrows labelled
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
