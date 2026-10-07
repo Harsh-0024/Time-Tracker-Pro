@@ -4453,6 +4453,12 @@
                 } else if (key === 'n') {
                     event.preventDefault();
                     openAddTaskFromAnywhere();
+                } else if (key === 'c') {
+                    const copyBtn = document.getElementById('copySummaryBtn');
+                    if (copyBtn) {
+                        event.preventDefault();
+                        copyBtn.click();
+                    }
                 } else if (key === '/') {
                     // Search: open the full log and focus its search box.
                     event.preventDefault();
@@ -4502,6 +4508,10 @@
                                     <div class="flex items-center gap-2">
                                         <kbd class="toast-kbd">/</kbd>
                                         <span class="toast-kbd-label">Search the log</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">C</kbd>
+                                        <span class="toast-kbd-label">Copy summary</span>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <kbd class="toast-kbd">G</kbd>
