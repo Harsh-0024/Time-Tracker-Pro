@@ -434,6 +434,22 @@
         .goal-bar.is-limit.is-over > span { background: linear-gradient(90deg, #E11D48, #FB7185); }
         [data-theme="dark"] .goal-bar { background: rgba(212, 175, 55, 0.10); }
         [data-theme="dark"] .goal-streak { color: #6EE7B7; }
+        .goal-dots { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+        .goal-dots.is-month { gap: 4px; }
+        .goal-dot { width: 12px; height: 12px; border-radius: 999px; flex: none; box-sizing: border-box; }
+        .goal-dots.is-month .goal-dot { width: 9px; height: 9px; }
+        a.goal-dot { transition: transform 0.15s ease; }
+        a.goal-dot:hover, a.goal-dot:focus-visible { transform: scale(1.35); }
+        a.goal-dot:focus-visible { outline: 2px solid #B8860B; outline-offset: 2px; }
+        .goal-dot.is-met { background: #10B981; }
+        .goal-dot.is-missed { background: #F5B826; }
+        .goal-dots[aria-label^="Waste"] .goal-dot.is-missed { background: #E11D48; }
+        .goal-dot.is-none { border: 1.5px dashed rgba(148, 126, 86, 0.45); }
+        .goal-dot.is-future { background: rgba(148, 126, 86, 0.12); }
+        [data-theme="dark"] .goal-dot.is-met { background: #34D399; }
+        [data-theme="dark"] .goal-dots[aria-label^="Waste"] .goal-dot.is-missed { background: #FB7185; }
+        [data-theme="dark"] .goal-dot.is-none { border-color: rgba(212, 175, 55, 0.35); }
+        [data-theme="dark"] .goal-dot.is-future { background: rgba(212, 175, 55, 0.10); }
         [data-theme="dark"] .goal-bar.is-limit > span { background: linear-gradient(90deg, #57534E, #78716C); }
         .insight-bar {
             height: 6px;
@@ -1524,6 +1540,13 @@
                 </div>
 
                 <div class="luxury-card rounded-2xl p-5 md:p-6 flex flex-col gap-4">
+{% macro goal_dots(calendar, key, label, verb_met, verb_missed) %}
+                            <div class="goal-dots{{ ' is-month' if calendar|length > 7 }}" role="group" aria-label="{{ label }} by day">
+                            {% for c in calendar %}{% set st = c[key] %}{% set tip = c.date.strftime('%a %-d %b') ~ ': ' ~ ({'met': verb_met ~ ' (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'missed': verb_missed ~ ' (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'none': 'nothing logged', 'future': 'not yet'}[st]) %}
+                                {% if st in ('met', 'missed') %}<a class="goal-dot is-{{ st }}" href="/?date={{ c.date }}&period=day" title="{{ tip }}" aria-label="{{ tip }}"></a>{% else %}<span class="goal-dot is-{{ st }}" title="{{ tip }}" role="img" aria-label="{{ tip }}"></span>{% endif %}
+                            {% endfor %}
+                            </div>
+{% endmacro %}
                     {% if goal_progress %}
                     <div class="goal-block">
                         <div class="flex items-baseline justify-between mb-3">
@@ -1561,12 +1584,14 @@
                                 <span class="text-gray-700">Growth ≥ {{ '%g' | format(gp.target) }}h</span>
                                 <span class="tabular-nums text-gray-600"><span class="text-lg font-light text-gray-900">{{ gp.met_days }}</span> / {{ gp.days }} days</span>
                             </div>
+                            {% if goal_progress.calendar %}{{ goal_dots(goal_progress.calendar, 'growth', 'Growth goal', 'goal met', 'below goal') }}{% endif %}
                             {% endif %}
                             {% if goal_progress.waste %}{% set wp = goal_progress.waste %}
                             <div class="flex items-baseline justify-between text-sm mt-2">
                                 <span class="text-gray-700">Waste ≤ {{ '%g' | format(wp.limit) }}h</span>
                                 <span class="tabular-nums text-gray-600"><span class="text-lg font-light text-gray-900">{{ wp.kept_days }}</span> / {{ wp.days }} days</span>
                             </div>
+                            {% if goal_progress.calendar %}{{ goal_dots(goal_progress.calendar, 'waste', 'Waste limit', 'under limit', 'over limit') }}{% endif %}
                             {% endif %}
                         {% endif %}
                     </div>

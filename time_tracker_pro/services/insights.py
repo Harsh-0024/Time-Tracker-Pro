@@ -324,6 +324,25 @@ def build_goal_progress(
     if limit is not None:
         kept = sum(1 for d in logged_days if float(waste_by_day.get(d, 0.0)) <= limit)
         result["waste"] = {"limit": limit, "kept_days": kept, "days": days}
+
+    # One entry per calendar day so the view can draw a met/missed dot row.
+    # Same rules as the counts above: unlogged days and days that haven't
+    # started are neither met nor missed.
+    logged = set(logged_days)
+    calendar = []
+    for d in _days(start_date, end_date):
+        entry: Dict[str, Any] = {"date": d}
+        state = "future" if d > max(today, start_date) else ("none" if d not in logged else None)
+        growth_h = float(growth_by_day.get(d, 0.0))
+        waste_h = float(waste_by_day.get(d, 0.0))
+        if target is not None:
+            entry["growth"] = state or ("met" if growth_h >= target else "missed")
+            entry["growth_hours"] = round_half_up(growth_h, 1)
+        if limit is not None:
+            entry["waste"] = state or ("met" if waste_h <= limit else "missed")
+            entry["waste_hours"] = round_half_up(waste_h, 1)
+        calendar.append(entry)
+    result["calendar"] = calendar
     return result
 
 

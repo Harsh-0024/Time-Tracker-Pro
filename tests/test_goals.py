@@ -89,3 +89,30 @@ def test_goal_streaks(db_path):
     assert goal_streaks(df, date(2026, 9, 20), goals) == {"growth": 2, "waste": 5}
     assert goal_streaks(df, date(2026, 9, 17), goals) == {"growth": 0, "waste": 3}
     assert goal_streaks(df, date(2026, 9, 16), {"growth_hours": 4.0, "waste_limit_hours": None}) == {"growth": 2}
+
+
+def test_goal_calendar_week(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-14", "08:00:00", "2026-09-14", "13:00:00", urg=0, imp=1)  # 5h growth
+    add_log(db_path, uid, "2026-09-15", "08:00:00", "2026-09-15", "10:00:00", urg=0, imp=1)  # 2h growth
+    add_log(db_path, uid, "2026-09-15", "10:00:00", "2026-09-15", "16:00:00", urg=0, imp=0)  # 6h waste
+    df = fetch_local_data(db_path, uid)
+    goals = {"growth_hours": 4.0, "waste_limit_hours": 3.0}
+    week = df[(df["date"] >= date(2026, 9, 13)) & (df["date"] <= date(2026, 9, 19))]
+    p = build_goal_progress(week, "week", date(2026, 9, 13), date(2026, 9, 19), goals, today=date(2026, 9, 16))
+    cal = p["calendar"]
+    assert [c["date"] for c in cal] == [date(2026, 9, d) for d in range(13, 20)]
+    assert [c["growth"] for c in cal] == ["none", "met", "missed", "none", "future", "future", "future"]
+    assert [c["waste"] for c in cal] == ["none", "met", "missed", "none", "future", "future", "future"]
+    assert cal[2]["growth_hours"] == 2.0 and cal[2]["waste_hours"] == 6.0
+
+    only_growth = build_goal_progress(week, "week", date(2026, 9, 13), date(2026, 9, 19),
+                                      {"growth_hours": 4.0, "waste_limit_hours": None}, today=date(2026, 9, 16))
+    assert "waste" not in only_growth["calendar"][1]
+
+    upsert_user_goals(db_path, uid, 4.0, 3.0)
+    html = login(uid).get("/?date=2026-09-15&period=week").get_data(as_text=True)
+    assert 'aria-label="Growth goal by day"' in html and 'aria-label="Waste limit by day"' in html
+    assert 'href="/?date=2026-09-14&period=day" title="Mon 14 Sep: goal met (5h)"' in html
+    assert 'title="Tue 15 Sep: over limit (6h)"' in html
+    assert html.count('class="goal-dot is-') == 14
