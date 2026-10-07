@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 22:50 IST: 22:20 resume session ACTIVE.
+- 2026-10-07 22:54 IST: 22:20 resume session ACTIVE.
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
@@ -253,6 +253,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [22:20 run] BUG: pull-to-refresh never worked - pulltorefresh.min.js needs a '.ptr' element the dashboard never had, so init returned null (it was still a render-blocking script on every load). Replaced with a small built-in 'Pull down to sync' that runs ONLY in the installed app (browsers have native pull-to-refresh), and ignores pulls with a dialog open, inside a scrolled panel/form field, or sideways swipes; release past the threshold reloads (which syncs). Library removed. Browser-verified with synthetic touches (pull / sideways / modal / short pull); not tried on a real phone
 - [22:20 run] style: graphs calendar weekday labels (Mon/Wed/Fri); README: pull to sync + offline page
 - [22:20 run] perf: fetch_local_data (runs on every dashboard/graphs/API request) 161 -> 69 ms at 22k logs; dashboard ~165 -> ~95 ms. (1) clock labels: each distinct HH:MM (<=1440) formatted once instead of per-row strftime x2; (2) datetime columns passed as arrays, not lists of Timestamps. Output byte-identical: existing row-by-row reference test, new every-minute test, assert_frame_equal vs the previous version on 22k synthetic logs; 3.14 + 3.12. NOTE: this touches the display formatting of times (not how time passes) - earlier runs left it alone for that reason; revert b2fc52e/9bf61b2 if you'd rather keep it untouched
+- [22:20 run] BUG: dashboard error toasts never used the friendly 401/403/404/5xx copy - it throws 'HTTP error! status: N' but the helper matched 'http N' (users saw 'Failed to load tasks: HTTP error! status: 500'). Status parsed from either form; any 5xx = server error; 404 says 'Task not found' only for single-task actions (graphs too). Browser-verified
+- [22:20 run] checked, no change needed: admin page at 375px, iOS home-screen meta, verification codes (secrets + hashed + attempt cap), saved-view validation, XSS sweep of innerHTML templates
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
