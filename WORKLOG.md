@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 20:05 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 20:06 IST: 19:20 resume session ACTIVE.
 
 ## 19:20 run summary - most important first
 1. SECURITY: verification/welcome emails injected the registrant's name as raw HTML (phishing via someone else's address). Escaped.
@@ -196,6 +196,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [19:20 run] perf: Google Fonts preconnect on all pages
 - [19:20 run] audit (no change needed): rendered pages have no duplicate ids, no dangling label-for / aria-labelledby / describedby / controls; no |safe in templates; API token compare is constant-time
 - [19:20 run] feat: Add task name autocomplete (60 most-used recent names); picking one pre-fills its usual tags/priority if untouched (+ tests)
+- [19:20 run] Edit-task name field uses the same suggestions
+- [19:20 run] BUG: after add/edit/delete in the full log, closing it left the dashboard totals/matrix/timeline/insights stale -> reloads on close after a successful change (not verified end-to-end: needs Sheety)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
