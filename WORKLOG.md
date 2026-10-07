@@ -114,6 +114,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [12:06 run] graphs Review-tasks pie: slice colours picked for distinct hues (green schemes coloured the top 3 slices green)
 - [12:06 run] Add/Edit task panels: stray 'Close' text -> labelled x icon button; copy no longer implies Sheety is always on
 - [12:06 run] admin: 'Remove a User' hides the message box + dead button when nobody is removable
+- [12:06 run] dark a11y (axe): active Day/Week/Month pill was cream-on-amber 1.3:1 -> dark text; matrix-card sub-labels + share % lifted from 2.5-4:1 to >=5.5:1
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -127,6 +128,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (note) dark --text-faint (#6E6045) is 3.2:1 - axe flags ~10 small labels (timeline axis, insight labels). Earlier session chose it for hierarchy; bump to ~#877858 for AA if you prefer.
 - (question) /sync-status answers anonymous callers with config booleans (sheety configured, db exists). Harmless-ish; could 401.
 - (question) /sync-now and /hard-reset are GET with side effects; SameSite=Lax lets another site trigger a forced Sheety sync via a top-level link. Low impact (quota). Consider POST.
 - (note) a dev server with LOCAL_AUTH_BYPASS was blocked by the session's permission classifier; verification done via pytest/Flask test client.
