@@ -72,3 +72,13 @@ def test_deleting_user_removes_notes(db_path, login):
     login(uid).put("/api/day-notes/2026-09-15", json={"note": "x"})
     delete_user_cascade(db_path, uid)
     assert get_day_note(db_path, uid, date(2026, 9, 15)) is None
+
+
+def test_note_box_on_a_day_without_logs(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-15", "08:00:00", "2026-09-15", "10:00:00", task="Study", tags="Work", urg=0, imp=1)
+    client = login(uid)
+    client.put("/api/day-notes/2026-09-20", json={"note": "Day off, hiking."})
+    html = client.get("/?date=2026-09-20&period=day").get_data(as_text=True)
+    assert "Nothing logged on" in html
+    assert html.count('id="dayNoteInput"') == 1 and "Day off, hiking.</textarea>" in html
