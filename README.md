@@ -25,7 +25,7 @@ Eisenhower matrix (urgent × important).
   - "Remember me" sessions, password reset, login throttling, and a resend cooldown on email codes.
 - **Admin:** user list (with each user's log count and last logged day) and account removal with an emailed reason.
   Admins cannot see other users' data.
-- **Interface:** light, dark and system themes; installable as a PWA (long-press the icon for Add task / This week / Graphs); keyboard shortcuts (press `?`).
+- **Interface:** light, dark and system themes; installable as a PWA (long-press the icon for Add task / This week / Graphs; pull down to sync; a friendly offline page); keyboard shortcuts (press `?`).
 
 ## Running locally
 
