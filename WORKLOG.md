@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 23:00 IST: 22:20 resume session ACTIVE.
+- 2026-10-07 23:03 IST: 22:20 resume session ACTIVE.
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
@@ -256,6 +256,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [22:20 run] BUG: dashboard error toasts never used the friendly 401/403/404/5xx copy - it throws 'HTTP error! status: N' but the helper matched 'http N' (users saw 'Failed to load tasks: HTTP error! status: 500'). Status parsed from either form; any 5xx = server error; 404 says 'Task not found' only for single-task actions (graphs too). Browser-verified
 - [22:20 run] checked, no change needed: admin page at 375px, iOS home-screen meta, verification codes (secrets + hashed + attempt cap), saved-view validation, XSS sweep of innerHTML templates
 - [22:20 run] feat: DAY NOTES. New table day_notes (user_id, day, note) created on startup (CREATE IF NOT EXISTS; added to admin delete cascade). PUT /api/day-notes/<YYYY-MM-DD> {note} (empty deletes, 1000 chars, per user). Day view: 'Note' box under Top activities (also its own card on a day with nothing logged), autosaved (debounced typing / blur / Cmd+Enter / keepalive on page hide) with 'Saving…/Saved' status. Week/month: 'Notes' list linking to each day. Copy summary ends with the note(s); JSON export has a 'notes' array (CSV unchanged). Notes are local only: not written to the sheet, untouched by sync/hard reset. (+ 7 tests; browser-verified with stubbed fetch)
+- [22:20 run] dark: 'None yet' quadrant badge (empty period) was a bright white pill -> dark override. Then a dark-mode scan of 11 rendered pages (transitions off; bright backgrounds flagged): nothing else real
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
