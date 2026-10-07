@@ -423,7 +423,7 @@
             <button id="sheetyAccountsToggle" type="button" class="w-full text-left rounded-2xl border border-[rgba(148,126,86,0.28)] bg-white/75 px-4 py-4 flex items-center justify-between gap-4 hover:bg-[#F7F1E6] transition" aria-expanded="false">
                 <div>
                     <h2 class="text-base sm:text-lg font-semibold text-gray-900">Sheety API Accounts</h2>
-                    <p class="text-xs sm:text-sm text-gray-600 mt-1">Current active: {{ sheety.active_email }} · Priority {{ sheety.active_priority }}</p>
+                    <p class="text-xs sm:text-sm text-gray-600 mt-1">{% if not api_accounts %}No accounts yet · add one to sync from Google Sheets{% elif sheety.active_priority == '-' %}{{ api_accounts|length }} saved · none active{% else %}Active: {{ sheety.active_email or 'unnamed account' }} · Priority {{ sheety.active_priority }}{% endif %}</p>
                 </div>
                 <span id="sheetyAccountsChevron" class="text-gray-500 text-xl leading-none">▾</span>
             </button>

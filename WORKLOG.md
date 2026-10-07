@@ -108,6 +108,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [12:06 run] SECURITY: Settings current-password check throttled (login_failures, key 'profile #<id>'); OTP still works when locked
 - [12:06 run] api: /sync-now, /hard-reset, Sheety test-connection no longer echo raw exception text
 - [12:06 run] reset-password: visible 8-char hint (was placeholder only) + live 'do not match' check; register hints tied via aria-describedby
+- [12:06 run] settings: Sheety summary reads 'No accounts yet' / 'N saved · none active' instead of 'No active account · Priority -'
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
