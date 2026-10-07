@@ -202,6 +202,7 @@
         [data-theme="dark"] #modalMissingTime .text-amber-900 { color: #F4D03F !important; }
         [data-theme="dark"] #modalMissingTime .text-amber-700 { color: #C9A43A !important; }
         [data-theme="dark"] #modalMissingTime .text-gray-500 { color: #8C7C58 !important; }
+        [data-theme="dark"] #modalMissingTime button[data-gap-start]:hover { background: rgba(212,175,55,0.18) !important; }
         [data-theme="dark"] #modalMissingTime .bg-amber-50 {
             background: rgba(212,175,55,0.12) !important;
             border-color: rgba(212,175,55,0.25) !important;
@@ -2622,7 +2623,8 @@
             }
         };
 
-        window.openCreateTaskPanel = function() {
+        // prefill: optional { start, end } in minutes (e.g. from a 'Missing time' gap).
+        window.openCreateTaskPanel = function(prefill = null) {
             const panel = document.getElementById('taskCreatePanel');
             if (!panel) return;
             const modal = document.getElementById('taskModal');
@@ -2664,6 +2666,13 @@
                     const hours = String(now.getHours()).padStart(2, '0');
                     const minutes = String(now.getMinutes()).padStart(2, '0');
                     timeInput.value = `${hours}:${minutes}`;
+                }
+            }
+            if (prefill && Number.isFinite(prefill.start)) {
+                if (timeInput) timeInput.value = minutesToInputTime(prefill.start);
+                // A gap that runs to midnight has no same-day end time; leave End for the user.
+                if (endInput && Number.isFinite(prefill.end) && prefill.end < 24 * 60) {
+                    endInput.value = minutesToInputTime(prefill.end);
                 }
             }
             if (overlap) {
@@ -3482,7 +3491,7 @@
                 const missingMinutes = gaps.reduce((sum, gap) => sum + (gap.end - gap.start), 0);
                 const gapHtml = gaps.length
                     ? gaps.map(gap => `
-                        <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-semibold border border-amber-200">${formatMinutesToTime(gap.start)} – ${formatMinutesToTime(gap.end)}</span>
+                        <button type="button" class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-semibold border border-amber-200 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 transition" data-gap-start="${gap.start}" data-gap-end="${gap.end}" title="Log this gap" aria-label="Log ${formatMinutesToTime(gap.start)} to ${formatMinutesToTime(gap.end)}">${formatMinutesToTime(gap.start)} – ${formatMinutesToTime(gap.end)}</button>
                     `).join('')
                     : '<span class="text-xs text-gray-500">No missing gaps found.</span>';
 
@@ -3493,7 +3502,7 @@
                                 <p class="text-xs uppercase tracking-[0.22em] text-amber-700 font-semibold">Missing time</p>
                                 <p class="text-sm text-amber-900 font-semibold">${hoursToHuman(missingMinutes / 60)}</p>
                             </div>
-                            <p class="text-[11px] text-amber-700">Unlogged gaps this day</p>
+                            <p class="text-[11px] text-amber-700">${gaps.length ? 'Tap a gap to log it' : 'Unlogged gaps this day'}</p>
                         </div>
                         <div class="mt-3 flex flex-wrap gap-2">
                             ${gapHtml}
@@ -3503,6 +3512,13 @@
                 missingContainer.classList.remove('hidden');
             };
             renderMissingTime();
+            if (missingContainer) {
+                missingContainer.onclick = (event) => {
+                    const chip = event.target.closest('[data-gap-start]');
+                    if (!chip || !window.openCreateTaskPanel) return;
+                    window.openCreateTaskPanel({ start: Number(chip.dataset.gapStart), end: Number(chip.dataset.gapEnd) });
+                };
+            }
             const statsContainer = document.getElementById('modalStats');
             if (statsContainer && isMultiDay) {
                 statsContainer.classList.add('cursor-pointer');
