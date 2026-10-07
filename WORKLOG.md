@@ -115,6 +115,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [12:06 run] Add/Edit task panels: stray 'Close' text -> labelled x icon button; copy no longer implies Sheety is always on
 - [12:06 run] admin: 'Remove a User' hides the message box + dead button when nobody is removable
 - [12:06 run] dark a11y (axe): active Day/Week/Month pill was cream-on-amber 1.3:1 -> dark text; matrix-card sub-labels + share % lifted from 2.5-4:1 to >=5.5:1
+- [12:06 run] a11y: day timeline / day-by-day columns used role=listitem on buttons/links (invalid) -> labelled groups
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync

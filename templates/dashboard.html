@@ -1075,9 +1075,9 @@
                     {% endfor %}
                 </div>
             </div>
-            <div class="daily-columns {{ 'is-month' if period == 'month' else '' }}" role="list">
+            <div class="daily-columns {{ 'is-month' if period == 'month' else '' }}" role="group" aria-label="Hours logged per day">
                 {% for day in daily_breakdown %}
-                <a role="listitem" class="daily-col{% if day.date == selected_date %} is-selected{% endif %}" href="/?date={{ day.date }}&period=day"
+                <a class="daily-col{% if day.date == selected_date %} is-selected{% endif %}" href="/?date={{ day.date }}&period=day"
                    title="{{ day.date.strftime('%a, %b %-d') }} · {{ day.total }}h logged{% for seg in day.segments %} · {{ seg.tag }} {{ seg.hours }}h{% endfor %}"
                    aria-label="{{ day.date.strftime('%A %B %-d') }}: {{ day.total }} hours logged">
                     <span class="daily-col-bar">
@@ -1097,9 +1097,9 @@
                 <h3 id="dayTimelineTitle" class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">Your day<span class="hidden sm:inline">, hour by hour</span></h3>
                 <span class="text-[11px] text-gray-400">{% if day_timeline.logged_pct >= 99.95 %}Fully logged{% else %}{{ (day_timeline.logged_pct * 24 / 100) | round(1) }}h of 24h logged{% endif %}</span>
             </div>
-            <div class="day-timeline" role="list">
+            <div class="day-timeline" role="group" aria-label="Activities by time of day">
                 {% for seg in day_timeline.segments %}
-                <button type="button" role="listitem" class="day-timeline-seg"
+                <button type="button" class="day-timeline-seg"
                     style="left: {{ seg.left }}%; width: {{ seg.width }}%; --seg-color: {{ seg.color }};"
                     data-activity="{{ seg.task }}" onclick="window.viewActivity(this.dataset.activity)"
                     title="{{ seg.task }} · {{ seg.start }} – {{ seg.end }} · {{ seg.tag }}"
