@@ -31,3 +31,14 @@ def get_current_user_id() -> Optional[int]:
         return int(uid)
     except Exception:
         return None
+
+
+def request_date_param(name: str = "date"):
+    """parse_date_param for a query arg, but treat absurd years (0001, 9999) like a bad
+    value: they overflow pandas timestamps / month arithmetic and 500 the page."""
+    from ..core.dates import parse_date_param
+
+    value = parse_date_param(request.args.get(name))
+    if not 1900 <= value.year <= 2200:
+        return parse_date_param(None)
+    return value

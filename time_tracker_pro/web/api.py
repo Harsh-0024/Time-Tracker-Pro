@@ -14,7 +14,7 @@ import pandas as pd
 from flask import Blueprint, current_app, g, jsonify, request, send_file
 
 from ..core.constants import GRAPH_TAG_MAP
-from ..core.dates import get_period_range, parse_date_param, parse_period_param
+from ..core.dates import get_period_range, parse_period_param
 from ..core.tags import filter_special_tags, normalize_tag, primary_special_tag
 from ..db import get_db_connection
 from ..repositories.graph_search_history import (
@@ -27,7 +27,7 @@ from ..core.rows import row_value
 from ..services.import_csv import import_csv_content
 from ..services.sync import sync_cloud_data, sync_status_payload, get_last_sync_stats
 from .decorators import api_or_login_required, resolve_request_user_id, token_is_valid
-from .utils import get_current_user_id
+from .utils import get_current_user_id, request_date_param
 
 
 bp = Blueprint("api", __name__)
@@ -301,7 +301,7 @@ def graph_data():
     except Exception:
         days = 30
 
-    requested_end_date = parse_date_param(request.args.get("end"))
+    requested_end_date = request_date_param("end")
     today = datetime.now().date()
     include_today_candidate = requested_end_date >= today
 
@@ -1352,7 +1352,7 @@ def get_tasks():
     db_name = current_app.config["DB_NAME"]
     user_id = int(getattr(g, "user_id", 0) or 0)
 
-    selected_date = parse_date_param(request.args.get("date"))
+    selected_date = request_date_param("date")
     period = parse_period_param(request.args.get("period", "day"))
     filter_type = request.args.get("filter", "all")
     tag_name = request.args.get("tag", "")
@@ -1500,7 +1500,7 @@ def get_tags():
     db_name = current_app.config["DB_NAME"]
     user_id = int(getattr(g, "user_id", 0) or 0)
 
-    selected_date = parse_date_param(request.args.get("date"))
+    selected_date = request_date_param("date")
     period = parse_period_param(request.args.get("period", "day"))
 
     df = fetch_local_data(db_name, user_id)

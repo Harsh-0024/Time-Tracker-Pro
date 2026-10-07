@@ -14,7 +14,7 @@ import pandas as pd
 from flask import Blueprint, current_app, make_response, redirect, render_template, request, send_file, session, url_for
 
 from ..core.admins import is_admin_email
-from ..core.dates import get_period_range, parse_date_param, parse_period_param
+from ..core.dates import get_period_range, parse_period_param
 from ..core.rows import display_name, row_value
 from ..core.tags import primary_special_tag
 from ..repositories.app_settings import get_app_setting, upsert_app_setting
@@ -32,7 +32,7 @@ from ..services.insights import (
 from ..services.matrix import get_matrix_stats
 from ..services.sync import get_last_sync_stats, sync_cloud_data, sync_status_payload
 from .decorators import admin_required, login_required
-from .utils import get_current_user_id
+from .utils import get_current_user_id, request_date_param
 
 
 bp = Blueprint("main", __name__)
@@ -200,10 +200,9 @@ def dashboard():
     sync_cloud_data(db_name, user_id)
     sync_stats = get_last_sync_stats(user_id)
 
-    date_str = request.args.get("date")
     raw_period = request.args.get("period", "day")
     period = parse_period_param(raw_period)
-    selected_date = parse_date_param(date_str)
+    selected_date = request_date_param("date")
 
     df = fetch_local_data(db_name, user_id)
     if df.empty:

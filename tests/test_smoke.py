@@ -58,3 +58,14 @@ def test_export_csv_contents(client_with_data):
     text = resp.get_data(as_text=True)
     assert text.splitlines()[0].startswith("start date,start time")
     assert "Deep work" in text and "Errand" not in text
+
+
+def test_out_of_range_dates_do_not_500(db_path, login):
+    client = login(make_user(db_path))
+    for url in (
+        "/?date=0001-01-01",
+        "/?date=9999-12-31&period=month",
+        "/api/tasks?date=9999-12-31&period=month",
+        "/api/tags?date=9999-12-31&period=month",
+    ):
+        assert client.get(url).status_code == 200, url
