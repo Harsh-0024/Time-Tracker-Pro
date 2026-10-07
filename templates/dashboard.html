@@ -4412,6 +4412,21 @@
                         }
                     };
                     openWhenReady();
+                } else if (key === '/') {
+                    // Search: open the full log and focus its search box.
+                    event.preventDefault();
+                    window.viewFullDay();
+                    let tries = 0;
+                    const focusWhenReady = () => {
+                        const modal = document.getElementById('taskModal');
+                        const search = document.getElementById('modalSearch');
+                        if (modal && modal.classList.contains('active') && search) {
+                            search.focus();
+                        } else if (++tries < 40) {
+                            setTimeout(focusWhenReady, 50);
+                        }
+                    };
+                    focusWhenReady();
                 } else if (key === '?') {
                     event.preventDefault();
                     if (shortcutToast && !document.body.contains(shortcutToast)) {
@@ -4442,6 +4457,10 @@
                                     <div class="flex items-center gap-2">
                                         <kbd class="toast-kbd">N</kbd>
                                         <span class="toast-kbd-label">Add a task</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">/</kbd>
+                                        <span class="toast-kbd-label">Search the log</span>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <kbd class="toast-kbd">G</kbd>
