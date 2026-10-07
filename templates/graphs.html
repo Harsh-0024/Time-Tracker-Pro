@@ -1665,13 +1665,13 @@
                     consistencyValue,
                     'Consistency',
                     'cursor-pointer',
-                    `data-stat="consistency" title="${consistencyTitle}"`
+                    `data-stat="consistency" role="button" tabindex="0" title="${consistencyTitle}"`
                 ),
                 statItem(
                     `<span class="js-hover-hours hover-swap" data-hours="${displayHours}">${formatHours(displayHours, 1)}</span>`,
                     totalLabel,
                     canAverage ? 'cursor-pointer' : '',
-                    `data-stat="hours" ${canAverage ? 'title="Click to toggle total/avg"' : ''}`
+                    `data-stat="hours" ${canAverage ? 'role="button" tabindex="0" title="Click to toggle total/avg"' : ''}`
                 ),
                 statItem(
                     `<span class="js-hover-hours hover-swap" data-hours="${avgTaskHours}">${formatHours(avgTaskHours, 1)}</span>`,
@@ -1697,6 +1697,16 @@
                             renderGraphTaskStats();
                             renderGraphTaskList();
                         }
+                    });
+                    graphTaskStats.addEventListener('keydown', (event) => {
+                        if (event.key !== 'Enter' && event.key !== ' ') return;
+                        const tile = event.target.closest('[data-stat][role="button"]');
+                        if (!tile) return;
+                        event.preventDefault();
+                        const stat = tile.dataset.stat;
+                        tile.click();
+                        // The tiles were re-rendered: keep focus on the same one.
+                        graphTaskStats.querySelector(`[data-stat="${stat}"][role="button"]`)?.focus();
                     });
                     graphTaskStats.__toggleBound = true;
                 }

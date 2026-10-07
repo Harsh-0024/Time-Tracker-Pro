@@ -3498,10 +3498,28 @@
             if (statsContainer && isMultiDay) {
                 statsContainer.classList.add('cursor-pointer');
                 statsContainer.title = 'Click to toggle avg/total';
+                statsContainer.setAttribute('role', 'button');
+                statsContainer.setAttribute('tabindex', '0');
+                statsContainer.setAttribute('aria-label', 'Toggle between average per day and total');
                 statsContainer.onclick = () => {
                     window.modalStatsMode = window.modalStatsMode === 'avg' ? 'total' : 'avg';
                     renderStats();
                 };
+                statsContainer.onkeydown = (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        statsContainer.onclick();
+                    }
+                };
+            } else if (statsContainer) {
+                // A single-day modal reuses this element: drop the toggle a week/month modal left behind.
+                statsContainer.classList.remove('cursor-pointer');
+                statsContainer.removeAttribute('title');
+                statsContainer.removeAttribute('role');
+                statsContainer.removeAttribute('tabindex');
+                statsContainer.removeAttribute('aria-label');
+                statsContainer.onclick = null;
+                statsContainer.onkeydown = null;
             }
             const chartContainer = document.getElementById('modalChart');
             chartContainer.innerHTML = '<div class="relative w-full" style="height: 280px;"><canvas id="filterChart" class="w-full h-full"></canvas></div><div id="mobileModalLegend" class="mt-4 mb-4 md:hidden flex flex-wrap gap-2 justify-center text-[11px] text-gray-700 px-2"></div><div id="desktopModalLegend" class="mt-4 hidden md:flex flex-wrap gap-3 justify-center text-[11px] text-gray-700 px-4"></div>';
