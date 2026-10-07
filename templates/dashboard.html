@@ -11,7 +11,7 @@
     <link rel="manifest" href="{{ pwa_manifest_url }}">
     <link rel="icon" href="{{ pwa_icon_url }}" type="image/png">
     <link rel="apple-touch-icon" href="{{ pwa_icon_url }}">
-    <title>Time Tracker Pro</title>
+    <title>{{ (selected_date.strftime('%a ') ~ selected_date.day ~ selected_date.strftime(' %b')) if period == 'day' else current_month }} · Time Tracker Pro</title>
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <script src="https://cdn.tailwindcss.com"></script>
