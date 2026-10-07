@@ -14,6 +14,10 @@
             if (!errorContainer) {
                 const div = document.createElement('div');
                 div.id = 'globalErrorBoundary';
+                div.setAttribute('role', 'alertdialog');
+                div.setAttribute('aria-modal', 'true');
+                div.setAttribute('aria-labelledby', 'globalErrorTitle');
+                div.setAttribute('aria-describedby', 'errorMessage');
                 div.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
                 div.innerHTML = `
                     <div style="background:#fff;border-radius:16px;padding:32px;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
@@ -22,7 +26,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                             </svg>
                         </div>
-                        <h2 style="font-size:24px;font-weight:700;color:#111827;margin-bottom:12px;text-align:center;">Something went wrong</h2>
+                        <h2 id="globalErrorTitle" style="font-size:24px;font-weight:700;color:#111827;margin-bottom:12px;text-align:center;">Something went wrong</h2>
                         <p id="errorMessage" style="color:#6B7280;margin-bottom:24px;text-align:center;font-size:14px;"></p>
                         <details style="margin-bottom:24px;padding:12px;background:#F3F4F6;border-radius:8px;font-size:12px;color:#374151;max-height:200px;overflow-y:auto;">
                             <summary style="cursor:pointer;font-weight:600;margin-bottom:8px;">Technical details</summary>
@@ -39,6 +43,8 @@
                     </div>
                 `;
                 document.body.appendChild(div);
+                const reloadBtn = div.querySelector('button');
+                if (reloadBtn) reloadBtn.focus();
             }
             
             const errorMsg = document.getElementById('errorMessage');
@@ -80,7 +86,8 @@
         
         function showErrorToast(message) {
             const toast = document.createElement('div');
-            toast.style.cssText = 'position:fixed;top:20px;right:20px;background:#EF4444;color:#fff;padding:16px 24px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.3);z-index:9999;max-width:400px;animation:slideIn 0.3s ease;';
+            toast.setAttribute('role', 'alert');
+            toast.style.cssText = 'position:fixed;top:20px;right:20px;background:#DC2626;color:#fff;padding:16px 24px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.3);z-index:9999;max-width:400px;animation:slideIn 0.3s ease;';
             toast.innerHTML = `
                 <div style="display:flex;align-items:center;gap:12px;">
                     <svg style="width:20px;height:20px;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
