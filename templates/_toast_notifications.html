@@ -1,5 +1,5 @@
 <!-- Toast Notification System -->
-<div id="toastContainer" class="fixed top-4 right-4 z-[10000] flex flex-col gap-3 pointer-events-none" style="max-width: calc(100vw - 32px);"></div>
+<div id="toastContainer" class="fixed top-4 right-4 z-[10000] flex flex-col gap-3 pointer-events-none" style="max-width: calc(100vw - 32px);" role="status" aria-live="polite"></div>
 
 <script>
     (function() {
@@ -13,31 +13,34 @@
             
             const toast = document.createElement('div');
             toast.className = 'toast-item pointer-events-auto transform transition-all duration-300 ease-out';
+            // Errors interrupt; everything else is announced politely by the container.
+            if (type === 'error') toast.setAttribute('role', 'alert');
             
             // Determine colors based on type
             let bgColor, borderColor, iconPath, iconColor;
             switch(type) {
+                // Shades chosen so white text clears 4.5:1 (the lighter ones were ~2-3:1).
                 case 'success':
-                    bgColor = '#10B981';
-                    borderColor = '#059669';
+                    bgColor = '#047857';
+                    borderColor = '#065F46';
                     iconColor = '#FFFFFF';
                     iconPath = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
                     break;
                 case 'error':
-                    bgColor = '#EF4444';
-                    borderColor = '#DC2626';
+                    bgColor = '#DC2626';
+                    borderColor = '#B91C1C';
                     iconColor = '#FFFFFF';
                     iconPath = 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z';
                     break;
                 case 'warning':
-                    bgColor = '#F59E0B';
-                    borderColor = '#D97706';
+                    bgColor = '#B45309';
+                    borderColor = '#92400E';
                     iconColor = '#FFFFFF';
                     iconPath = 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z';
                     break;
                 case 'failover':
-                    bgColor = '#8B5CF6';
-                    borderColor = '#7C3AED';
+                    bgColor = '#7C3AED';
+                    borderColor = '#6D28D9';
                     iconColor = '#FFFFFF';
                     iconPath = 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4';
                     break;
@@ -48,8 +51,8 @@
                     iconPath = 'M12 3v18m9-9H3';
                     break;
                 default: // info
-                    bgColor = '#3B82F6';
-                    borderColor = '#2563EB';
+                    bgColor = '#2563EB';
+                    borderColor = '#1D4ED8';
                     iconColor = '#FFFFFF';
                     iconPath = 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
             }
