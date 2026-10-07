@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 08:45 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
+- 2026-10-07 08:31 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -86,6 +86,10 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [08:22 run] toasts render text by default (server errors/account emails were innerHTML); html opt-in
 - [08:22 run] 16MB request body cap (MAX_CONTENT_LENGTH_MB) + 413 page/JSON
 - [08:22 run] non-ASCII API token -> 401 (was 500)
+- [08:22 run] login next= rejects '/\\evil.com' and control chars (open redirect)
+- [08:22 run] Insights: 'Longest growth block' (day/week/month; links to the day)
+- [08:22 run] password show/hide toggles: aria-pressed
+- [08:22 run] admin: ADMIN_EMAILS admins shown as admin and can't be deleted
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
