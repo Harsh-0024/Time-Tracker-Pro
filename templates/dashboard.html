@@ -3824,11 +3824,12 @@
                         datasets: [{
                             data: values,
                             backgroundColor: colors,
-                            borderWidth: 2,
+                            // A lone slice would show its rim as a seam at 12 o'clock.
+                            borderWidth: (c) => (c.chart.data.datasets[0].data.filter(v => Number(v) > 0).length > 1 ? 2 : 0),
                             // Slice gaps take the surface colour (white rims glare in dark mode).
                             borderColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#0E0C08' : '#FFFFFF',
                             hoverOffset: 10,
-                            hoverBorderWidth: 3
+                            hoverBorderWidth: (c) => (c.chart.data.datasets[0].data.filter(v => Number(v) > 0).length > 1 ? 3 : 0)
                         }]
                     },
                     plugins: [percentLabelPlugin],
@@ -4743,10 +4744,11 @@
                             datasets: [{
                                 data: tagData,
                                 backgroundColor: tagColors,
-                                borderWidth: 2,
+                                // A lone slice would show its rim as a seam at 12 o'clock.
+                                borderWidth: (c) => (c.chart.data.datasets[0].data.filter(v => Number(v) > 0).length > 1 ? 2 : 0),
                                 borderColor: tagChartDark ? '#0E0C08' : '#FFFFFF',
                                 hoverOffset: 12,
-                                hoverBorderWidth: 3
+                                hoverBorderWidth: (c) => (c.chart.data.datasets[0].data.filter(v => Number(v) > 0).length > 1 ? 3 : 0)
                             }]
                         },
                         plugins: [percentLabelPlugin],
