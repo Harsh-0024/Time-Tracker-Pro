@@ -1762,8 +1762,9 @@ def sync_now():
         if failover:
             response["failover"] = failover
         return jsonify(response)
-    except Exception as exc:
-        return jsonify({"status": "error", "message": str(exc)}), 500
+    except Exception:
+        logger.exception("sync-now failed")
+        return jsonify({"status": "error", "message": "Sync failed. Please try again later."}), 500
 
 
 @bp.route("/hard-reset", endpoint="hard_reset")
@@ -1780,8 +1781,9 @@ def hard_reset():
                 "stats": get_last_sync_stats(user_id),
             }
         )
-    except Exception as exc:
-        return jsonify({"status": "error", "message": str(exc)}), 500
+    except Exception:
+        logger.exception("hard-reset failed")
+        return jsonify({"status": "error", "message": "Sync failed. Please try again later."}), 500
 
 
 @bp.route("/api/sheety-accounts", methods=["POST"], endpoint="create_sheety_account")
@@ -1868,6 +1870,6 @@ def test_sheety_account(account_id: int):
                 "success": False,
                 "error": error or "Connection test failed"
             }), 200
-    except Exception as exc:
-        logger.error(f"Error testing API account: {exc}")
-        return jsonify({"success": False, "error": str(exc)}), 200
+    except Exception:
+        logger.exception("Error testing API account")
+        return jsonify({"success": False, "error": "Connection test failed. Please try again."}), 200

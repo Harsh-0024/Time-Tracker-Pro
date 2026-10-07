@@ -129,3 +129,17 @@ def test_safe_next_url_rejects_browser_normalised_external_urls():
     for bad in ("//evil.com", "/\\evil.com", "/\t/evil.com", "/\n/evil.com", "https://evil.com", "evil.com"):
         assert safe_next_url(bad) is None, bad
     assert safe_next_url("/graphs?x=1") == "/graphs?x=1"
+
+
+def test_sync_now_error_does_not_echo_exception(db_path, login, monkeypatch):
+    from time_tracker_pro.web import api
+
+    def boom(*a, **k):
+        raise RuntimeError("/secret/path/productivity.db is locked")
+
+    monkeypatch.setattr(api, "sync_cloud_data", boom)
+    client = login(make_user(db_path))
+    for path in ("/sync-now", "/hard-reset"):
+        resp = client.get(path)
+        assert resp.status_code == 500
+        assert b"secret" not in resp.data
