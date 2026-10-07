@@ -993,7 +993,7 @@
 
                 {% if period == 'day' %}
                 <div class="md:flex-1 md:min-w-0 md:flex md:justify-center">
-                    <div id="weekScroller" class="flex justify-between gap-1.5 sm:gap-3 overflow-x-auto pt-1 pb-4 px-1 scroll-smooth scroll-px-6 md:justify-start md:gap-1.5 lg:gap-4 md:pb-3 md:max-w-[560px]">
+                    <div id="weekScroller" data-swipe-period="week" class="flex justify-between gap-1.5 sm:gap-3 overflow-x-auto pt-1 pb-4 px-1 scroll-smooth scroll-px-6 md:justify-start md:gap-1.5 lg:gap-4 md:pb-3 md:max-w-[560px]">
                         {% for day in week_days %}
                         <a href="/?date={{ day.full_str }}&period={{ period }}" class="flex flex-col items-center flex-1 min-w-0 md:flex-none md:min-w-[44px] lg:min-w-[48px] xl:min-w-[56px] group" {% if day.is_selected %}data-selected-day="true"{% endif %}
                            aria-label="{{ day.date_obj.strftime('%A') }} {{ day.day_num }} {{ day.date_obj.strftime('%B') }}{{ ', today' if day.is_today }}, {{ day.hours }} hours logged"{% if day.is_today %} aria-current="date"{% endif %}>
@@ -1091,7 +1091,7 @@
 
         {% if daily_breakdown %}
         <!-- Week/Month: one stacked column per day -->
-        <section class="luxury-card rounded-2xl px-4 py-4 md:px-6 md:py-5 mb-6 md:mb-8" aria-labelledby="dailyBreakdownTitle">
+        <section class="luxury-card rounded-2xl px-4 py-4 md:px-6 md:py-5 mb-6 md:mb-8" aria-labelledby="dailyBreakdownTitle" data-swipe-period>
             <div class="flex items-baseline justify-between gap-3 mb-3">
                 <h3 id="dailyBreakdownTitle" class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">Day by day</h3>
                 <div class="hidden sm:flex items-center gap-3 text-[11px] text-gray-500">
@@ -4239,6 +4239,45 @@
                 const exportModal = document.getElementById('exportFormatModal');
                 return Boolean(exportModal && !exportModal.classList.contains('hidden'));
             };
+            // Previous/next day, week or month (arrow keys, swipes).
+            window.shiftPeriod = (delta, unit) => {
+                // Work on local calendar parts: new Date('YYYY-MM-DD') is UTC midnight,
+                // and setMonth() on the 29th-31st overflows into the following month.
+                const [y, m, d] = String(window.currentDate || window.getLocalIsoDate()).split('-').map(Number);
+                const period = unit || window.currentPeriod || 'day';
+                let base;
+                if (period === 'month') {
+                    base = new Date(y, m - 1 + delta, 1);
+                } else {
+                    base = new Date(y, m - 1, d + (period === 'week' ? 7 * delta : delta));
+                }
+                const iso = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
+                window.changeDate(iso);
+            };
+            // Phones have no arrow keys: a horizontal swipe on the week strip or the
+            // day-by-day chart moves to the previous/next period (left swipe = next);
+            // the day view's week strip moves a whole week, keeping the weekday.
+            document.querySelectorAll('[data-swipe-period]').forEach(area => {
+                let start = null;
+                area.addEventListener('touchstart', (event) => {
+                    start = event.touches.length === 1
+                        ? { x: event.touches[0].clientX, y: event.touches[0].clientY, t: Date.now() }
+                        : null;
+                }, { passive: true });
+                area.addEventListener('touchend', (event) => {
+                    if (!start || !event.changedTouches.length) return;
+                    const dx = event.changedTouches[0].clientX - start.x;
+                    const dy = event.changedTouches[0].clientY - start.y;
+                    const quick = Date.now() - start.t < 700;
+                    start = null;
+                    // Leave a strip that actually scrolls sideways to its own scrolling.
+                    if (area.scrollWidth > area.clientWidth + 1) return;
+                    if (quick && Math.abs(dx) >= 60 && Math.abs(dx) > 1.5 * Math.abs(dy)) {
+                        window.shiftPeriod(dx < 0 ? 1 : -1, area.dataset.swipePeriod || undefined);
+                    }
+                }, { passive: true });
+                area.addEventListener('touchcancel', () => { start = null; }, { passive: true });
+            });
             document.addEventListener('keydown', (event) => {
                 const tag = event.target?.tagName;
                 if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
@@ -4256,19 +4295,7 @@
                 }
                 if (!event.metaKey && !event.ctrlKey && !event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
                     event.preventDefault();
-                    // Work on local calendar parts: new Date('YYYY-MM-DD') is UTC midnight,
-                    // and setMonth() on the 29th-31st overflows into the following month.
-                    const [y, m, d] = String(window.currentDate || window.getLocalIsoDate()).split('-').map(Number);
-                    const delta = event.key === 'ArrowRight' ? 1 : -1;
-                    const period = window.currentPeriod || 'day';
-                    let base;
-                    if (period === 'month') {
-                        base = new Date(y, m - 1 + delta, 1);
-                    } else {
-                        base = new Date(y, m - 1, d + (period === 'week' ? 7 * delta : delta));
-                    }
-                    const iso = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
-                    window.changeDate(iso);
+                    window.shiftPeriod(event.key === 'ArrowRight' ? 1 : -1);
                     return;
                 }
                 if (event.metaKey || event.ctrlKey || event.altKey) return;
