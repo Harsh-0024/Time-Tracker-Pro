@@ -211,5 +211,16 @@ def test_week_dashboard_shows_activity_trend(db_path, login):
     html = login(uid).get("/?period=week&date=2026-10-05").get_data(as_text=True)
     assert "▲</span><span class=\"sr-only\">up</span> 1.0h vs last week" in html
     assert "new vs last week" in html
-    day_html = login(uid).get("/?period=day&date=2026-10-05").get_data(as_text=True)
-    assert "insight-trend" not in day_html
+
+
+def test_day_dashboard_activity_vs_recent_days(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-28", "08:00:00", "2026-09-28", "09:00:00", task="Gym", tags="Work")
+    add_log(db_path, uid, "2026-09-29", "08:00:00", "2026-09-29", "10:00:00", task="Gym", tags="Work")
+    add_log(db_path, uid, "2026-10-01", "08:00:00", "2026-10-01", "11:00:00", task="Gym", tags="Work")
+    add_log(db_path, uid, "2026-10-01", "11:00:00", "2026-10-01", "12:00:00", task="Chess", tags="Soul")
+    html = login(uid).get("/?period=day&date=2026-10-01").get_data(as_text=True)
+    # Gym averaged 1.5h over the 2 logged days before; 3h today-of-view.
+    assert "usually 1.5h/day" in html
+    assert '<span class="sr-only">up</span> 1.5h' in html
+    assert "new vs your last 2 days" in html

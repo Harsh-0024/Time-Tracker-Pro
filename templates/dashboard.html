@@ -1490,13 +1490,26 @@
                             </div>
                             <div class="insight-bar mt-1.5" aria-hidden="true"><span style="width: {{ item.bar }}%"></span></div>
                             {% if item.delta_per_day is defined %}
+                            {% set arrow -%}
+                            <span aria-hidden="true">{{ '▲' if item.delta_per_day > 0 else '▼' }}</span><span class="sr-only">{{ 'up' if item.delta_per_day > 0 else 'down' }}</span> {{ item.delta_per_day | abs }}h
+                            {%- endset %}
+                            {% if period == 'day' %}
+                            {% set vw_days = insights.vs_week.days if insights.vs_week else 7 %}
+                            <div class="insight-trend mt-1 text-[11px] text-gray-500 tabular-nums" title="Average per logged day over your last {{ vw_days }} day{{ '' if vw_days == 1 else 's' }}: {{ item.prev_per_day }}h">
+                                {% if item.prev_per_day == 0 -%}new vs your last {{ vw_days }} day{{ '' if vw_days == 1 else 's' }}
+                                {%- else -%}usually {{ item.prev_per_day }}h/day
+                                {%- if not is_today and item.delta_per_day != 0 %} · {{ arrow }}{% endif %}
+                                {%- endif %}
+                            </div>
+                            {% else %}
                             <div class="insight-trend mt-1 text-[11px] text-gray-500 tabular-nums" title="Per logged day: {{ item.per_day }}h this {{ period }}, {{ item.prev_per_day }}h last {{ period }}">
                                 {{ item.per_day }}h/day ·
                                 {% if item.prev_per_day == 0 -%}new vs last {{ period }}
                                 {%- elif item.delta_per_day == 0 -%}same as last {{ period }}
-                                {%- else -%}<span aria-hidden="true">{{ '▲' if item.delta_per_day > 0 else '▼' }}</span><span class="sr-only">{{ 'up' if item.delta_per_day > 0 else 'down' }}</span> {{ item.delta_per_day | abs }}h vs last {{ period }}
+                                {%- else -%}{{ arrow }} vs last {{ period }}
                                 {%- endif %}
                             </div>
+                            {% endif %}
                             {% endif %}
                             </button>
                         </li>

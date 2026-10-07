@@ -167,6 +167,7 @@ def build_insights(
                 "waste_hours": round_half_up(day_waste / 60.0, 1),
                 "waste_avg": round_half_up(float(window[_waste_mask(window)]["duration"].sum()) / logged_days / 60.0, 1),
             }
+            _add_activity_trends(insights["top_activities"], period_df, 1, window, int(logged_days))
         return insights
 
     # Week / month: only count days that have started.
