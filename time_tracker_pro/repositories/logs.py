@@ -103,8 +103,9 @@ def fetch_local_data(db_name: str, user_id: int) -> pd.DataFrame:
         "date": list(start.dt.date),
         "start_time": _clock_labels(start),
         "end_time": _clock_labels(end),
-        "start_datetime": list(start),
-        "end_datetime": list(end),
+        # Arrays, not lists of Timestamps (pandas would re-infer the dtype per element).
+        "start_datetime": start.to_numpy(),
+        "end_datetime": end.to_numpy(),
         "task": list(df["task"]),
         "duration": [float(v) for v in duration_minutes],
         "tag": [", ".join(tags) if tags else "Waste" for tags in special_tags],
