@@ -1002,8 +1002,46 @@
                 }
 
                 closeExportModal();
-                window.location.href = url;
+                downloadExport(url);
             });
+        }
+
+        // Fetch first so errors and empty ranges become a toast instead of a raw
+        // JSON error page or an empty file.
+        async function downloadExport(url) {
+            try {
+                const response = await fetch(url, { credentials: 'include' });
+                if (response.status === 401) {
+                    window.location.href = '/login?next=' + encodeURIComponent('/settings');
+                    return;
+                }
+                if (!response.ok) {
+                    let message = '';
+                    try { message = (await response.json()).error || ''; } catch (e) { /* not JSON */ }
+                    notifyExportError(message || `Export failed (HTTP ${response.status}).`);
+                    return;
+                }
+                const rows = Number(response.headers.get('X-Export-Rows'));
+                if (rows === 0) {
+                    if (window.showWarningToast) window.showWarningToast('No logs in that range, so there is nothing to export.');
+                    return;
+                }
+                const blob = await response.blob();
+                const disposition = response.headers.get('Content-Disposition') || '';
+                const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = match ? decodeURIComponent(match[1]) : 'time-tracker-export';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+                if (window.showSuccessToast && Number.isFinite(rows)) {
+                    window.showSuccessToast(`Exported ${rows} ${rows === 1 ? 'entry' : 'entries'}.`);
+                }
+            } catch (error) {
+                notifyExportError('Export failed: check your connection and try again.');
+            }
         }
 
         // API Account Management

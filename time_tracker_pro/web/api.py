@@ -1809,12 +1809,14 @@ def export_csv():
             "rows": export_rows,
         }
         buffer = BytesIO(json.dumps(payload, ensure_ascii=True, indent=2).encode("utf-8"))
-        return send_file(
+        resp = send_file(
             buffer,
             mimetype="application/json",
             as_attachment=True,
             download_name=f"time-tracker-export-{filename_suffix}.json",
         )
+        resp.headers["X-Export-Rows"] = str(len(export_rows))
+        return resp
 
     output = StringIO()
     writer = csv.writer(output)
@@ -1823,12 +1825,15 @@ def export_csv():
         writer.writerow([_csv_safe_cell(row.get(header, "")) for header in headers])
 
     buffer = BytesIO(output.getvalue().encode("utf-8"))
-    return send_file(
+    resp = send_file(
         buffer,
         mimetype="text/csv",
         as_attachment=True,
         download_name=f"time-tracker-export-{filename_suffix}.csv",
     )
+    # Lets the Settings export say "No logs in that range" instead of saving an empty file.
+    resp.headers["X-Export-Rows"] = str(len(export_rows))
+    return resp
 
 
 @bp.route("/download-db", endpoint="download_db")

@@ -58,6 +58,9 @@ def test_export_csv_contents(client_with_data):
     text = resp.get_data(as_text=True)
     assert text.splitlines()[0].startswith("start date,start time")
     assert "Deep work" in text and "Errand" not in text
+    assert int(resp.headers["X-Export-Rows"]) >= 1
+    empty = client_with_data.get("/api/export-csv?mode=range&start_date=2001-01-01&end_date=2001-01-02&format=json")
+    assert empty.headers["X-Export-Rows"] == "0"
 
 
 def test_out_of_range_dates_do_not_500(db_path, login):
