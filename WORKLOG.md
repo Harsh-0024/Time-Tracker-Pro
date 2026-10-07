@@ -7,7 +7,16 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 08:51 IST: session active (resumed 06:22).
+- 2026-10-07 09:02 IST: session active (resumed 06:22).
+
+## Morning summary (06:22-09:00 session) - most important first
+1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
+2. Security/privacy: Sheety URL must be public https (SSRF); email masked when a code is requested by user ID;
+   60s cooldown on OTP/forgot/resend emails; user IDs can't look like emails (login shadowing).
+3. Crashes: graphs 'Review tasks'/Export on an empty list; /api/tasks 500s on odd JSON; ?date=0001/9999 500s.
+4. Races: graphs chart could show the wrong range; dashboard modal could open the wrong card's tasks.
+5. UX: Necessity tag chip was missing from Add task; tabs/modals/week strip fit small screens; 'By weekday' card.
+All 123 tests pass on 3.14 and 3.12. Nothing pushed.
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -67,6 +76,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - security: 60s resend cooldown on OTP/forgot/resend (VERIFICATION_RESEND_COOLDOWN_SECONDS) + UI countdown
 - password reset clears login lockout
 - 'Name .' and 'Name' grouped together in Insights + modal charts (display only)
+- Add-task Necessity chip; full-log quadrant names match the matrix (Growth/Drudgery)
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
