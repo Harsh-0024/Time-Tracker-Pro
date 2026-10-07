@@ -884,7 +884,7 @@
             return maxValue > 0 && maxValue < 1 ? 'minutes' : 'hours';
         }
 
-        function updateRecentAverage(values, rangeAvg, scale) {
+        function updateRecentAverage(values, rangeAvg, scale, labels) {
             const avgEl = document.getElementById('recentAvgHours');
             const deltaEl = document.getElementById('recentAvgDelta');
             if (!avgEl || !deltaEl) return;
@@ -897,6 +897,18 @@
             }
             const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
             avgEl.textContent = `${formatGraphValue(recentAvg, scale, 1)}/day`;
+            if (recentAvg === 0 && series.length > 7) {
+                // Nothing in the window: "▼ x vs avg" would read like a slump, so say when it last happened.
+                let lastIdx = -1;
+                for (let i = series.length - 1; i >= 0; i--) { if (series[i] > 0) { lastIdx = i; break; } }
+                const lastLabel = lastIdx >= 0 && Array.isArray(labels) ? labels[lastIdx] : null;
+                const lastDate = lastLabel ? new Date(`${lastLabel}T00:00:00`) : null;
+                deltaEl.textContent = lastDate && !Number.isNaN(lastDate.getTime())
+                    ? `none since ${lastDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+                    : 'none logged';
+                deltaEl.className = 'text-[11px] mt-0.5 text-gray-500';
+                return;
+            }
             const delta = recentAvg - (Number(rangeAvg) || 0);
             if (series.length <= 7 || Math.abs(delta) < 0.05) {
                 deltaEl.textContent = series.length <= 7 ? 'whole range' : 'same as average';
@@ -2723,7 +2735,7 @@
             totalHoursEl.textContent = formatGraphValue(total_hours, valueScale, 1);
             avgHoursEl.textContent = formatGraphValue(avg_hours, valueScale, 1);
             maxHoursEl.textContent = formatGraphValue(max_hours, valueScale, 1);
-            updateRecentAverage(values, avg_hours, valueScale);
+            updateRecentAverage(values, avg_hours, valueScale, labels);
 
             const label = metricLabels[metricKey] || 'Total time';
             if (graphFocusValue === 'search_only' && graphSearchQuery) {
