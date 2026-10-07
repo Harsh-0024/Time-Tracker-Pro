@@ -323,6 +323,7 @@
         .daily-col-bar > span + span { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6); }
         .daily-col:hover .daily-col-bar, .daily-col:focus-visible .daily-col-bar { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(120, 90, 30, 0.18); }
         .daily-col:focus-visible { outline: none; }
+        .daily-col:focus-visible .daily-col-bar { box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px #D4AF37; }
         .daily-col.is-selected .daily-col-bar { box-shadow: 0 0 0 2px #F5B826; }
         .daily-col-label { text-align: center; font-size: 10px; color: #9CA3AF; font-variant-numeric: tabular-nums; }
         .daily-col.is-selected .daily-col-label { color: #111827; font-weight: 700; }
@@ -334,6 +335,7 @@
         [data-theme="dark"] .daily-col-bar > span + span { box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5); }
         [data-theme="dark"] .daily-col-label { color: #6E6045; }
         [data-theme="dark"] .daily-col.is-selected .daily-col-label { color: #EDE6D3; }
+        [data-theme="dark"] .daily-col:focus-visible .daily-col-bar { box-shadow: 0 0 0 2px #050403, 0 0 0 4px #D4AF37; }
         .day-timeline {
             position: relative;
             height: 30px;
@@ -382,6 +384,9 @@
         }
         [data-theme="dark"] .day-timeline::after { opacity: 0.12; }
         [data-theme="dark"] .day-timeline-seg { box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.45); }
+        /* The strip clips overflow, so the keyboard focus ring is drawn inside the segment. */
+        .day-timeline-seg:focus-visible,
+        [data-theme="dark"] .day-timeline-seg:focus-visible { box-shadow: inset 0 0 0 2px #FFFFFF, inset 0 0 0 4px #D4AF37; }
         [data-theme="dark"] .day-timeline-axis { color: #6E6045; }
         .welcome-steps li {
             display: flex;
@@ -437,6 +442,7 @@
         }
         .insight-activity { border-radius: 12px; margin: -6px; padding: 6px; width: calc(100% + 12px); transition: background 0.2s ease; }
         .insight-activity:hover, .insight-activity:focus-visible { background: rgba(247, 207, 107, 0.16); outline: none; }
+        .insight-activity:focus-visible { box-shadow: inset 0 0 0 2px #D4AF37; }
         [data-theme="dark"] .insight-activity:hover, [data-theme="dark"] .insight-activity:focus-visible { background: rgba(212, 175, 55, 0.08); }
         .insight-stat { display: block; }
         .insight-stat-label {
