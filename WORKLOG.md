@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 16:50 IST: 16:20 resume session ACTIVE (another run should exit).
+- 2026-10-07 17:05 IST: 16:20 resume session ACTIVE (another run should exit).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -140,6 +140,9 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [16:20 run] BUG: full-log stat tiles showed Growth/Drudgery/Waste only (Critical missing, didn't add up to the total) -> 4 tiles, 2x2 on phones
 - [16:20 run] dashboard loaded Tailwind with defer -> unstyled first paint (blue default buttons); other pages had already dropped defer
 - [16:20 run] verify page said 'We sent a 6-digit code' + expiry right above 'We couldn't send the email' -> honest header when the send failed (+ test)
+- [16:20 run] export: dismissing the CSV/JSON picker still toasted 'Summary exported successfully'; Export Summary file named after the exported day, not today
+- [16:20 run] week 'Day by day': each column shows its hours (were tooltip-only, invisible on touch)
+- [16:20 run] header: 'September 2026' wrapped at every width (fixed 240px column); week/month titles take free space; 768-1023px day strip showed ~5 of 7 days -> fits (button 'Full Day' there); summary cards p-6 below lg
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
