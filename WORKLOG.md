@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 20:02 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 20:03 IST: 19:20 resume session ACTIVE.
 
 ## 19:20 run summary - most important first
 1. SECURITY: verification/welcome emails injected the registrant's name as raw HTML (phishing via someone else's address). Escaped.
@@ -193,6 +193,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [19:20 run] fuzz: 3,920 graph-data param combos incl. overnight/zero/negative logs - 0 errors, by_hour always 24 non-negative
 - [19:20 run] perf: app gzips HTML/JSON/CSS/JS (dashboard 292KB -> 53KB per load; files/static/streams untouched; DISABLE_GZIP=1 to opt out; README/.env.example) (+ test, 3.12 ok)
 - [19:20 run] perf: static URLs get ?v=<mtime> (url_defaults) and versioned requests are cached 1 year; unversioned keep revalidating. Auth/error pages switched from hard-coded /static/ to url_for (+ test)
+- [19:20 run] perf: Google Fonts preconnect on all pages
+- [19:20 run] audit (no change needed): rendered pages have no duplicate ids, no dangling label-for / aria-labelledby / describedby / controls; no |safe in templates; API token compare is constant-time
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
@@ -207,6 +209,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (note) Chart.js (pinned 4.5.1 on jsdelivr) could get an SRI integrity hash, but cdn.tailwindcss.com (unpinnable, loaded on every page) makes that moot until Tailwind is compiled locally.
 - (question) DISABLE_CLOUD_SYNC is truthy-checked (sync.py, __init__.py): DISABLE_CLOUD_SYNC=0 or =false DISABLES sync. Not changed: if a deployment sets =0 today, fixing it would switch background sync on. Check your env, then parse it like SESSION_COOKIE_SECURE.
 - (question) graph/full-log search: '-' is the NOT operator even inside words, so 'deep-work' = deep AND NOT work and a date like 2026-10-05 searches '2026 NOT 10 NOT 05'. Quoting ("e-mail") works. Could treat '-' as NOT only after whitespace/start - left as is since it changes query semantics.
 - (question) Full Day Log 'Missing time' for TODAY lists the rest of the day (e.g. '2:00 PM - 12:00 AM') as unlogged, including hours that haven't happened yet. Graphs 'Last 7 days' also includes today's partial day. Both are time-handling, so left for you.
