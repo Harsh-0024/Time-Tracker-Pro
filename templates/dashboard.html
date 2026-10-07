@@ -2569,14 +2569,16 @@
             if (!key) return [];
             if (Array.isArray(window.__dayTasksCache[key])) return window.__dayTasksCache[key];
             const url = `/api/tasks?date=${encodeURIComponent(key)}&period=day&filter=all`;
-            const response = await fetch(url, { credentials: 'include' });
-            if (!response.ok) {
-                window.__dayTasksCache[key] = [];
+            // Neighbour lookup is best-effort: on failure return [] without caching it, so a retry can succeed.
+            try {
+                const response = await fetch(url, { credentials: 'include' });
+                if (!response.ok) return [];
+                const data = await response.json();
+                window.__dayTasksCache[key] = Array.isArray(data?.tasks) ? data.tasks : [];
+                return window.__dayTasksCache[key];
+            } catch (e) {
                 return [];
             }
-            const data = await response.json();
-            window.__dayTasksCache[key] = Array.isArray(data?.tasks) ? data.tasks : [];
-            return window.__dayTasksCache[key];
         };
 
         window.getTaskNeighborsForEdit = async function(task) {
