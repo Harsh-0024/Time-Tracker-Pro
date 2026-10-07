@@ -99,18 +99,21 @@
 
         /* Dark: tag/priority chips */
         [data-theme="dark"] .create-tag-chip,
+        [data-theme="dark"] .edit-tag-chip,
         [data-theme="dark"] .create-priority-chip {
             background: #0E0C08 !important;
             border-color: rgba(212,175,55,0.14) !important;
             color: #8A7A52 !important;
         }
         [data-theme="dark"] .create-tag-chip:hover,
+        [data-theme="dark"] .edit-tag-chip:hover,
         [data-theme="dark"] .create-priority-chip:hover {
             background: #1A1610 !important;
             border-color: rgba(212,175,55,0.22) !important;
             color: #B8A878 !important;
         }
         [data-theme="dark"] .create-tag-chip.active,
+        [data-theme="dark"] .edit-tag-chip.active,
         [data-theme="dark"] .create-priority-chip.active {
             background: rgba(212,175,55,0.15) !important;
             border-color: rgba(212,175,55,0.35) !important;
@@ -1691,6 +1694,13 @@
                     </div>
                     <div>
                         <label for="editTaskTags" class="block text-xs font-semibold text-gray-600 mb-1">Tags</label>
+                        <div class="flex flex-wrap gap-2 mb-2" id="editTagChips">
+                            <button type="button" class="edit-tag-chip px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 bg-white/80 hover:bg-white transition" data-edit-tag="Work" aria-pressed="false">Work</button>
+                            <button type="button" class="edit-tag-chip px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 bg-white/80 hover:bg-white transition" data-edit-tag="Necessity" aria-pressed="false">Necessity</button>
+                            <button type="button" class="edit-tag-chip px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 bg-white/80 hover:bg-white transition" data-edit-tag="Soul" aria-pressed="false">Soul</button>
+                            <button type="button" class="edit-tag-chip px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 bg-white/80 hover:bg-white transition" data-edit-tag="Rest" aria-pressed="false">Rest</button>
+                            <button type="button" class="edit-tag-chip px-3 py-1 rounded-full border border-slate-200 text-xs font-semibold text-gray-600 bg-white/80 hover:bg-white transition" data-edit-tag="Waste" aria-pressed="false">Waste</button>
+                        </div>
                         <input id="editTaskTags" type="text" placeholder="Work, Soul" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-300" />
                     </div>
                     <div class="flex items-center gap-4">
@@ -1934,6 +1944,8 @@
             chips.forEach(chip => {
                 const tag = chip.dataset.createTag || '';
                 const active = tags.some(t => t.toLowerCase() === tag.toLowerCase());
+                chip.classList.toggle('active', active);
+                chip.setAttribute('aria-pressed', active ? 'true' : 'false');
                 chip.classList.toggle('bg-emerald-600', active);
                 chip.classList.toggle('text-white', active);
                 chip.classList.toggle('border-emerald-600', active);
@@ -1954,6 +1966,8 @@
                 const activeClasses = key === 'urgent'
                     ? ['bg-red-500', 'text-white', 'border-red-500']
                     : ['bg-emerald-600', 'text-white', 'border-emerald-600'];
+                chip.classList.toggle('active', active);
+                chip.setAttribute('aria-pressed', active ? 'true' : 'false');
                 chip.classList.toggle(activeClasses[0], active);
                 chip.classList.toggle(activeClasses[1], active);
                 chip.classList.toggle(activeClasses[2], active);
@@ -2628,6 +2642,7 @@
                 const displayTag = formatTagNames(task.tag);
                 tagInput.value = displayTag === 'Waste' ? '' : displayTag;
             }
+            if (window.updateEditTagChipStyles) window.updateEditTagChipStyles();
             if (importantInput) importantInput.checked = Boolean(task.important);
             if (urgentInput) urgentInput.checked = Boolean(task.urgent);
             window.__editingTask = task;
@@ -4126,6 +4141,41 @@
             if (createTagInput && !createTagInput.__bound) {
                 createTagInput.addEventListener('input', updateCreateTagChipStyles);
                 createTagInput.__bound = true;
+            }
+            // Edit form: same toggle-a-tag chips as the Add form.
+            window.updateEditTagChipStyles = function() {
+                const tagInput = document.getElementById('editTaskTags');
+                if (!tagInput) return;
+                const tags = String(tagInput.value || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                document.querySelectorAll('.edit-tag-chip').forEach(chip => {
+                    const active = tags.includes(String(chip.dataset.editTag || '').toLowerCase());
+                    chip.classList.toggle('active', active);
+                    chip.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    chip.classList.toggle('bg-emerald-600', active);
+                    chip.classList.toggle('text-white', active);
+                    chip.classList.toggle('border-emerald-600', active);
+                    chip.classList.toggle('bg-white/80', !active);
+                    chip.classList.toggle('text-gray-600', !active);
+                    chip.classList.toggle('border-slate-200', !active);
+                });
+            };
+            document.querySelectorAll('.edit-tag-chip').forEach(chip => {
+                if (chip.__bound) return;
+                chip.addEventListener('click', () => {
+                    const tagInput = document.getElementById('editTaskTags');
+                    const tag = chip.dataset.editTag || '';
+                    if (!tagInput || !tag) return;
+                    const tags = String(tagInput.value || '').split(',').map(t => t.trim()).filter(Boolean);
+                    const exists = tags.some(t => t.toLowerCase() === tag.toLowerCase());
+                    tagInput.value = (exists ? tags.filter(t => t.toLowerCase() !== tag.toLowerCase()) : [...tags, tag]).join(', ');
+                    window.updateEditTagChipStyles();
+                });
+                chip.__bound = true;
+            });
+            const editTagsInput = document.getElementById('editTaskTags');
+            if (editTagsInput && !editTagsInput.__chipsBound) {
+                editTagsInput.addEventListener('input', () => window.updateEditTagChipStyles());
+                editTagsInput.__chipsBound = true;
             }
             document.querySelectorAll('.create-tag-chip').forEach(chip => {
                 if (chip.__bound) return;
