@@ -890,9 +890,11 @@ def update_task(task_id: int):
     overlap_deletes: List[Dict[str, int]] = []
     overlap_inserts: List[Dict[str, Any]] = []
 
+    # Only logs whose dates touch the edited span can overlap it (ISO dates compare as text).
     other_rows = conn.execute(
-        "SELECT * FROM logs WHERE user_id = ? AND id != ? ORDER BY start_date ASC, start_time ASC",
-        (int(user_id), row_id),
+        "SELECT * FROM logs WHERE user_id = ? AND id != ? AND start_date <= ? AND end_date >= ? "
+        "ORDER BY start_date ASC, start_time ASC",
+        (int(user_id), row_id, end_dt.strftime("%Y-%m-%d"), start_dt.strftime("%Y-%m-%d")),
     ).fetchall()
 
     def record_overlap_update(target_row, new_start: datetime, new_end: datetime) -> None:
@@ -934,9 +936,6 @@ def update_task(task_id: int):
 
     for other in other_rows:
         other_sheety_id = other["sheety_id"]
-        if other_sheety_id is None:
-            conn.close()
-            return jsonify({"error": "Overlapping tasks must be linked to Sheety before editing."}), 400
         other_start = parse_datetime(other["start_date"], other["start_time"])
         other_end = parse_datetime(other["end_date"], other["end_time"])
         if other_start is None or other_end is None:
@@ -944,6 +943,11 @@ def update_task(task_id: int):
             return jsonify({"error": "Invalid time format on overlapping task."}), 400
         if other_end <= start_dt or other_start >= end_dt:
             continue
+        # Checked only for logs that really overlap: any unsynced log elsewhere in the
+        # history used to block every edit.
+        if other_sheety_id is None:
+            conn.close()
+            return jsonify({"error": "Overlapping tasks must be linked to Sheety before editing."}), 400
         before = other_start < start_dt
         after = other_end > end_dt
         if before and after:

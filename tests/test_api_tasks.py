@@ -213,3 +213,20 @@ def test_create_task_reports_overlaps(db_path, login):
     assert resp.status_code != 409
     resp = post("10:00", 1)  # touches Morning's end exactly: not an overlap
     assert resp.status_code != 409
+
+
+def test_edit_not_blocked_by_unrelated_unsynced_log(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-10-07", "09:00:00", "2026-10-07", "10:00:00", task="Edit me", sheety_id=7)
+    # A local-only (not yet synced) log on another day, nowhere near the edit.
+    add_log(db_path, uid, "2026-09-01", "09:00:00", "2026-09-01", "10:00:00", task="Unsynced", sheety_id=None)
+    resp = login(uid).put("/api/tasks/7?by=sheety", json={"task": "Edited", "date": "2026-10-07", "start_time": "09:00", "duration": 1})
+    assert "must be linked to Sheety" not in (resp.get_json() or {}).get("error", "")
+
+
+def test_edit_still_refuses_to_reshape_an_unsynced_overlapping_log(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-10-07", "09:00:00", "2026-10-07", "10:00:00", task="Edit me", sheety_id=7)
+    add_log(db_path, uid, "2026-10-07", "10:00:00", "2026-10-07", "11:00:00", task="Unsynced", sheety_id=None)
+    resp = login(uid).put("/api/tasks/7?by=sheety", json={"task": "Edit me", "date": "2026-10-07", "start_time": "09:00", "duration": 1.5})
+    assert resp.status_code == 400 and "must be linked to Sheety" in resp.get_json()["error"]
