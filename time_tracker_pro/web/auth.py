@@ -472,13 +472,28 @@ def update_profile():
     current_password = request.form.get("current_password") or ""
     otp_code = (request.form.get("otp_code") or "").strip()
 
+    # Wrong current-password guesses are throttled like logins (a hijacked session must not
+    # be able to brute-force the password). The key has a space, which user IDs can't contain.
+    throttle_key = f"profile #{int(user['id'])}"
+
     def confirm_with_password_or_otp(purpose: str) -> Tuple[bool, str]:
+        password_locked = False
         if current_password:
+            password_locked = is_locked_out(db_name, throttle_key)
             pw_hash = row_value(user, "password_hash") or ""
-            if len(current_password) <= MAX_PASSWORD_LENGTH and check_password_hash(pw_hash, current_password):
+            if (
+                not password_locked
+                and len(current_password) <= MAX_PASSWORD_LENGTH
+                and check_password_hash(pw_hash, current_password)
+            ):
+                clear_failures(db_name, throttle_key)
                 return True, ""
+            if not password_locked:
+                record_failure(db_name, throttle_key)
         if otp_code:
             return verify_email_code(db_name, int(user["id"]), otp_code, purpose=purpose)
+        if password_locked:
+            return False, "Too many incorrect password attempts. Try again later or use a verification code."
         if current_password:
             return False, "Current password is incorrect."
         return False, "Provide your current password or a verification code."

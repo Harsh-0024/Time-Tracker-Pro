@@ -105,6 +105,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [08:22 run] perf: tag strings parsed once per distinct value in fetch_local_data (~30ms/request at 22k logs). Remaining cost is pandas strftime for display times (left alone: time formatting).
 - [08:22 run] client-side Review exports (dashboard/graphs) also guard formula cells
 - [12:06 run] a11y: dashboard 'Time Tracker Pro' sync title is a real <button> (keyboard-focusable) inside the h1
+- [12:06 run] SECURITY: Settings current-password check throttled (login_failures, key 'profile #<id>'); OTP still works when locked
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -118,7 +119,6 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
-- (question) Settings profile changes check the current password with no attempt throttling (needs a logged-in session to abuse). Could reuse login_failures keyed per user.
 - (question) /sync-status answers anonymous callers with config booleans (sheety configured, db exists). Harmless-ish; could 401.
 - (question) /sync-now and /hard-reset are GET with side effects; SameSite=Lax lets another site trigger a forced Sheety sync via a top-level link. Low impact (quota). Consider POST.
 - (note) a dev server with LOCAL_AUTH_BYPASS was blocked by the session's permission classifier; verification done via pytest/Flask test client.

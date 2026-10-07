@@ -291,3 +291,37 @@ def test_login_with_huge_password_is_rejected_without_hashing(app, db_path, monk
     monkeypatch.setattr(auth_module, "check_password_hash", lambda *a: called.append(1) or False)
     html = app.test_client().post("/login", data={"identifier": "alice", "password": "x" * 5000}).get_data(as_text=True)
     assert "Invalid credentials." in html and not called
+
+
+def test_profile_current_password_is_throttled(db_path, login):
+    from time_tracker_pro.repositories import login_throttle
+
+    uid = make_user(db_path)
+    _set_password(db_path, uid, "correct-horse")
+    client = login(uid)
+    for _ in range(login_throttle.MAX_FAILURES):
+        client.post("/profile/update", data={"action": "update_username", "new_name": "X", "current_password": "nope"})
+        with client.session_transaction() as sess:
+            assert sess.pop("profile_error") == "Current password is incorrect."
+
+    # Locked: even the right password is refused.
+    client.post("/profile/update", data={"action": "update_username", "new_name": "X", "current_password": "correct-horse"})
+    with client.session_transaction() as sess:
+        assert "Too many incorrect password attempts" in sess.pop("profile_error")
+
+    # Login throttling for the account's user ID is a separate bucket.
+    assert not login_throttle.is_locked_out(db_path, "alice")
+
+
+def test_profile_correct_password_clears_failures(db_path, login):
+    from time_tracker_pro.repositories import login_throttle
+
+    uid = make_user(db_path)
+    _set_password(db_path, uid, "correct-horse")
+    client = login(uid)
+    for _ in range(login_throttle.MAX_FAILURES - 1):
+        client.post("/profile/update", data={"action": "update_username", "new_name": "X", "current_password": "nope"})
+    client.post("/profile/update", data={"action": "update_username", "new_name": "Y", "current_password": "correct-horse"})
+    with client.session_transaction() as sess:
+        assert sess.get("profile_success") == "Profile updated."
+    assert not login_throttle.is_locked_out(db_path, f"profile #{uid}")
