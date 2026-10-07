@@ -844,6 +844,7 @@
     </style>
 </head>
 <body class="antialiased overflow-x-hidden" data-sync-stats="{{ (sync_stats or {}) | tojson | e }}">
+    <a href="#top" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[10001] focus:px-4 focus:py-2 focus:rounded-full focus:bg-gray-900 focus:text-amber-300 focus:text-sm focus:font-semibold focus:shadow-lg">Skip to content</a>
 {% macro share_delta(key, good='') -%}
     {%- if matrix_deltas and key in matrix_deltas -%}
         {%- set d = matrix_deltas[key] -%}
@@ -959,7 +960,7 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-6 md:px-8 pt-8 pb-24 md:py-12" role="main" id="top">
+    <main class="max-w-7xl mx-auto px-6 md:px-8 pt-8 pb-24 md:py-12 focus:outline-none" role="main" id="top" tabindex="-1">
 
         <!-- Month Header & Controls -->
         <div class="mb-10 md:mb-12" id="monthHeader">

@@ -215,6 +215,7 @@
     </style>
 </head>
 <body class="antialiased overflow-x-hidden">
+    <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[10001] focus:px-4 focus:py-2 focus:rounded-full focus:bg-gray-900 focus:text-amber-300 focus:text-sm focus:font-semibold focus:shadow-lg">Skip to content</a>
     <header class="bg-[#F7F1E6]/90 backdrop-blur border-b border-[rgba(148,126,86,0.25)] shadow-sm" role="banner">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -233,7 +234,7 @@
         </div>
     </header>
 
-    <main class="max-w-3xl mx-auto px-6 py-10">
+    <main id="main" tabindex="-1" class="max-w-3xl mx-auto px-6 py-10 focus:outline-none">
         {% if profile_error %}
             <div class="px-4 py-3 rounded-2xl bg-red-50 border border-red-200 text-sm text-red-700 mb-4">
                 {{ profile_error }}
