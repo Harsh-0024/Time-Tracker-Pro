@@ -1187,9 +1187,12 @@ def create_task():
         return jsonify({"error": "Duration must be greater than 0"}), 400
 
     conn = get_db_connection(db_name)
+    # Only rows whose date span touches the new entry's can overlap (dates are stored
+    # as ISO strings, so they compare correctly as text). Was every log of the user.
     overlap_rows = conn.execute(
-        "SELECT id, sheety_id, task, start_date, start_time, end_date, end_time FROM logs WHERE user_id = ?",
-        (int(user_id),),
+        "SELECT id, sheety_id, task, start_date, start_time, end_date, end_time FROM logs "
+        "WHERE user_id = ? AND start_date <= ? AND end_date >= ?",
+        (int(user_id), end_dt.strftime("%Y-%m-%d"), start_dt.strftime("%Y-%m-%d")),
     ).fetchall()
     overlaps: List[Dict[str, Any]] = []
     for row in overlap_rows:

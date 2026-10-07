@@ -190,3 +190,26 @@ def test_task_payloads_carry_end_date_for_overnight_logs(db_path, login):
 
     graph = client.get("/api/graph-data?days=all&include_tasks=1&end=2026-09-21").get_json()
     assert [(t["date"], t["end_date"]) for t in graph["tasks"]] == [("2026-09-20", "2026-09-21")]
+
+
+def test_create_task_reports_overlaps(db_path, login):
+    uid = make_user(db_path)
+    other = make_user(db_path, username="bob", email="bob@example.com")
+    add_log(db_path, uid, "2026-10-06", "23:00:00", "2026-10-07", "01:00:00", task="Overnight")
+    add_log(db_path, uid, "2026-10-07", "09:00:00", "2026-10-07", "10:00:00", task="Morning")
+    add_log(db_path, uid, "2026-10-01", "00:30:00", "2026-10-01", "01:30:00", task="Other day")
+    add_log(db_path, other, "2026-10-07", "00:00:00", "2026-10-07", "02:00:00", task="Bob's")
+    client = login(uid)
+
+    def post(start, hours):
+        return client.post("/api/tasks", json={"task": "New", "date": "2026-10-07", "start_time": start, "duration": hours})
+
+    resp = post("00:30", 1)  # overlaps the log that started the evening before
+    assert resp.status_code == 409
+    assert [o["task"] for o in resp.get_json()["overlaps"]] == ["Overnight"]
+    resp = post("08:30", 2)
+    assert resp.status_code == 409 and [o["task"] for o in resp.get_json()["overlaps"]] == ["Morning"]
+    resp = post("23:30", 2)  # runs into the next day; nothing logged there
+    assert resp.status_code != 409
+    resp = post("10:00", 1)  # touches Morning's end exactly: not an overlap
+    assert resp.status_code != 409
