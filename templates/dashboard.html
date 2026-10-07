@@ -677,6 +677,7 @@
             border-color: rgba(212,175,55,0.16) !important;
             box-shadow: 0 16px 60px rgba(0,0,0,0.85), 0 0 0 1px rgba(212,175,55,0.06) !important;
         }
+        .app-title-btn { font: inherit; color: inherit; letter-spacing: inherit; background: none; border: 0; padding: 0; }
         .app-title-btn:hover {
             color: #7C5E24;
         }
@@ -866,8 +867,9 @@
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
                 <div class="flex items-center justify-between md:block md:shrink-0">
                     <div>
-                        <h1 id="appTitleBtn" class="text-xl md:text-2xl font-semibold whitespace-nowrap text-gray-900 tracking-tight cursor-pointer app-title-btn" aria-label="Sync and reload" title="Click to sync now">
-                            Time Tracker Pro
+                        <h1 class="text-xl md:text-2xl font-semibold whitespace-nowrap text-gray-900 tracking-tight">
+                            <button type="button" id="appTitleBtn" class="app-title-btn cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300" title="Click to sync now" aria-describedby="appTitleSyncHint">Time Tracker Pro</button>
+                            <span id="appTitleSyncHint" class="sr-only">Sync now and reload</span>
                         </h1>
                         <p class="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1 md:hidden lg:block">Personal productivity analytics</p>
                     </div>

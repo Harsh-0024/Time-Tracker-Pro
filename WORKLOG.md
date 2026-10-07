@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 08:50 IST: resume session ACTIVE (scheduled run). (Prev session ended 07:05; its '09:45' stamp was wrong.)
+- 2026-10-07 12:06 IST: resume session ACTIVE (scheduled run).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -104,6 +104,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [08:22 run] input caps: graph search history (200 chars, 1000 rows/user), Sheety account fields, name 80 / email 254 / password 1024 (no slow hash on huge passwords)
 - [08:22 run] perf: tag strings parsed once per distinct value in fetch_local_data (~30ms/request at 22k logs). Remaining cost is pandas strftime for display times (left alone: time formatting).
 - [08:22 run] client-side Review exports (dashboard/graphs) also guard formula cells
+- [12:06 run] a11y: dashboard 'Time Tracker Pro' sync title is a real <button> (keyboard-focusable) inside the h1
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
