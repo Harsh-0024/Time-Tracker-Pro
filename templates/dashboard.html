@@ -3165,7 +3165,28 @@
             let html = '';
             // A one-day list doesn't need the same date repeated on every card.
             const showDate = new Set(searched.map(t => t.date)).size > 1;
+            // Multi-day lists in time order get a header per day instead of a date on every card.
+            const groupByDay = showDate && String(window.modalSort || 'time_desc').startsWith('time');
+            const dayTotals = {};
+            if (groupByDay) {
+                searched.forEach(t => {
+                    const key = String(t.date || '');
+                    const entry = dayTotals[key] || (dayTotals[key] = { count: 0, hours: 0 });
+                    entry.count += 1;
+                    entry.hours += Number(t.duration || 0) || 0;
+                });
+            }
+            let lastDay = null;
             searched.forEach(task => {
+                if (groupByDay && String(task.date || '') !== lastDay) {
+                    lastDay = String(task.date || '');
+                    const totals = dayTotals[lastDay] || { count: 0, hours: 0 };
+                    html += `
+                        <div class="flex items-baseline justify-between gap-3 px-1 ${html ? 'pt-4' : 'pt-1'} pb-2">
+                            <h4 class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-600" title="${escapeHtml(lastDay)}">${escapeHtml(friendlyTaskDate(lastDay))}</h4>
+                            <span class="text-xs text-gray-500 tabular-nums">${totals.count} ${totals.count === 1 ? 'task' : 'tasks'} · ${hoursToHuman(totals.hours)}</span>
+                        </div>`;
+                }
                 const dur = Number(task.duration || 0);
                 const durText = hoursToHuman(isNaN(dur) ? 0 : dur);
                 const badges = [];
@@ -3192,7 +3213,7 @@
                             <div class="flex-1 min-w-0">
                                 <div class="font-medium text-gray-900 mb-1 line-clamp-2 break-words" title="${escapeHtml(task.task)}">${escapeHtml(task.task)}</div>
                                 <div class="flex flex-wrap items-center gap-2 text-[13px] text-gray-600">
-                                    ${showDate ? `<span class="text-gray-500" title="${escapeHtml(task.date)}">${escapeHtml(friendlyTaskDate(task.date))}</span>` : ''}
+                                    ${showDate && !groupByDay ? `<span class="text-gray-500" title="${escapeHtml(task.date)}">${escapeHtml(friendlyTaskDate(task.date))}</span>` : ''}
                                     <span class="text-gray-500">${escapeHtml(task.start_time)} - ${escapeHtml(task.end_time)}</span>
                                     ${tagBadge}
                                     ${badges.join('')}
