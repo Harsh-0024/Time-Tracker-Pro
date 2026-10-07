@@ -344,3 +344,22 @@ def test_verify_page_does_not_claim_a_code_was_sent_when_email_failed(app, db_pa
     resp = client.post("/verify-email", data={"action": "resend"})
     assert b"We sent a 6-digit code" in resp.data
     assert b"Code expires" in resp.data
+
+
+def test_register_error_keeps_typed_fields_but_not_passwords(app, db_path):
+    make_user(db_path, username="taken", email="taken@example.com")
+    resp = app.test_client().post("/register", data={
+        "name": "New Person", "email": "new@example.com", "user_id": "taken",
+        "password": "secretpass1", "confirm_password": "secretpass1",
+    })
+    html = resp.get_data(as_text=True)
+    assert resp.status_code == 200
+    assert 'value="New Person"' in html
+    assert 'value="new@example.com"' in html
+    assert 'value="taken"' in html
+    assert "secretpass1" not in html
+
+
+def test_forgot_password_error_keeps_identifier(app):
+    resp = app.test_client().post("/forgot-password", data={"identifier": "nobody-here"})
+    assert 'value="nobody-here"' in resp.get_data(as_text=True)

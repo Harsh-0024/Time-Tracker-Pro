@@ -183,7 +183,12 @@ def forgot_password():
                     return redirect(url_for("auth.verify_email"))
                 error = SEND_FAILED_MESSAGE
 
-    return render_template("forgot_password.html", error=error, success=success)
+    return render_template(
+        "forgot_password.html",
+        error=error,
+        success=success,
+        identifier=(request.form.get("identifier") or "").strip()[:254] if request.method == "POST" else "",
+    )
 
 
 @bp.route("/register", methods=["GET", "POST"], endpoint="register")
@@ -251,7 +256,9 @@ def register():
                 session["verification_error"] = REGISTER_SEND_FAILED_MESSAGE
             return redirect(url_for("auth.verify_email"))
 
-    return render_template("register.html", error=error)
+    # Keep what was typed (never the passwords) so one bad field doesn't wipe the form.
+    form = {k: (request.form.get(k) or "").strip()[:254] for k in ("name", "email", "user_id")} if request.method == "POST" else {}
+    return render_template("register.html", error=error, form=form)
 
 
 @bp.route("/logout", endpoint="logout")
