@@ -1747,9 +1747,24 @@ def sync_status():
         return jsonify({"error": "Could not read sync status."}), 500
 
 
-@bp.route("/sync-now", endpoint="sync_now")
+def _browser_get_refused():
+    """Side-effecting sync endpoints: a cookie session must POST.
+
+    SameSite=Lax cookies ride along on top-level GET navigations, so a link on
+    another site could otherwise trigger a forced Sheety sync. API-token
+    clients (shortcuts/automations) may keep using GET.
+    """
+    if request.method == "GET" and not token_is_valid(dict(request.headers)):
+        return jsonify({"status": "error", "message": "Use POST for this endpoint."}), 405
+    return None
+
+
+@bp.route("/sync-now", methods=["GET", "POST"], endpoint="sync_now")
 @api_or_login_required
 def sync_now():
+    refused = _browser_get_refused()
+    if refused:
+        return refused
     try:
         db_name = current_app.config["DB_NAME"]
         user_id = int(getattr(g, "user_id", 0) or 0)
@@ -1767,9 +1782,12 @@ def sync_now():
         return jsonify({"status": "error", "message": "Sync failed. Please try again later."}), 500
 
 
-@bp.route("/hard-reset", endpoint="hard_reset")
+@bp.route("/hard-reset", methods=["GET", "POST"], endpoint="hard_reset")
 @api_or_login_required
 def hard_reset():
+    refused = _browser_get_refused()
+    if refused:
+        return refused
     try:
         db_name = current_app.config["DB_NAME"]
         user_id = int(getattr(g, "user_id", 0) or 0)

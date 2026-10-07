@@ -140,6 +140,42 @@ def test_sync_now_error_does_not_echo_exception(db_path, login, monkeypatch):
     monkeypatch.setattr(api, "sync_cloud_data", boom)
     client = login(make_user(db_path))
     for path in ("/sync-now", "/hard-reset"):
-        resp = client.get(path)
+        resp = client.post(path)
         assert resp.status_code == 500
         assert b"secret" not in resp.data
+
+
+def test_sync_endpoints_refuse_cookie_get(db_path, login, monkeypatch):
+    """A cross-site link (top-level GET carries Lax cookies) must not force a sync."""
+    from time_tracker_pro.web import api
+
+    calls = []
+    monkeypatch.setattr(api, "sync_cloud_data", lambda *a, **k: calls.append(a))
+    client = login(make_user(db_path))
+    for path in ("/sync-now", "/hard-reset"):
+        assert client.get(path).status_code == 405
+    assert calls == []
+    assert client.post("/sync-now").status_code == 200
+    assert len(calls) == 1
+
+
+def test_sync_now_get_still_allowed_with_api_token(app, db_path, monkeypatch):
+    from time_tracker_pro.web import api
+
+    calls = []
+    monkeypatch.setattr(api, "sync_cloud_data", lambda *a, **k: calls.append(a))
+    monkeypatch.setenv("TIME_TRACKER_API_TOKEN", "secret-token")
+    uid = make_user(db_path)
+    resp = app.test_client().get("/sync-now", headers={"X-API-Token": "secret-token", "X-User-Id": str(uid)})
+    assert resp.status_code == 200, resp.data
+    assert len(calls) == 1
+
+
+def test_api_token_header_is_accepted(app, db_path, monkeypatch):
+    monkeypatch.setenv("TIME_TRACKER_API_TOKEN", "secret-token")
+    uid = make_user(db_path)
+    client = app.test_client()
+    ok = client.get("/api/tags", headers={"X-API-Token": "secret-token", "X-User-Id": str(uid)})
+    assert ok.status_code == 200
+    bad = client.get("/api/tags", headers={"X-API-Token": "wrong", "X-User-Id": str(uid)})
+    assert bad.status_code in (401, 302)

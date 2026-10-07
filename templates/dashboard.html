@@ -4770,7 +4770,7 @@
                     if (showLoading) {
                         setGlobalLoading(true, '');
                     }
-                    const r = await fetch('/sync-now', { method: 'GET', credentials: 'include' });
+                    const r = await fetch('/sync-now', { method: 'POST', credentials: 'include' });
                     if (r.status === 401) {
                         const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
                         window.location.href = `/login?next=${nextUrl}`;
