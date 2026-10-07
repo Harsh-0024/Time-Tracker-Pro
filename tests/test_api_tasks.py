@@ -86,3 +86,26 @@ def test_update_task_rejects_non_numeric_duration(db_path, login):
     resp = login(uid).put("/api/tasks/7?by=sheety", json={"duration": "soon"})
     assert resp.status_code == 400
     assert resp.get_json()["error"] == "Duration must be a number"
+
+
+def test_create_task_rejects_non_object_json(db_path, login):
+    client = login(make_user(db_path))
+    for body in ([1, 2], "task", 5):
+        resp = client.post("/api/tasks", json=body)
+        assert resp.status_code == 400, body
+
+
+def test_create_task_tolerates_non_string_fields(db_path, login):
+    client = login(make_user(db_path))
+    resp = client.post("/api/tasks", json={"task": 123, "date": 20260920, "start_time": "09:00", "duration": 1})
+    assert resp.status_code == 400  # bad date, but no crash
+    resp = client.post("/api/tasks", json={"task": "x", "date": "2026-09-20", "start_time": "09:00", "duration": "inf"})
+    assert resp.status_code == 400
+    assert resp.get_json()["error"] == "Duration must be a number"
+
+
+def test_update_task_infinite_duration_is_400(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "09:00:00", "2026-09-20", "10:00:00", task="Synced", sheety_id=7)
+    resp = login(uid).put("/api/tasks/7?by=sheety", json={"duration": "inf", "task": 5})
+    assert resp.status_code == 400

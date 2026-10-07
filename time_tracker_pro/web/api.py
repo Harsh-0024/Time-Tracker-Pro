@@ -34,6 +34,17 @@ bp = Blueprint("api", __name__)
 
 logger = logging.getLogger(__name__)
 
+
+def _json_body() -> Dict[str, Any]:
+    """Request JSON as a dict; anything else (array, scalar, bad JSON) becomes {}."""
+    data = request.get_json(silent=True)
+    return data if isinstance(data, dict) else {}
+
+
+def _text(value: Any) -> str:
+    """Stringify a JSON field so a number/bool can't crash .strip()."""
+    return "" if value is None else str(value)
+
 SearchExpr = Tuple[str, Any]
 SEARCH_TOKEN_RE = re.compile(r'"[^"]*"|\'[^\']*\'|\(|\)|,|\+|\-|\*|\bAND\b|\bOR\b|\bNOT\b|[^\s()+*\-()]+', re.IGNORECASE)
 
@@ -426,7 +437,7 @@ def create_graph_view_route():
 
     db_name = current_app.config["DB_NAME"]
     user_id = int(getattr(g, "user_id", 0) or 0)
-    data = request.get_json(silent=True) or {}
+    data = _json_body()
     try:
         view = create_graph_view(
             db_name,
@@ -474,7 +485,7 @@ def graph_search_suggestions():
 def graph_search_suggestions_use():
     db_name = current_app.config["DB_NAME"]
     user_id = int(getattr(g, "user_id", 0) or 0)
-    payload = request.get_json(silent=True) or {}
+    payload = _json_body()
     focus = str(payload.get("focus") or "").strip().lower()
     search = str(payload.get("search") or "").strip()
     if not search:
@@ -500,7 +511,7 @@ def update_task(task_id: int):
     db_name = current_app.config["DB_NAME"]
     user_id = int(getattr(g, "user_id", 0) or 0)
 
-    data = request.get_json(silent=True) or {}
+    data = _json_body()
 
     conn = get_db_connection(db_name)
     row = _find_task_row(conn, task_id, user_id)
@@ -515,7 +526,7 @@ def update_task(task_id: int):
         conn.close()
         return jsonify({"error": "Task is not linked to a Sheety row"}), 400
 
-    task_name = re.sub(r"\s+", " ", (data.get("task") or row["task"] or "").strip()).title()
+    task_name = re.sub(r"\s+", " ", _text(data.get("task") or row["task"] or "").strip()).title()
     if not task_name:
         conn.close()
         return jsonify({"error": "Task name is required"}), 400
@@ -528,7 +539,7 @@ def update_task(task_id: int):
             duration_minutes = int(round(float(data.get("duration") or 0) * 60))
         else:
             duration_minutes = int(row["duration"] or 0)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         conn.close()
         return jsonify({"error": "Duration must be a number"}), 400
 
@@ -536,7 +547,7 @@ def update_task(task_id: int):
         conn.close()
         return jsonify({"error": "Duration must be greater than 0"}), 400
 
-    tag_raw = normalize_tag((data.get("tag") or row["tags"] or "").strip())
+    tag_raw = normalize_tag(_text(data.get("tag") or row["tags"] or "").strip())
     urgent = bool(data.get("urgent") if "urgent" in data else row["urg"])
     important = bool(data.get("important") if "important" in data else row["imp"])
 
@@ -556,8 +567,8 @@ def update_task(task_id: int):
         conn.close()
         return jsonify({"error": "Invalid start time format"}), 400
 
-    start_raw = (data.get("start") or data.get("start_raw") or "").strip()
-    end_raw = (data.get("end") or data.get("end_raw") or "").strip()
+    start_raw = _text(data.get("start") or data.get("start_raw") or "").strip()
+    end_raw = _text(data.get("end") or data.get("end_raw") or "").strip()
 
     start_dt = existing_start_dt
     end_dt: Optional[datetime] = None
@@ -953,14 +964,14 @@ def create_task():
     db_name = current_app.config["DB_NAME"]
     user_id = int(getattr(g, "user_id", 0) or 0)
 
-    data = request.get_json(silent=True) or {}
+    data = _json_body()
 
-    task_name = re.sub(r"\s+", " ", (data.get("task") or "").strip()).title()
+    task_name = re.sub(r"\s+", " ", _text(data.get("task") or "").strip()).title()
     if not task_name:
         return jsonify({"error": "Task name is required"}), 400
 
-    date_value = (data.get("date") or "").strip()
-    start_time_value = (data.get("start_time") or data.get("start") or "").strip()
+    date_value = _text(data.get("date") or "").strip()
+    start_time_value = _text(data.get("start_time") or data.get("start") or "").strip()
     if not date_value:
         return jsonify({"error": "Date is required"}), 400
     if not start_time_value:
@@ -972,13 +983,13 @@ def create_task():
             duration_minutes = int(float(data.get("duration_minutes") or 0))
         elif data.get("duration") is not None:
             duration_minutes = int(round(float(data.get("duration") or 0) * 60))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return jsonify({"error": "Duration must be a number"}), 400
 
     if duration_minutes is None or duration_minutes <= 0:
         return jsonify({"error": "Duration must be greater than 0"}), 400
 
-    tag_raw = normalize_tag((data.get("tag") or "").strip())
+    tag_raw = normalize_tag(_text(data.get("tag") or "").strip())
     urgent = bool(data.get("urgent"))
     important = bool(data.get("important"))
 
@@ -1532,7 +1543,7 @@ def import_csv():
     user_id = int(getattr(g, "user_id", 0) or 0)
 
     try:
-        data = request.get_json(silent=True) or {}
+        data = _json_body()
         csv_content = data.get("csv_data")
         if not csv_content:
             return jsonify({"status": "error", "message": "Missing 'csv_data' field"}), 400
@@ -1740,10 +1751,10 @@ def create_sheety_account():
         db_name = current_app.config["DB_NAME"]
         user_id = int(getattr(g, "user_id", 0) or 0)
         
-        data = request.get_json(silent=True) or {}
-        account_email = (data.get("account_email") or "").strip()
-        api_base_url = (data.get("api_base_url") or "").strip()
-        api_token = (data.get("api_token") or "").strip() or None
+        data = _json_body()
+        account_email = _text(data.get("account_email") or "").strip()
+        api_base_url = _text(data.get("api_base_url") or "").strip()
+        api_token = _text(data.get("api_token") or "").strip() or None
         
         if not api_base_url:
             return jsonify({"error": "API base URL is required"}), 400
