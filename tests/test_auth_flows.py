@@ -325,3 +325,22 @@ def test_profile_correct_password_clears_failures(db_path, login):
     with client.session_transaction() as sess:
         assert sess.get("profile_success") == "Profile updated."
     assert not login_throttle.is_locked_out(db_path, f"profile #{uid}")
+
+
+def test_verify_page_does_not_claim_a_code_was_sent_when_email_failed(app, db_path, monkeypatch):
+    import time_tracker_pro.services.verification as ver
+
+    make_user(db_path, username="alice", email="alice@example.com")
+    client = app.test_client()
+
+    monkeypatch.setattr(ver, "send_email", lambda *a, **k: False)
+    resp = client.post("/login", data={"identifier": "alice", "action": "login_otp"}, follow_redirects=True)
+    assert b"couldn&#39;t send the email" in resp.data
+    assert b"We sent a 6-digit code" not in resp.data
+    assert b"Code expires" not in resp.data
+
+    monkeypatch.setattr(ver, "send_email", lambda *a, **k: True)
+    monkeypatch.setattr(ver, "VERIFICATION_RESEND_COOLDOWN_SECONDS", 0)
+    resp = client.post("/verify-email", data={"action": "resend"})
+    assert b"We sent a 6-digit code" in resp.data
+    assert b"Code expires" in resp.data

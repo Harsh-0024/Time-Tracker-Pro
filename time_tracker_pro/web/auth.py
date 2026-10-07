@@ -53,6 +53,8 @@ MAX_EMAIL_LENGTH = 254
 USER_ID_RE = re.compile(r"^[A-Za-z0-9._-]{3,32}$")
 USER_ID_RULE = "User ID must be 3-32 letters, numbers, dots, dashes or underscores."
 RECENT_CODE_MESSAGE = "We sent you a code less than a minute ago. Check your inbox (and spam)."
+SEND_FAILED_MESSAGE = "We couldn't send the email right now. Please try again in a few minutes."
+REGISTER_SEND_FAILED_MESSAGE = "Your account was created, but we couldn't send the code. Tap Resend code to try again."
 
 
 def _ua_hash(value: str) -> str:
@@ -98,7 +100,7 @@ def login():
                             f"Verification code sent to {target_email}." if target_email else "Verification code sent."
                         )
                     else:
-                        session["verification_error"] = "We couldn't send the email right now. Please try again in a few minutes."
+                        session["verification_error"] = SEND_FAILED_MESSAGE
                     return redirect(url_for("auth.verify_email", next=next_url or ""))
         elif not identifier or not password:
             error = "Username, email, or user ID and password are required."
@@ -122,7 +124,7 @@ def login():
                     if send_verification_email(db_name, user):
                         session["verification_success"] = "Verification code sent."
                     else:
-                        session["verification_error"] = "We couldn't send the email right now. Please try again in a few minutes."
+                        session["verification_error"] = SEND_FAILED_MESSAGE
 
                     return redirect(url_for("auth.verify_email", next=next_url or ""))
                 else:
@@ -179,7 +181,7 @@ def forgot_password():
                         f"Verification code sent to {target_email}." if target_email else "Verification code sent."
                     )
                     return redirect(url_for("auth.verify_email"))
-                error = "We couldn't send the email right now. Please try again in a few minutes."
+                error = SEND_FAILED_MESSAGE
 
     return render_template("forgot_password.html", error=error, success=success)
 
@@ -246,7 +248,7 @@ def register():
             session["pending_user_id"] = new_user_id
             session["pending_remember"] = remember
             if not sent:
-                session["verification_error"] = "Your account was created, but we couldn't send the code. Tap Resend code to try again."
+                session["verification_error"] = REGISTER_SEND_FAILED_MESSAGE
             return redirect(url_for("auth.verify_email"))
 
     return render_template("register.html", error=error)
@@ -296,7 +298,7 @@ def verify_email():
             elif send_verification_email(db_name, user, purpose=purpose):
                 success = "Verification code resent."
             else:
-                error = "We couldn't send the email right now. Please try again in a few minutes."
+                error = SEND_FAILED_MESSAGE
         else:
             code = (request.form.get("code") or "").strip()
             if not code:
@@ -335,7 +337,7 @@ def verify_email():
         if send_verification_email(db_name, user, purpose=purpose):
             success = "Verification code sent."
         else:
-            error = "We couldn't send the email right now. Please try again in a few minutes."
+            error = SEND_FAILED_MESSAGE
 
     return render_template(
         "verify_email.html",
@@ -345,6 +347,8 @@ def verify_email():
         name=display_name(user),
         title=title,
         subtitle=subtitle,
+        # Don't claim "We sent a code" (with an expiry) when the email just failed.
+        send_failed=error in (SEND_FAILED_MESSAGE, REGISTER_SEND_FAILED_MESSAGE),
         purpose=purpose,
         resend_wait=seconds_until_resend_allowed(db_name, int(user["id"]), purpose),
         ttl_minutes=VERIFICATION_CODE_TTL_MINUTES,
@@ -454,7 +458,7 @@ def profile_request_otp():
     if send_verification_email(db_name, user, purpose=purpose):
         session["profile_success"] = "Verification code sent."
     else:
-        session["profile_error"] = "We couldn't send the email right now. Please try again in a few minutes."
+        session["profile_error"] = SEND_FAILED_MESSAGE
     return redirect(url_for("main.settings"))
 
 
