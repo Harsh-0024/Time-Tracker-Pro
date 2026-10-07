@@ -2682,6 +2682,13 @@
                     timeInput.value = `${hours}:${minutes}`;
                 }
             }
+            // 'Log again': same name, tags and priority; times stay as computed above.
+            if (prefill && prefill.name) {
+                if (nameInput) nameInput.value = prefill.name;
+                if (tagInput) tagInput.value = prefill.tags || '';
+                if (importantInput) importantInput.checked = Boolean(prefill.important);
+                if (urgentInput) urgentInput.checked = Boolean(prefill.urgent);
+            }
             if (prefill && Number.isFinite(prefill.start)) {
                 if (timeInput) timeInput.value = minutesToInputTime(prefill.start);
                 // A gap that runs to midnight has no same-day end time; leave End for the user.
@@ -2697,7 +2704,9 @@
             updateCreatePriorityChips();
             panel.classList.remove('hidden');
             try {
-                const focusTarget = document.getElementById('createTaskName');
+                const focusTarget = prefill && prefill.name
+                    ? (endInput || durationInput)
+                    : document.getElementById('createTaskName');
                 if (focusTarget) focusTarget.focus();
             } catch (e) {
                 // ignore focus errors
@@ -3245,12 +3254,18 @@
                     tagBadge = `<span class="px-2 py-0.5 rounded-full text-xs font-medium" style="${tagStyle}">${displayTag}</span>`;
                 }
                 const taskId = Number(task.sheety_id || task.id || 0);
+                const localId = Number(task.id || 0);
+                const againButton = localId
+                    ? `<button class="px-2.5 py-1 rounded-full border border-slate-200 text-[11px] font-semibold text-gray-600 hover:bg-white" data-action="repeat-task" data-local-id="${localId}" aria-label="Log ${escapeHtml(task.task)} again" title="Add a new entry with this name, tags and priority">Again</button>`
+                    : '';
+                // Phones: actions get their own row under the task so the times don't wrap.
                 const actionButtons = (taskId && task.sheety_id != null)
                     ? `<div class="flex items-center gap-2">
+                            ${againButton}
                             <button class="px-2.5 py-1 rounded-full border border-slate-200 text-[11px] font-semibold text-gray-600 hover:bg-white" data-action="edit-task" data-task-id="${taskId}">Edit</button>
                             <button class="px-2.5 py-1 rounded-full border border-red-200 text-[11px] font-semibold text-red-600 hover:bg-white" data-action="delete-task" data-task-id="${taskId}">Delete</button>
                         </div>`
-                    : '';
+                    : (againButton ? `<div class="flex items-center gap-2">${againButton}</div>` : '');
                 html += `
                     <div class="luxury-card rounded-2xl p-4 md:p-5 mb-3 shadow-lg">
                         <div class="flex items-center justify-between gap-3">
@@ -3265,9 +3280,10 @@
                             </div>
                             <div class="shrink-0 flex flex-col items-end gap-2">
                                 <span class="inline-flex px-2.5 py-1 rounded-full bg-white border border-slate-200 text-xs font-semibold text-gray-700 js-hover-hours hover-swap" data-hours="${dur}">${durText}</span>
-                                ${actionButtons}
+                                ${actionButtons ? `<div class="hidden sm:block">${actionButtons}</div>` : ''}
                             </div>
                         </div>
+                        ${actionButtons ? `<div class="sm:hidden mt-3 flex justify-end">${actionButtons}</div>` : ''}
                     </div>
                 `;
             });
@@ -4384,6 +4400,20 @@
             const modalTasks = document.getElementById('modalTasks');
             if (modalTasks && !modalTasks.__taskActionBound) {
                 modalTasks.addEventListener('click', (e) => {
+                    const repeatBtn = e.target.closest('[data-action="repeat-task"]');
+                    if (repeatBtn) {
+                        const localId = Number(repeatBtn.dataset.localId || 0);
+                        const task = (window.modalData?.tasks || []).find(t => Number(t.id || 0) === localId);
+                        if (task && window.openCreateTaskPanel) {
+                            window.openCreateTaskPanel({
+                                name: String(task.task || '').trim(),
+                                tags: formatTagNames(task.tag),
+                                important: task.important,
+                                urgent: task.urgent,
+                            });
+                        }
+                        return;
+                    }
                     const editBtn = e.target.closest('[data-action="edit-task"]');
                     if (editBtn) {
                         const taskId = parseInt(editBtn.dataset.taskId || '0', 10);
