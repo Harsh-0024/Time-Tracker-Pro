@@ -531,6 +531,12 @@
                     </svg>
                     <span class="text-[10px] font-medium">Tags</span>
                 </button>
+                <button id="navInsights" class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 18h6M10 21h4M12 3a6 6 0 00-3.6 10.8c.6.45 1 1.15 1 1.9V16h5.2v-.3c0-.75.4-1.45 1-1.9A6 6 0 0012 3z" />
+                    </svg>
+                    <span class="text-[10px] font-medium">Insights</span>
+                </button>
                 <button id="navGraphs" class="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-gray-900 bg-slate-100">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 18V6m0 12h16M8 14l3-3 3 2 4-5" />
@@ -3671,9 +3677,10 @@
         const navMatrix = document.getElementById('navMatrix');
         const navTags = document.getElementById('navTags');
         const navGraphs = document.getElementById('navGraphs');
+        const navInsights = document.getElementById('navInsights');
         
         function setActiveGraphNav(id) {
-            [navHome, navMatrix, navTags, navGraphs].forEach(btn => {
+            [navHome, navMatrix, navTags, navInsights, navGraphs].forEach(btn => {
                 if (!btn) return;
                 if (btn.id === id) {
                     btn.classList.remove('text-gray-600', 'bg-transparent');
@@ -3690,6 +3697,7 @@
         if (navHome) navHome.onclick = () => { window.location.href = `${dashboardUrl}#top`; };
         if (navMatrix) navMatrix.onclick = () => { window.location.href = `${dashboardUrl}#matrix`; };
         if (navTags) navTags.onclick = () => { window.location.href = `${dashboardUrl}#tags`; };
+        if (navInsights) navInsights.onclick = () => { window.location.href = `${dashboardUrl}#insights`; };
         if (navGraphs) navGraphs.onclick = () => { window.location.href = "{{ url_for('main.graphs') }}"; };
 
         let graphShortcutToast = null;
