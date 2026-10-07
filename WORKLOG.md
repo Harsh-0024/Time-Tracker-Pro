@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 22:31 IST: 22:20 resume session ACTIVE.
+- 2026-10-07 22:33 IST: 22:20 resume session ACTIVE.
 
 ## 21:20 run summary - most important first
 1. Feature: Insights 'Top activities' now show a trend per activity (week/month: per-day change vs last period; day: 'usually Xh/day').
@@ -230,6 +230,10 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [22:20 run] SECURITY: Settings mirrored the typed NEW PASSWORD + confirmation into sessionStorage in plaintext (to survive the 'Send code' reload). 'Send code' (User ID/Password forms) now posts in the background (/profile/request-otp returns JSON for Accept: application/json; toast + focus the code box), nothing is stored, stale keys purged on load; falls back to a normal submit if the fetch fails (+ tests)
 - [22:20 run] feat: day view Daily goals show the last 7 days as dots under each bar (oldest -> selected day); today's Growth below target is an amber ring 'so far', not a miss (also in the current week/month row; counts unchanged) (+ test)
 - [22:20 run] feat: graphs 'Calendar' card - GitHub-style heatmap of the focus metric over the plotted days (53 weeks; 26 on phones, re-renders on breakpoint change), 5 levels in the focus colour, month labels, 'N of M days active · longest run X days', click a day -> dashboard day view; hidden under 28 days. Browser-checked desktop/phone/dark (+ smoke test)
+- [22:20 run] BUG (phones): verify-email page refocused + scrolled the code box on EVERY tap, so a tap on 'Resend code'/links could miss as the page moved. Only empty-space taps refocus now (no scroll). Browser-verified
+- [22:20 run] BUG: forgot-password ('Email or user ID') turned a user ID into '<id>@gmail.com' on blur -> only a trailing '@' is completed (as on login). Browser-verified
+- [22:20 run] login: Enter in the password field used form.submit() (no busy state, double Enter = double POST, no validation) -> requestSubmit(Log In). Browser-verified
+- [22:20 run] README: goal dots, calendar heatmap
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
