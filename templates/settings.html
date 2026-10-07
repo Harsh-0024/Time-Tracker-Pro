@@ -321,7 +321,7 @@
                         </form>
                         <form id="updateUsernameForm" method="POST" action="{{ url_for('auth.update_profile') }}" class="space-y-3" autocomplete="off">
                             <input type="hidden" name="action" value="update_username" />
-                            <input aria-label="New user ID" autocomplete="username" id="settingsUserId" name="new_user_id" placeholder="New user ID" value="" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                            <input aria-label="New user ID" autocomplete="username" id="settingsUserId" autocapitalize="none" autocorrect="off" spellcheck="false" name="new_user_id" placeholder="New user ID" value="" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
                             <div>
                                 <input aria-label="Full name" autocomplete="name" id="settingsName" name="new_name" placeholder="Full name" value="" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
                                 <p class="text-xs text-gray-500 mt-1">Enter as: First Last (e.g., John Smith)</p>
