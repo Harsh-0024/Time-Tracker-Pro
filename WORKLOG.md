@@ -18,7 +18,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 6. Features: Add-task name autocomplete w/ tag prefill; week/month 'vs last week/month' daily averages; graphs 'By time of day' card; 'Again' on task cards; swipe week strip / day-by-day chart on phones; admin log counts.
 7. Perf: responses gzipped (dashboard 292KB -> 53KB); graph search ~10x faster (vectorised, equivalence-tested); task lists/exports iterate records (~300ms saved at 22k logs).
 8. a11y: skip links, date-picker + graphs focus-menu keyboard support.
-All tests pass (170). Nothing pushed.
+All tests pass (177, py3.14 + 3.12). Nothing pushed.
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
