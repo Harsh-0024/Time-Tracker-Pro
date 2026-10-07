@@ -728,11 +728,9 @@
             const form = document.getElementById(formId);
             if (!form) return;
             form.addEventListener('submit', (e) => {
-                const btn = form.querySelector('button[type="submit"]');
-                if (btn) {
-                    btn.disabled = true;
-                    btn.dataset.originalText = btn.textContent;
-                    btn.textContent = 'Updating...';
+                const btn = e.submitter || form.querySelector('button[type="submit"]');
+                if (btn && !btn.disabled) {
+                    markFormBusy(btn, 'Updating...');
                 }
                 sessionStorage.removeItem('settings.new_name');
                 sessionStorage.removeItem('settings.new_user_id');
@@ -743,26 +741,22 @@
             });
         });
 
-        const emailForms = document.querySelectorAll('form[action*="profile_request_otp"], form[action*="update_profile"]');
+        const emailForms = document.querySelectorAll('form[action="{{ url_for('auth.profile_request_otp') }}"], form[action="{{ url_for('auth.update_profile') }}"]');
         emailForms.forEach(form => {
-            form.addEventListener('submit', () => {
-                const btn = form.querySelector('button[type="submit"]');
+            form.addEventListener('submit', (e) => {
+                const btn = e.submitter || form.querySelector('button[type="submit"]');
                 if (btn && !btn.disabled) {
-                    btn.disabled = true;
-                    btn.dataset.originalText = btn.textContent;
-                    btn.textContent = btn.textContent.includes('Send') ? 'Sending...' : 'Updating...';
+                    markFormBusy(btn, btn.textContent.includes('Send') ? 'Sending...' : 'Updating...');
                 }
             });
         });
 
-        const iconForm = document.querySelector('form[action*="update_app_icon"]');
+        const iconForm = document.querySelector('form[action="{{ url_for('main.update_app_icon') }}"]');
         if (iconForm) {
             iconForm.addEventListener('submit', () => {
                 const btn = iconForm.querySelector('button[type="submit"]');
                 if (btn) {
-                    btn.disabled = true;
-                    btn.dataset.originalText = btn.textContent;
-                    btn.textContent = 'Uploading...';
+                    markFormBusy(btn, 'Uploading...');
                 }
             });
         }
@@ -1258,5 +1252,6 @@
     </script>
     {% include '_toast_notifications.html' %}
     {% include '_error_boundary.html' %}
+    {% include '_form_busy.html' %}
 </body>
 </html>

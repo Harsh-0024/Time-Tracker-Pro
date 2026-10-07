@@ -161,8 +161,7 @@
         
         if (registerForm && registerBtn) {
             registerForm.addEventListener('submit', () => {
-                registerBtn.disabled = true;
-                registerBtn.textContent = 'Creating account...';
+                markFormBusy(registerBtn, 'Creating account...');
             });
         }
         
@@ -245,5 +244,6 @@
             });
         }
     </script>
+    {% include '_form_busy.html' %}
 </body>
 </html>

@@ -107,6 +107,7 @@
             hidden.type = 'hidden';
             hidden.name = button.name;
             hidden.value = button.value;
+            hidden.dataset.submitterCopy = '1';
             form.appendChild(hidden);
         }
         // Mirror the server's resend cooldown so the button isn't a dead end.
@@ -129,12 +130,10 @@
             verifyForm.addEventListener('submit', (e) => {
                 const submitter = e.submitter;
                 if (submitter === verifyBtn) {
-                    verifyBtn.disabled = true;
-                    verifyBtn.textContent = 'Verifying...';
+                    markFormBusy(verifyBtn, 'Verifying...');
                 } else if (submitter === resendBtn) {
                     keepSubmitterValue(verifyForm, resendBtn);
-                    resendBtn.disabled = true;
-                    resendBtn.textContent = 'Sending...';
+                    markFormBusy(resendBtn, 'Sending...');
                 }
             });
         }
@@ -188,5 +187,6 @@
             }, { passive: true, capture: true });
         })();
     </script>
+    {% include '_form_busy.html' %}
 </body>
 </html>
