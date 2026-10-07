@@ -9,6 +9,14 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 ## Status / last heartbeat
 - 2026-10-07 22:50 IST: 22:20 resume session ACTIVE.
 
+## 22:20 run summary - most important first
+1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
+2. BUG: Settings > Update Profile showed no 'Current password' / 'Email code' field on load (the Password form's switch hid them) - name/user-ID changes were blocked until you clicked a toggle.
+3. BUGs: pull-to-refresh never worked (lib needed a missing element) -> new installed-app-only 'Pull down to sync'; forgot-password turned a user ID into '<id>@gmail.com'; verify-email taps on 'Resend' could miss (focus/scroll hijack); Enter on login skipped the busy state; Growth streak vanished after the first partial log of the day.
+4. Features: goal dots (week/month: one per day; day view: last 7 days) + best streak; graphs Calendar heatmap; offline page for the installed app (minimal service worker, nothing else cached); streaks in Copy summary.
+5. Perf: fetch_local_data 161 -> 69 ms at 22k logs (dashboard ~165 -> ~95 ms), output identical. Touches time *display formatting* only - see Done list if you want it reverted.
+Verification: pytest (198, py3.14 + 3.12), browser pane on rendered pages with synthetic data, node harness for the service worker. Nothing pushed.
+
 ## 21:20 run summary - most important first
 1. Feature: Insights 'Top activities' now show a trend per activity (week/month: per-day change vs last period; day: 'usually Xh/day').
 2. Feature: 'Copy summary' button (+ C shortcut) copies a plain-text recap of the period.
