@@ -462,6 +462,8 @@
         .insight-note { margin-top: 2px; font-size: 12px; color: #6B7280; }
         .insight-note.is-good { color: #047857; }
         .insight-note.is-bad { color: #BE123C; }
+        .insight-good { color: #047857; font-weight: 600; }
+        .insight-bad { color: #BE123C; font-weight: 600; }
         .insight-link { border-radius: 12px; margin: -6px; padding: 6px; transition: background 0.2s ease; }
         .insight-link:hover { background: rgba(247, 207, 107, 0.16); }
         [data-theme="dark"] .insight-bar { background: rgba(212, 175, 55, 0.10); }
@@ -471,6 +473,8 @@
         [data-theme="dark"] .insight-stat-sub, [data-theme="dark"] .insight-note { color: #8C7C58; }
         [data-theme="dark"] .insight-note.is-good { color: #6EE7B7; }
         [data-theme="dark"] .insight-note.is-bad { color: #FDA4AF; }
+        [data-theme="dark"] .insight-good { color: #6EE7B7; }
+        [data-theme="dark"] .insight-bad { color: #FDA4AF; }
         [data-theme="dark"] .insight-link:hover { background: rgba(212, 175, 55, 0.08); }
         .matrix-card:focus-visible, .card-title-btn:focus-visible { outline: 2px solid #F5B826; outline-offset: 3px; }
         .card-title-btn { font: inherit; color: inherit; text-align: left; border-radius: 6px; }
@@ -1577,6 +1581,17 @@
                                 <span class="text-gray-300 mx-1">·</span>
                                 <span class="text-rose-700">{{ insights.daily_avg.waste }}h waste</span>
                             </div>
+                            {% set pv = insights.daily_avg.prev %}
+                            {% if pv %}
+                            {% macro avg_delta(value, good_when_up) -%}
+                            {%- if value == 0 -%}<span class="text-gray-500">same</span>
+                            {%- else -%}<span class="{{ 'insight-good' if (value > 0) == good_when_up else 'insight-bad' }}">{{ '+' if value > 0 else '−' }}{{ value | abs }}h</span>
+                            {%- endif -%}
+                            {%- endmacro %}
+                            <div class="insight-note mt-1" title="Last {{ period }}: {{ pv.growth }}h growth · {{ pv.waste }}h waste per logged day ({{ pv.days }} day{{ '' if pv.days == 1 else 's' }})">
+                                vs last {{ period }}: {{ avg_delta(pv.growth_delta, true) }} growth · {{ avg_delta(pv.waste_delta, false) }} waste
+                            </div>
+                            {% endif %}
                         </div>
                         {% endif %}
                         {% if insights.best_growth_day %}

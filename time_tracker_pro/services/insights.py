@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 from datetime import date, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
@@ -86,7 +86,10 @@ def build_insights(
     start_date: date,
     end_date: date,
     today: Optional[date] = None,
+    previous: Optional[Tuple[date, date]] = None,
 ) -> Dict[str, Any]:
+    """``previous`` is the (start, end) of the period before this one; week/month
+    views compare their daily averages with it."""
     today = today or date.today()
     insights: Dict[str, Any] = {"top_activities": top_activities(period_df)}
     if period_df.empty:
@@ -137,6 +140,19 @@ def build_insights(
         "waste": round_half_up(float(waste.sum()) / logged_days / 60.0, 1) if not waste.empty else 0.0,
         "days": logged_days,
     }
+    if previous is not None and not df.empty:
+        prev_df = df[(df["date"] >= previous[0]) & (df["date"] <= previous[1])]
+        prev_days = int(prev_df["date"].nunique()) if not prev_df.empty else 0
+        if prev_days:
+            prev_growth = float(prev_df[_growth_mask(prev_df)]["duration"].sum()) / prev_days / 60.0
+            prev_waste = float(prev_df[_waste_mask(prev_df)]["duration"].sum()) / prev_days / 60.0
+            insights["daily_avg"]["prev"] = {
+                "growth": round_half_up(prev_growth, 1),
+                "waste": round_half_up(prev_waste, 1),
+                "growth_delta": round_half_up(float(growth.sum()) / logged_days / 60.0 - prev_growth, 1),
+                "waste_delta": round_half_up(float(waste.sum()) / logged_days / 60.0 - prev_waste, 1),
+                "days": prev_days,
+            }
     return insights
 
 

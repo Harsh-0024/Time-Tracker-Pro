@@ -250,7 +250,10 @@ def dashboard():
 
     matrix = get_matrix_stats(period_df)
     matrix_deltas = _matrix_share_deltas(df, matrix, selected_date, period)
-    insights = build_insights(df, period_df, period, start_date, end_date)
+    insights = build_insights(
+        df, period_df, period, start_date, end_date,
+        previous=_previous_period_range(selected_date, period) if period != "day" else None,
+    )
     day_timeline = build_day_timeline(df, selected_date) if period == "day" else None
     daily_breakdown = build_daily_breakdown(period_df, start_date, end_date) if period != "day" and not df.empty else None
     logged_coverage = _logged_coverage(float(matrix.get("total_hours") or 0.0), start_date, end_date)

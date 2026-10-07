@@ -124,3 +124,29 @@ def test_longest_growth_block_absent_without_growth(db_path):
     add_log(db_path, uid, "2026-09-20", "08:00:00", "2026-09-20", "13:00:00", task="Netflix", urg=0, imp=0)
     df = _df(db_path, uid)
     assert "longest_growth_block" not in build_insights(df, df, "day", date(2026, 9, 20), date(2026, 9, 20))
+
+
+def test_week_daily_average_compares_with_previous_week():
+    from datetime import date as _d
+    import pandas as _pd
+    from time_tracker_pro.services.insights import build_insights
+
+    def row(day, minutes, urgent, important):
+        return {"date": day, "duration": minutes, "urgent": urgent, "important": important, "task": "x"}
+
+    rows = [
+        row(_d(2026, 9, 28), 120, False, True),  # previous week: 2h growth, 1h waste over 1 day
+        row(_d(2026, 9, 28), 60, False, False),
+        row(_d(2026, 10, 5), 180, False, True),  # this week: 3h growth, 0.5h waste
+        row(_d(2026, 10, 5), 30, False, False),
+    ]
+    df = _pd.DataFrame(rows)
+    period_df = df[df["date"] >= _d(2026, 10, 4)]
+    ins = build_insights(df, period_df, "week", _d(2026, 10, 4), _d(2026, 10, 10),
+                         today=_d(2026, 10, 7), previous=(_d(2026, 9, 27), _d(2026, 10, 3)))
+    prev = ins["daily_avg"]["prev"]
+    assert prev["growth_delta"] == 1.0 and prev["waste_delta"] == -0.5 and prev["days"] == 1
+    # No previous data -> no comparison.
+    ins = build_insights(period_df, period_df, "week", _d(2026, 10, 4), _d(2026, 10, 10),
+                         today=_d(2026, 10, 7), previous=(_d(2026, 9, 27), _d(2026, 10, 3)))
+    assert "prev" not in ins["daily_avg"]
