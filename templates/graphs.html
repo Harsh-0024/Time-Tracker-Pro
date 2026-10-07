@@ -2719,6 +2719,7 @@
                                 max: xMaxLabel
                             },
                             y: {
+                                beginAtZero: true,
                                 grid: { color: isDarkTheme() ? 'rgba(180,148,72,0.07)' : 'rgba(148,163,184,0.25)' },
                                 ticks: {
                                     color: isDarkTheme() ? '#635848' : '#6B7280',
@@ -2746,7 +2747,10 @@
                 chartTitle.textContent = label;
             }
             const displayedDays = getDisplayedSpanDaysForRange(labels, values, currentRange);
-            const subtitleParts = [`Last ${displayedDays} days`, `${maWindow}-day avg`];
+            const subtitleParts = [
+                currentRange === 'all' && !firstLogDateStr ? 'No entries yet' : `Last ${displayedDays} days`,
+                `${maWindow}-day avg`
+            ];
             if (graphSearchQuery || graphExcludedIds.size) {
                 subtitleParts.push('Filtered');
             }
