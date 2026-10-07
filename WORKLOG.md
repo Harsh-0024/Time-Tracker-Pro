@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 18:05 IST: 16:20 resume session ACTIVE (another run should exit).
+- 2026-10-07 18:10 IST: 16:20 resume session ACTIVE (another run should exit).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -154,8 +154,10 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [16:20 run] dashboard edit-panel neighbour lookup cached failed fetches forever and rejected unhandled offline -> best-effort, uncached on failure
 - [16:20 run] dashboard tab title names the period ('Tue 6 Oct · Time Tracker Pro') - history/tabs were indistinguishable
 - [16:20 run] a11y: toasts announced (polite live region, errors role=alert); toast colours deepened so white text >= 4.5:1 (success/warning were 2.5/2.2:1); error-boundary overlay is a labelled alertdialog with focus on Reload
+- [16:20 run] privacy: Settings > API Keys URL placeholder showed a real-looking Sheety project ID (1a861cfa...) to every user -> 'your-project-id'; bearer token input masked with Show/Hide
 
 ## Questions for owner (not changed, need your call)
+- (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
   (`runManualSync({reload:false})` -> /sync-now, force=True) 2s after load. That bypasses the
   server-side SYNC_INTERVAL throttle, so each page view costs a Sheety request (quota!), and the
