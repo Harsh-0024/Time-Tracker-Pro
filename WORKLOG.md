@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 17:20 IST: 16:20 resume session ACTIVE (another run should exit).
+- 2026-10-07 17:40 IST: 16:20 resume session ACTIVE (another run should exit).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -147,6 +147,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [16:20 run] register / forgot-password errors kept nothing typed -> name/email/user ID (never passwords) preserved (+ tests)
 - [16:20 run] register note: stock blue box -> cream/amber like the rest of the app
 - [16:20 run] fuzzed ~2000 GETs on graph-data/search/tasks/tags/export/dashboard params: 0 server errors
+- [16:20 run] a11y: total/avg + consistency stat toggles (dashboard full log, graphs Review) keyboard-operable; 'Time by Category' card reachable (heading button); pie legend toggles are buttons w/ aria-pressed on both pages
+- [16:20 run] charts: a single-slice pie/doughnut showed its rim as a white seam -> no border when only one slice has data
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
