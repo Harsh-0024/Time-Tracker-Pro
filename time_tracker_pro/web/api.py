@@ -280,6 +280,81 @@ def graph_row_matches(row: pd.Series, expr: Optional[SearchExpr]) -> bool:
     return True
 
 
+def _norm_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip().lower())
+
+
+def _word_parts(value: str) -> set:
+    return {part for part in re.split(r"[^a-z0-9]+", value) if part}
+
+
+def _term_mask(df: pd.DataFrame, term: str, cache: Dict[str, Any]) -> pd.Series:
+    """Vectorised ``graph_term_matches``: the term hits a row through its
+    important/urgent flags, its tags, its task name or its date. Each part is
+    evaluated once per distinct value instead of once per row."""
+    clean = str(term or "").strip().lower()
+    if not clean:
+        return pd.Series(False, index=df.index)
+
+    if "tags" not in cache:
+        def tag_key(row) -> tuple:
+            special = row[3] if isinstance(row[3], list) else []
+            return (row[0], row[1], row[2], tuple(special))
+
+        cols = [df[c] if c in df.columns else pd.Series(None, index=df.index) for c in ("tag", "raw_tag", "primary_tag", "special_tags")]
+        cache["tag_keys"] = pd.Series([tag_key(r) for r in zip(*cols)], index=df.index)
+        cache["tags"] = {}
+        for key in set(cache["tag_keys"]):
+            tags = set()
+            for value in key[:3]:
+                tags.update(part.strip() for part in _norm_text(value).split(",") if part.strip())
+            tags.update(_norm_text(t) for t in key[3] if t)
+            words = set()
+            for tag in tags:
+                words.update(_word_parts(tag))
+            cache["tags"][key] = tags | words
+        tasks = df["task"] if "task" in df.columns else pd.Series(None, index=df.index)
+        cache["task_text"] = tasks.map(_norm_text)
+        cache["date_text"] = (df["date"] if "date" in df.columns else pd.Series(None, index=df.index)).map(_norm_text)
+
+    def text_hits(texts: pd.Series) -> pd.Series:
+        hits = {text: clean == text or clean in _word_parts(text) for text in set(texts)}
+        return texts.map(hits).astype(bool)
+
+    mask = cache["tag_keys"].map(lambda key: clean in cache["tags"][key]).astype(bool)
+    mask |= text_hits(cache["task_text"])
+    mask |= text_hits(cache["date_text"])
+    if clean == "important" and "important" in df.columns:
+        mask |= df["important"].fillna(False).astype(bool)
+    if clean == "urgent" and "urgent" in df.columns:
+        mask |= df["urgent"].fillna(False).astype(bool)
+    return mask
+
+
+def graph_search_mask(df: pd.DataFrame, expr: Optional[SearchExpr], _cache: Optional[Dict[str, Any]] = None) -> pd.Series:
+    """Rows of ``df`` matching ``expr``; same result as ``graph_row_matches`` per row."""
+    cache = {} if _cache is None else _cache
+    if not expr or df.empty:
+        return pd.Series(True, index=df.index)
+    op = expr[0]
+    if op == "term":
+        return _term_mask(df, expr[1], cache)
+    if op == "only":
+        clean = str(expr[1] or "").strip().lower()
+        if not clean:
+            return pd.Series(False, index=df.index)
+        if "task_text" not in cache:
+            _term_mask(df, "_", cache)
+        return cache["task_text"] == clean
+    if op == "not":
+        return ~graph_search_mask(df, expr[1], cache) if expr[1] else pd.Series(True, index=df.index)
+    if op == "and":
+        return graph_search_mask(df, expr[1], cache) & graph_search_mask(df, expr[2], cache)
+    if op == "or":
+        return graph_search_mask(df, expr[1], cache) | graph_search_mask(df, expr[2], cache)
+    return pd.Series(True, index=df.index)
+
+
 def _optional_int(value: Any) -> Optional[int]:
     """Convert a nullable DataFrame cell to int; NULL columns arrive as NaN."""
     if value is None:
@@ -372,7 +447,7 @@ def graph_data():
     if search:
         search_expr = parse_graph_search(search)
         if search_expr:
-            df = df[df.apply(lambda row: graph_row_matches(row, search_expr), axis=1)]
+            df = df[graph_search_mask(df, search_expr)]
 
     if raw_exclude:
         try:
