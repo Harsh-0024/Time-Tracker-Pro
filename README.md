@@ -11,7 +11,9 @@ Eisenhower matrix (urgent × important).
   - Priority Breakdown (extended Eisenhower matrix), with each quadrant's change vs the previous period.
   - **Day view:** an hour-by-hour 24h timeline.
   - **Week and Month views:** a "Day by day" stacked chart.
-  - **Insights:** top activities, the day vs your 7-day average (week/month: vs the previous period), best and worst days, and fully-logged days.
+  - **Insights:** top activities (each with its change vs the previous period, or vs your usual day), the day vs your
+    7-day average (week/month: vs the previous period), best and worst days, and fully-logged days.
+  - **Copy summary:** a plain-text recap of the period for a journal or message; **Export Summary** downloads its rows.
   - **Daily goals:** a Growth target and a Waste limit, with progress and streaks.
   - **Full log modal:** search (`gym, reading` · `only lunch` · `-waste`), sort, export, and create/edit/delete entries
     (written back to the sheet), with task-name autocomplete, "Again" to re-log a task, and tap-a-gap to fill missing time.
@@ -23,7 +25,7 @@ Eisenhower matrix (urgent × important).
   - "Remember me" sessions, password reset, login throttling, and a resend cooldown on email codes.
 - **Admin:** user list (with each user's log count and last logged day) and account removal with an emailed reason.
   Admins cannot see other users' data.
-- **Interface:** light, dark and system themes; installable as a PWA; keyboard shortcuts (press `?`).
+- **Interface:** light, dark and system themes; installable as a PWA (long-press the icon for Add task / This week / Graphs); keyboard shortcuts (press `?`).
 
 ## Running locally
 
