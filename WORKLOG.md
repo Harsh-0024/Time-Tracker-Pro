@@ -7,15 +7,15 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 22:54 IST: 22:20 resume session ACTIVE.
+- 2026-10-07 23:00 IST: 22:20 resume session ACTIVE.
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
 2. BUG: Settings > Update Profile showed no 'Current password' / 'Email code' field on load (the Password form's switch hid them) - name/user-ID changes were blocked until you clicked a toggle.
 3. BUGs: pull-to-refresh never worked (lib needed a missing element) -> new installed-app-only 'Pull down to sync'; forgot-password turned a user ID into '<id>@gmail.com'; verify-email taps on 'Resend' could miss (focus/scroll hijack); Enter on login skipped the busy state; Growth streak vanished after the first partial log of the day.
-4. Features: goal dots (week/month: one per day; day view: last 7 days) + best streak; graphs Calendar heatmap; offline page for the installed app (minimal service worker, nothing else cached); streaks in Copy summary.
+4. Features: DAY NOTES (private note per day, autosaved; listed in week/month; in Copy summary + JSON export); goal dots (week/month: one per day; day view: last 7 days) + best streak; graphs Calendar heatmap; offline page for the installed app (minimal service worker, nothing else cached); streaks in Copy summary.
 5. Perf: fetch_local_data 161 -> 69 ms at 22k logs (dashboard ~165 -> ~95 ms), output identical. Touches time *display formatting* only - see Done list if you want it reverted.
-Verification: pytest (198, py3.14 + 3.12), browser pane on rendered pages with synthetic data, node harness for the service worker. Nothing pushed.
+Verification: pytest (205, py3.14 + 3.12), browser pane on rendered pages with synthetic data, node harness for the service worker. Nothing pushed.
 
 ## 21:20 run summary - most important first
 1. Feature: Insights 'Top activities' now show a trend per activity (week/month: per-day change vs last period; day: 'usually Xh/day').
@@ -255,6 +255,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [22:20 run] perf: fetch_local_data (runs on every dashboard/graphs/API request) 161 -> 69 ms at 22k logs; dashboard ~165 -> ~95 ms. (1) clock labels: each distinct HH:MM (<=1440) formatted once instead of per-row strftime x2; (2) datetime columns passed as arrays, not lists of Timestamps. Output byte-identical: existing row-by-row reference test, new every-minute test, assert_frame_equal vs the previous version on 22k synthetic logs; 3.14 + 3.12. NOTE: this touches the display formatting of times (not how time passes) - earlier runs left it alone for that reason; revert b2fc52e/9bf61b2 if you'd rather keep it untouched
 - [22:20 run] BUG: dashboard error toasts never used the friendly 401/403/404/5xx copy - it throws 'HTTP error! status: N' but the helper matched 'http N' (users saw 'Failed to load tasks: HTTP error! status: 500'). Status parsed from either form; any 5xx = server error; 404 says 'Task not found' only for single-task actions (graphs too). Browser-verified
 - [22:20 run] checked, no change needed: admin page at 375px, iOS home-screen meta, verification codes (secrets + hashed + attempt cap), saved-view validation, XSS sweep of innerHTML templates
+- [22:20 run] feat: DAY NOTES. New table day_notes (user_id, day, note) created on startup (CREATE IF NOT EXISTS; added to admin delete cascade). PUT /api/day-notes/<YYYY-MM-DD> {note} (empty deletes, 1000 chars, per user). Day view: 'Note' box under Top activities (also its own card on a day with nothing logged), autosaved (debounced typing / blur / Cmd+Enter / keepalive on page hide) with 'Saving…/Saved' status. Week/month: 'Notes' list linking to each day. Copy summary ends with the note(s); JSON export has a 'notes' array (CSV unchanged). Notes are local only: not written to the sheet, untouched by sync/hard reset. (+ 7 tests; browser-verified with stubbed fetch)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
