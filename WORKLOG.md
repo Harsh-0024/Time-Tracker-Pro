@@ -112,6 +112,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [12:06 run] full-log modal stat tiles: quadrant explainer moved to a sub-line shown from sm up (wrapped to 5 lines on phones)
 - [12:06 run] task lists (dashboard full log, graphs Review tasks): dates read 'Wed 7 Oct' (locale-aware; ISO in tooltip) instead of '2026-10-07'
 - [12:06 run] graphs Review-tasks pie: slice colours picked for distinct hues (green schemes coloured the top 3 slices green)
+- [12:06 run] Add/Edit task panels: stray 'Close' text -> labelled x icon button; copy no longer implies Sheety is always on
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
