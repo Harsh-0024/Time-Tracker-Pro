@@ -2926,6 +2926,7 @@
             updateRecentAverage(values, avg_hours, valueScale, labels);
             updateWeekdayPattern(labels, values, valueScale);
             updateHourPattern(by_hour);
+            persistGraphState();
 
             const label = metricLabels[metricKey] || 'Total time';
             if (graphFocusValue === 'search_only' && graphSearchQuery) {
@@ -3168,6 +3169,27 @@
                 renderSavedViews();
             } catch (e) {
                 console.warn('Could not load saved views', e);
+            }
+        }
+
+        // Remember focus, range and average window in this browser so the page opens
+        // where you left it (the search is not restored: a silent filter would confuse).
+        const GRAPH_STATE_KEY = 'ttp-graphs-state';
+        function persistGraphState() {
+            try {
+                localStorage.setItem(GRAPH_STATE_KEY, JSON.stringify({ focus: graphFocusValue, range: currentRange, ma: maWindow }));
+            } catch (e) { /* storage unavailable */ }
+        }
+        function loadGraphState() {
+            try {
+                const state = JSON.parse(localStorage.getItem(GRAPH_STATE_KEY) || 'null');
+                if (!state || typeof state !== 'object') return null;
+                const focusOk = Array.from(document.querySelectorAll('.graph-focus-option')).some(o => o.dataset.value === state.focus);
+                const maOk = Array.from(document.querySelectorAll('.ma-pill')).some(p => Number(p.dataset.ma) === Number(state.ma));
+                if (!focusOk || !maOk) return null;
+                return { focus: state.focus, range: state.range, ma: Number(state.ma), search: '' };
+            } catch (e) {
+                return null;
             }
         }
 
@@ -3752,8 +3774,13 @@
 
         syncRangePills();
         syncMAPills();
-        fetchGraphData();
-        setFocus('work', { fetch: false });
+        const restoredGraphState = loadGraphState();
+        if (restoredGraphState) {
+            applySavedView(restoredGraphState);
+        } else {
+            fetchGraphData();
+            setFocus('work', { fetch: false });
+        }
 
         // Re-render chart when theme changes so axis colors update
         new MutationObserver(function(mutations) {
