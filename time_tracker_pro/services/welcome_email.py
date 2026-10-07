@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from markupsafe import escape
+
 from ..core.rows import display_name, row_value
 from .emailer import send_email
 
@@ -37,7 +39,7 @@ def send_welcome_email(user_row) -> bool:
                     </tr>
                     <tr>
                         <td style="padding: 32px 24px;">
-                            <h2 style="margin: 0 0 12px 0; color: #1F2937; font-size: 20px; font-weight: 600;">Welcome, {greeting}!</h2>
+                            <h2 style="margin: 0 0 12px 0; color: #1F2937; font-size: 20px; font-weight: 600;">Welcome, {escape(greeting)}!</h2>
                             <p style="margin: 0 0 18px 0; color: #374151; font-size: 15px; line-height: 1.5;">Your account is now verified and ready to use.</p>
                             <div style="background: #1F2937; border-radius: 12px; padding: 18px 20px; text-align: center; margin: 18px 0;">
                                 <div style="color: #FCD34D; font-size: 15px; font-weight: 600; letter-spacing: 0.4px;">Start tracking your time today</div>

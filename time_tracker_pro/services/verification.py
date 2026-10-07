@@ -6,6 +6,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 
+from markupsafe import escape
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from ..db import get_db_connection
@@ -172,7 +173,7 @@ def send_verification_email(
                     </tr>
                     <tr>
                         <td style="padding: 32px 24px;">
-                            <h2 style="margin: 0 0 16px 0; color: #1F2937; font-size: 20px; font-weight: 600;">Hi {greeting},</h2>
+                            <h2 style="margin: 0 0 16px 0; color: #1F2937; font-size: 20px; font-weight: 600;">Hi {escape(greeting)},</h2>
                             <p style="margin: 0 0 24px 0; color: #374151; font-size: 15px; line-height: 1.5;">{instruction}</p>
                             <div style="background: #1F2937; border-radius: 12px; padding: 24px 20px; text-align: center; margin: 24px 0;">
                                 <div style="color: #D1D5DB; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 10px; font-weight: 600;">Your Verification Code</div>
