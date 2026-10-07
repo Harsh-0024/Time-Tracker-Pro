@@ -342,6 +342,8 @@
         .calendar-cell[data-level="1"] { opacity: 0.3; }
         .calendar-cell[data-level="2"] { opacity: 0.5; }
         .calendar-cell[data-level="3"] { opacity: 0.75; }
+        .calendar-cell.is-armed { outline: 2px solid rgba(17, 24, 39, 0.7); outline-offset: 0; }
+        [data-theme="dark"] .calendar-cell.is-armed { outline-color: rgba(244, 208, 63, 0.8); }
         .calendar-cell:not(.is-out):not(.is-legend):hover { outline: 1.5px solid rgba(17, 24, 39, 0.5); outline-offset: 0; }
         [data-theme="dark"] .calendar-cell[data-level="0"] { background: rgba(212, 175, 55, 0.08); }
         [data-theme="dark"] .calendar-cell.is-out { background: transparent; }
@@ -1141,11 +1143,23 @@
         (function wireCalendarHeatmap() {
             const grid = document.getElementById('calendarGrid');
             if (grid) {
+                // Touch has no hover tooltip: the first tap shows the day in the caption,
+                // a second tap on the same day opens it. Mouse clicks open straight away.
+                let lastPointer = 'mouse';
+                let armed = null;
+                grid.addEventListener('pointerdown', (event) => { lastPointer = event.pointerType || 'mouse'; });
                 grid.addEventListener('click', (event) => {
                     const cell = event.target.closest('.calendar-cell[data-day]');
-                    if (cell && cell.dataset.day) {
-                        window.location.href = `{{ url_for('main.dashboard') }}?date=${cell.dataset.day}&period=day`;
+                    if (!cell || !cell.dataset.day) return;
+                    if (lastPointer === 'touch' && armed !== cell) {
+                        if (armed) armed.classList.remove('is-armed');
+                        armed = cell;
+                        cell.classList.add('is-armed');
+                        const caption = document.getElementById('calendarCaption');
+                        if (caption) caption.textContent = `${cell.title} · tap again to open`;
+                        return;
                     }
+                    window.location.href = `{{ url_for('main.dashboard') }}?date=${cell.dataset.day}&period=day`;
                 });
             }
             const mq = window.matchMedia('(max-width: 767px)');
