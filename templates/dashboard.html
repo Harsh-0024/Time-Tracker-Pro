@@ -3135,9 +3135,10 @@
             };
         };
 
-        window.downloadUnifiedRows = async function(rows, filePrefix = 'time-tracker-export') {
+        // Resolves false when the format picker is dismissed (nothing downloaded).
+        window.downloadUnifiedRows = async function(rows, filePrefix = 'time-tracker-export', fileDate = '') {
             const format = await window.showExportFormatPicker();
-            if (!format) return;
+            if (!format) return false;
             const headers = window.unifiedExportHeaders || [];
             const payload = format === 'json'
                 ? JSON.stringify({ columns: headers, rows }, null, 2)
@@ -3148,11 +3149,12 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${filePrefix}-${window.getLocalIsoDate()}.${extension}`;
+            a.download = `${filePrefix}-${fileDate || window.getLocalIsoDate()}.${extension}`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            return true;
         };
 
         window.exportModalTasks = async function() {
@@ -3162,8 +3164,8 @@
                 return;
             }
             const rows = searched.map(task => window.normalizeTaskForUnifiedExport(task));
-            await window.downloadUnifiedRows(rows, 'time-tracker-review');
-            if (window.showSuccessToast) window.showSuccessToast('Review exported successfully');
+            const saved = await window.downloadUnifiedRows(rows, 'time-tracker-review');
+            if (saved && window.showSuccessToast) window.showSuccessToast('Review exported successfully');
         };
 
         window.renderModalTasks = function() {
@@ -4899,8 +4901,9 @@
                             return;
                         }
                         const rows = tasks.map(task => window.normalizeTaskForUnifiedExport(task));
-                        await window.downloadUnifiedRows(rows, `time-tracker-${window.currentPeriod || 'period'}`);
-                        if (window.showSuccessToast) {
+                        // Name the file after the period being exported, not the day it was downloaded.
+                        const saved = await window.downloadUnifiedRows(rows, `time-tracker-${window.currentPeriod || 'period'}`, String(window.currentDate || ''));
+                        if (saved && window.showSuccessToast) {
                             window.showSuccessToast('Summary exported successfully');
                         }
                     } catch (error) {
