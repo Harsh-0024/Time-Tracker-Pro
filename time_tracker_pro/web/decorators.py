@@ -128,7 +128,7 @@ def login_required(fn: Callable[..., Any]) -> Callable[..., Any]:
             return redirect(url_for("auth.register"))
         if request.path.startswith("/api/"):
             return jsonify({"error": "Unauthorized"}), 401
-        return redirect(url_for("auth.login", next=safe_next_url(request.full_path or request.path)))
+        return redirect(url_for("auth.login", next=safe_next_url((request.full_path or request.path).rstrip("?"))))
 
     return wrapper
 
