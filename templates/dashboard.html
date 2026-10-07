@@ -4619,6 +4619,15 @@
                 } else if (key === 'n') {
                     event.preventDefault();
                     openAddTaskFromAnywhere();
+                } else if (key === 'j') {
+                    // Jot a note for this day (day view).
+                    const note = document.getElementById('dayNoteInput');
+                    if (note) {
+                        event.preventDefault();
+                        note.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                        note.focus({ preventScroll: true });
+                        note.setSelectionRange(note.value.length, note.value.length);
+                    }
                 } else if (key === 'c') {
                     const copyBtn = document.getElementById('copySummaryBtn');
                     if (copyBtn) {
@@ -4679,6 +4688,10 @@
                                         <kbd class="toast-kbd">C</kbd>
                                         <span class="toast-kbd-label">Copy summary</span>
                                     </div>
+                                    ${document.getElementById('dayNoteInput') ? `<div class="flex items-center gap-2">
+                                        <kbd class="toast-kbd">J</kbd>
+                                        <span class="toast-kbd-label">Day note</span>
+                                    </div>` : ''}
                                     <div class="flex items-center gap-2">
                                         <kbd class="toast-kbd">G</kbd>
                                         <span class="toast-kbd-label">Graphs</span>
