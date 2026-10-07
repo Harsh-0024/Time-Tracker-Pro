@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 04:51 IST: paused at usage limit; resume from TODO queue.
+- 2026-10-07 06:40 IST: session active (resumed 06:22).
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -43,6 +43,11 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - dark: bg-white/65-75 surfaces; period-aware subtitle copy
 - matrix cards keyboard-accessible; Chart.js pinned 4.5.1; _is_admin refactor
 - mobile nav Insights item; goal/limit reference line on q2/q4 graphs
+- a11y: settings/task-modal/admin inputs labelled; autocomplete + one-time-code hints
+- category doughnut hides % labels <5%; graphs 'Last 7 days' -> 'none since <date>' when empty
+- settings profile tabs fit on phones (tablist semantics)
+- api: non-object JSON / non-string fields / 'inf' duration no longer 500
+- ?date= with year 0001/9999 no longer 500 (guard in web/utils.request_date_param)
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -56,6 +61,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (question) /api/tasks has no upper bound on duration (e.g. 500h accepted if it overlaps nothing). Cap at 24h? Left for owner.
 - UX polish: keyboard shortcuts, empty states, a11y labels
 - Feature ideas: streaks / goals, weekly summary insights
 
