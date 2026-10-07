@@ -167,3 +167,14 @@ def test_create_task_while_sheet_rewrite_queues_instead_of_500(db_path, login, m
     rows = conn.execute("SELECT task, sheety_id FROM logs WHERE user_id = ?", (uid,)).fetchall()
     conn.close()
     assert rows == [("Walk", None)]
+
+
+def test_absurd_duration_is_400_not_500(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "09:00:00", "2026-09-20", "10:00:00", task="Synced", sheety_id=7)
+    client = login(uid)
+    for body in ({"duration": 10**19}, {"duration_minutes": 10**19}):
+        created = client.post("/api/tasks", json={"task": "x", "date": "2026-09-21", "start_time": "09:00", **body})
+        assert created.status_code == 400, created.data
+        updated = client.put("/api/tasks/7?by=sheety", json=body)
+        assert updated.status_code == 400, updated.data

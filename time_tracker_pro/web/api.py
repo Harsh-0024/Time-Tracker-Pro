@@ -526,6 +526,11 @@ def graph_search_suggestions_use():
     return jsonify({"ok": True})
 
 
+# Sanity bound only (a year): larger values overflow datetime arithmetic (500).
+# Whether to cap real tasks lower (e.g. 24h) is an open product question.
+_MAX_TASK_MINUTES = 366 * 24 * 60
+
+
 @bp.route("/api/tasks/<int:task_id>", methods=["PUT"], endpoint="update_task")
 @api_or_login_required
 def update_task(task_id: int):
@@ -569,6 +574,9 @@ def update_task(task_id: int):
     if duration_minutes <= 0:
         conn.close()
         return jsonify({"error": "Duration must be greater than 0"}), 400
+    if duration_minutes > _MAX_TASK_MINUTES:
+        conn.close()
+        return jsonify({"error": "Duration is too long."}), 400
 
     tag_raw = normalize_tag(_text(data.get("tag") or row["tags"] or "").strip())
     urgent = bool(data.get("urgent") if "urgent" in data else row["urg"])
@@ -1011,6 +1019,8 @@ def create_task():
 
     if duration_minutes is None or duration_minutes <= 0:
         return jsonify({"error": "Duration must be greater than 0"}), 400
+    if duration_minutes > _MAX_TASK_MINUTES:
+        return jsonify({"error": "Duration is too long."}), 400
 
     tag_raw = normalize_tag(_text(data.get("tag") or "").strip())
     urgent = bool(data.get("urgent"))
