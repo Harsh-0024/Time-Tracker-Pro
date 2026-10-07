@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
@@ -40,6 +41,10 @@ logger = logging.getLogger(__name__)
 
 _PROFILE_OTP_PURPOSES = {"change_password", "change_username"}
 MIN_PASSWORD_LENGTH = 8
+# Login accepts a username, user ID or email in one box, so IDs must never look like an email
+# (an ID of "someone@x.com" would shadow that person's email login).
+USER_ID_RE = re.compile(r"^[A-Za-z0-9._-]{3,32}$")
+USER_ID_RULE = "User ID must be 3-32 letters, numbers, dots, dashes or underscores."
 
 
 def _ua_hash(value: str) -> str:
@@ -190,9 +195,11 @@ def register():
             error = f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
         elif "@" not in email or "." not in email:
             error = "Please provide a valid email address."
+        elif not USER_ID_RE.match(public_user_id):
+            error = USER_ID_RULE
         elif get_user_by_public_id(db_name, public_user_id) or get_user_by_username_or_id_or_email(db_name, public_user_id):
             error = "That user ID is already taken."
-        elif get_user_by_email(db_name, email):
+        elif get_user_by_email(db_name, email) or get_user_by_username_or_id_or_email(db_name, email):
             error = "An account with that email already exists."
         else:
             created_at = datetime.now(timezone.utc).isoformat()
@@ -438,6 +445,9 @@ def update_profile():
         new_name = (request.form.get("new_name") or "").strip()
         if not new_user_id and not new_name:
             session["profile_error"] = "Please enter a new user ID or name."
+            return redirect(url_for("main.settings"))
+        if new_user_id and not USER_ID_RE.match(new_user_id):
+            session["profile_error"] = USER_ID_RULE
             return redirect(url_for("main.settings"))
         existing = (
             get_user_by_public_id(db_name, new_user_id) or get_user_by_username_or_id_or_email(db_name, new_user_id)

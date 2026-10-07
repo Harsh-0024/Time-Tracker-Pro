@@ -112,3 +112,47 @@ def test_unconsumed_check_can_be_repeated(db_path):
     assert verification.verify_email_code(db_path, uid, code, purpose="change_email_old", consume=False)[0]
     verification.consume_verification(db_path, uid, "change_email_old")
     assert not verification.verify_email_code(db_path, uid, code, purpose="change_email_old")[0]
+
+
+def _register(client, user_id, email="new@example.com"):
+    return client.post(
+        "/register",
+        data={"name": "New Person", "email": email, "user_id": user_id,
+              "password": "password123", "confirm_password": "password123"},
+    )
+
+
+def test_register_rejects_user_ids_that_look_like_emails_or_have_spaces(app, db_path, monkeypatch):
+    import time_tracker_pro.web.auth as auth_mod
+
+    monkeypatch.setattr(auth_mod, "send_verification_email", lambda *a, **k: True)
+    make_user(db_path)
+    client = app.test_client()
+    for bad in ("someone@example.com", "has space", "ab", "x" * 33, "semi;colon"):
+        resp = _register(client, bad)
+        assert resp.status_code == 200, bad
+        assert b"User ID must be 3-32" in resp.data, bad
+    assert _register(client, "good.id-1_x").status_code == 302
+
+
+def test_register_rejects_email_equal_to_existing_user_id(app, db_path, monkeypatch):
+    import sqlite3
+    import time_tracker_pro.web.auth as auth_mod
+
+    monkeypatch.setattr(auth_mod, "send_verification_email", lambda *a, **k: True)
+    uid = make_user(db_path)
+    conn = sqlite3.connect(db_path)
+    conn.execute("UPDATE users SET user_id = 'taken@example.com', username = 'taken@example.com' WHERE id = ?", (uid,))
+    conn.commit()
+    conn.close()
+    resp = _register(app.test_client(), "freshid", email="taken@example.com")
+    assert b"An account with that email already exists." in resp.data
+
+
+def test_profile_user_id_change_enforces_format(db_path, login):
+    alice = make_user(db_path)
+    _set_password(db_path, alice, "password123")
+    client = login(alice)
+    client.post("/profile/update", data={"action": "update_username", "new_user_id": "a@b.co", "current_password": "password123"})
+    with client.session_transaction() as sess:
+        assert sess.get("profile_error", "").startswith("User ID must be 3-32")
