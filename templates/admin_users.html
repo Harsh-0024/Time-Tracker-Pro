@@ -166,8 +166,8 @@
             <h2 class="text-xl font-semibold text-gray-900">Remove a User</h2>
             <p class="text-sm text-gray-600 mt-1">Send a custom message explaining the removal.</p>
 
-            <form method="POST" action="{{ url_for('admin.admin_delete_user') }}" class="mt-6 space-y-5">
-                {% set ns = namespace(has_removable=false, first_checked=false) %}
+            <form method="POST" action="{{ url_for('admin.admin_delete_user') }}" class="mt-6 space-y-5" id="deleteUserForm">
+                {% set ns = namespace(has_removable=false) %}
                 <div>
                     <label class="block text-sm font-semibold text-gray-800 mb-3">Select user</label>
                     <div class="space-y-3">
@@ -175,7 +175,7 @@
                             {% if user.role != 'admin' and user.id != current_user.id %}
                                 {% set ns.has_removable = true %}
                                 <label class="flex items-start gap-3 rounded-2xl border border-[rgba(148,126,86,0.25)] bg-white/80 px-4 py-4 shadow-sm hover:border-[rgba(148,126,86,0.45)] hover:bg-white transition-all cursor-pointer">
-                                    <input type="radio" name="user_id" value="{{ user.id }}" class="mt-1 h-4 w-4 text-amber-400 border-gray-300 focus:ring-amber-300" {% if not ns.first_checked %}checked{% set ns.first_checked = true %}{% endif %}>
+                                    <input type="radio" name="user_id" value="{{ user.id }}" data-user-label="{{ user.name or user.user_id }} ({{ user.email }})" required class="mt-1 h-4 w-4 text-amber-400 border-gray-300 focus:ring-amber-300">
                                     <div class="flex-1">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <span class="text-sm font-semibold text-gray-900">{{ user.name or user.user_id }}</span>
@@ -228,6 +228,17 @@
     </main>
     <script>
         const dashboardUrl = "{{ url_for('main.dashboard') }}";
+        // Deleting a user can't be undone: no default selection, and name them before it happens.
+        const deleteUserForm = document.getElementById('deleteUserForm');
+        if (deleteUserForm) {
+            deleteUserForm.addEventListener('submit', (event) => {
+                const picked = deleteUserForm.querySelector('input[name="user_id"]:checked');
+                const who = picked ? picked.dataset.userLabel : 'this user';
+                if (!window.confirm(`Permanently delete ${who} and all of their logs? This cannot be undone.`)) {
+                    event.preventDefault();
+                }
+            });
+        }
         document.addEventListener('keydown', (event) => {
             const tag = event.target?.tagName;
             if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
