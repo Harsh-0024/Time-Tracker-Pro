@@ -73,7 +73,7 @@ def create_graph_view(
             raise ValueError("Unknown time range.")
     try:
         ma_value = int(ma_window)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         raise ValueError("Unknown moving-average window.") from None
     if ma_value not in ALLOWED_MA:
         raise ValueError("Unknown moving-average window.")

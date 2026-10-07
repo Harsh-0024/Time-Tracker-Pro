@@ -52,3 +52,15 @@ def test_graph_views_limit(db_path, login):
         assert client.post("/api/graph-views", json={"name": f"v{i}", "focus": "work", "range": "30", "ma": 7}).status_code == 201
     resp = client.post("/api/graph-views", json={"name": "one more", "focus": "work", "range": "30", "ma": 7})
     assert resp.status_code == 400
+
+
+def test_infinite_ma_window_is_400_not_500(db_path, login):
+    from conftest import make_user
+
+    client = login(make_user(db_path, username="inf", email="inf@example.com"))
+    resp = client.post(
+        "/api/graph-views",
+        data='{"name": "x", "focus": "total", "range": "30", "ma": Infinity}',
+        content_type="application/json",
+    )
+    assert resp.status_code == 400
