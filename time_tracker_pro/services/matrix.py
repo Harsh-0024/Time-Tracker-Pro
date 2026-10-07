@@ -4,6 +4,8 @@ from typing import Dict
 
 import pandas as pd
 
+from ..core.numbers import round_half_up
+
 
 def get_matrix_stats(df: pd.DataFrame) -> Dict[str, Dict[str, float]]:
     stats = {
@@ -31,13 +33,13 @@ def get_matrix_stats(df: pd.DataFrame) -> Dict[str, Dict[str, float]]:
     not_urg = float(df[~df["urgent"]]["duration"].sum())
 
     return {
-        "q1": {"hours": round(q1 / 60.0, 1), "pct": round((q1 / total_min) * 100.0, 1)},
-        "q2": {"hours": round(q2 / 60.0, 1), "pct": round((q2 / total_min) * 100.0, 1)},
-        "q3": {"hours": round(q3 / 60.0, 1), "pct": round((q3 / total_min) * 100.0, 1)},
-        "q4": {"hours": round(q4 / 60.0, 1), "pct": round((q4 / total_min) * 100.0, 1)},
-        "important": {"hours": round(imp / 60.0, 1), "pct": round((imp / total_min) * 100.0, 1)},
-        "not_important": {"hours": round(not_imp / 60.0, 1), "pct": round((not_imp / total_min) * 100.0, 1)},
-        "urgent": {"hours": round(urg / 60.0, 1), "pct": round((urg / total_min) * 100.0, 1)},
-        "not_urgent": {"hours": round(not_urg / 60.0, 1), "pct": round((not_urg / total_min) * 100.0, 1)},
-        "total_hours": round(total_min / 60.0, 1),
+        "q1": {"hours": round_half_up(q1 / 60.0, 1), "pct": round_half_up((q1 / total_min) * 100.0, 1)},
+        "q2": {"hours": round_half_up(q2 / 60.0, 1), "pct": round_half_up((q2 / total_min) * 100.0, 1)},
+        "q3": {"hours": round_half_up(q3 / 60.0, 1), "pct": round_half_up((q3 / total_min) * 100.0, 1)},
+        "q4": {"hours": round_half_up(q4 / 60.0, 1), "pct": round_half_up((q4 / total_min) * 100.0, 1)},
+        "important": {"hours": round_half_up(imp / 60.0, 1), "pct": round_half_up((imp / total_min) * 100.0, 1)},
+        "not_important": {"hours": round_half_up(not_imp / 60.0, 1), "pct": round_half_up((not_imp / total_min) * 100.0, 1)},
+        "urgent": {"hours": round_half_up(urg / 60.0, 1), "pct": round_half_up((urg / total_min) * 100.0, 1)},
+        "not_urgent": {"hours": round_half_up(not_urg / 60.0, 1), "pct": round_half_up((not_urg / total_min) * 100.0, 1)},
+        "total_hours": round_half_up(total_min / 60.0, 1),
     }

@@ -29,6 +29,7 @@ from ..services.insights import (
     build_insights,
     goal_streaks,
 )
+from ..core.numbers import round_half_up
 from ..services.matrix import get_matrix_stats
 from ..services.sync import get_last_sync_stats, sync_cloud_data, sync_status_payload
 from .decorators import admin_required, login_required
@@ -171,7 +172,7 @@ def _logged_coverage(total_hours: float, start_date, end_date, today=None) -> fl
         # A future period: compare against its full length so the number stays meaningful.
         elapsed_days = (end_date - start_date).days + 1
     expected = max(1, elapsed_days) * 24.0
-    return round(min(100.0, total_hours / expected * 100.0), 1)
+    return round_half_up(min(100.0, total_hours / expected * 100.0), 1)
 
 
 def _previous_period_range(selected_date, period: str):
@@ -195,7 +196,7 @@ def _matrix_share_deltas(df: pd.DataFrame, matrix: Dict[str, Any], selected_date
     prev = get_matrix_stats(prev_df)
     if not prev.get("total_hours"):
         return {}
-    return {key: round(float(matrix[key]["pct"]) - float(prev[key]["pct"]), 1) for key in _MATRIX_KEYS}
+    return {key: round_half_up(float(matrix[key]["pct"]) - float(prev[key]["pct"]), 1) for key in _MATRIX_KEYS}
 
 
 @bp.route("/", endpoint="dashboard")
@@ -280,7 +281,7 @@ def dashboard():
     for i in range(7):
         day = start_of_week + timedelta(days=i)
         day_data = df[df["date"] == day] if not df.empty else pd.DataFrame()
-        day_hours = round(day_data["duration"].sum() / 60.0, 1) if not day_data.empty else 0.0
+        day_hours = round_half_up(day_data["duration"].sum() / 60.0, 1) if not day_data.empty else 0.0
         week_days.append(
             {
                 "date_obj": day,
@@ -302,7 +303,7 @@ def dashboard():
             tag_df["primary_tag"] = tag_df["tag"].apply(primary_special_tag)
         tag_counts = tag_df.groupby("primary_tag")["duration"].sum().sort_values(ascending=False)
         tag_labels = list(tag_counts.index)
-        tag_data = [round(float(x) / 60.0, 1) for x in tag_counts.values]
+        tag_data = [round_half_up(float(x) / 60.0, 1) for x in tag_counts.values]
 
     if period == "day":
         period_label = selected_date.strftime("%B %Y")
@@ -333,7 +334,7 @@ def dashboard():
             tags={"labels": tag_labels, "data": tag_data},
             task_count=task_count,
             week_days=week_days,
-            week_total=round(week_total, 1),
+            week_total=round_half_up(week_total, 1),
             current_month=period_label,
             selected_date=selected_date,
             period=period,

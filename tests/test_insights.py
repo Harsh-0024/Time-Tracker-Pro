@@ -76,6 +76,7 @@ def test_day_timeline_clips_overnight_and_reports_coverage(db_path):
     assert (work["left"], work["width"], work["color"]) == (25.0, 25.0, "#10B981")
     assert late["end"] == "12:00 AM" and round(late["width"], 3) == round(100 / 24, 3)
     assert tl["logged_pct"] == round(13 / 24 * 100, 1)
+    assert tl["logged_hours"] == 13.0
 
 
 def test_day_timeline_empty(db_path):
@@ -83,7 +84,7 @@ def test_day_timeline_empty(db_path):
 
     uid = make_user(db_path)
     add_log(db_path, uid, "2026-09-18", "08:00:00", "2026-09-18", "09:00:00")
-    assert build_day_timeline(_df(db_path, uid), date(2026, 9, 20)) == {"segments": [], "logged_pct": 0.0}
+    assert build_day_timeline(_df(db_path, uid), date(2026, 9, 20)) == {"segments": [], "logged_pct": 0.0, "logged_hours": 0.0}
 
 
 def test_daily_breakdown(db_path):

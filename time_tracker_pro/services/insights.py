@@ -11,6 +11,8 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
+from ..core.numbers import round_half_up
+
 FULL_DAY_MINUTES = 23.5 * 60  # treat a day as fully logged from 23.5h
 
 
@@ -40,9 +42,9 @@ def top_activities(period_df: pd.DataFrame, limit: int = 5) -> List[Dict[str, An
     return [
         {
             "name": display[key],
-            "hours": round(float(minutes) / 60.0, 1),
-            "share": round(float(minutes) / period_total * 100.0, 1),
-            "bar": round(float(minutes) / top_minutes * 100.0, 1),
+            "hours": round_half_up(float(minutes) / 60.0, 1),
+            "share": round_half_up(float(minutes) / period_total * 100.0, 1),
+            "bar": round_half_up(float(minutes) / top_minutes * 100.0, 1),
         }
         for key, minutes in totals.items()
     ]
@@ -73,7 +75,7 @@ def longest_growth_block(period_df: pd.DataFrame) -> Optional[Dict[str, Any]]:
         "task": name,
         "date": row["date"],
         "start_time": str(row.get("start_time") or ""),
-        "hours": round(float(row["duration"]) / 60.0, 1),
+        "hours": round_half_up(float(row["duration"]) / 60.0, 1),
     }
 
 
@@ -103,10 +105,10 @@ def build_insights(
             day_waste = float(period_df[_waste_mask(period_df)]["duration"].sum())
             insights["vs_week"] = {
                 "days": int(logged_days),
-                "growth_hours": round(day_growth / 60.0, 1),
-                "growth_avg": round(float(window[_growth_mask(window)]["duration"].sum()) / logged_days / 60.0, 1),
-                "waste_hours": round(day_waste / 60.0, 1),
-                "waste_avg": round(float(window[_waste_mask(window)]["duration"].sum()) / logged_days / 60.0, 1),
+                "growth_hours": round_half_up(day_growth / 60.0, 1),
+                "growth_avg": round_half_up(float(window[_growth_mask(window)]["duration"].sum()) / logged_days / 60.0, 1),
+                "waste_hours": round_half_up(day_waste / 60.0, 1),
+                "waste_avg": round_half_up(float(window[_waste_mask(window)]["duration"].sum()) / logged_days / 60.0, 1),
             }
         return insights
 
@@ -124,15 +126,15 @@ def build_insights(
 
     if not growth.empty:
         best_day = growth.idxmax()
-        insights["best_growth_day"] = {"date": best_day, "hours": round(float(growth.max()) / 60.0, 1)}
+        insights["best_growth_day"] = {"date": best_day, "hours": round_half_up(float(growth.max()) / 60.0, 1)}
     if not waste.empty:
         worst_day = waste.idxmax()
-        insights["most_waste_day"] = {"date": worst_day, "hours": round(float(waste.max()) / 60.0, 1)}
+        insights["most_waste_day"] = {"date": worst_day, "hours": round_half_up(float(waste.max()) / 60.0, 1)}
 
     logged_days = max(1, len([d for d in days if float(totals.get(d, 0.0)) > 0]))
     insights["daily_avg"] = {
-        "growth": round(float(growth.sum()) / logged_days / 60.0, 1) if not growth.empty else 0.0,
-        "waste": round(float(waste.sum()) / logged_days / 60.0, 1) if not waste.empty else 0.0,
+        "growth": round_half_up(float(growth.sum()) / logged_days / 60.0, 1) if not growth.empty else 0.0,
+        "waste": round_half_up(float(waste.sum()) / logged_days / 60.0, 1) if not waste.empty else 0.0,
         "days": logged_days,
     }
     return insights
@@ -151,12 +153,12 @@ def build_day_timeline(df: pd.DataFrame, day: date) -> Dict[str, Any]:
     """Segments for a 24h strip: every log overlapping ``day`` (including ones that
     started the evening before), clipped to the day, positioned in percent."""
     if df.empty or "start_datetime" not in df.columns:
-        return {"segments": [], "logged_pct": 0.0}
+        return {"segments": [], "logged_pct": 0.0, "logged_hours": 0.0}
     day_start = pd.Timestamp(day)
     day_end = day_start + pd.Timedelta(days=1)
     overlapping = df[(df["start_datetime"] < day_end) & (df["end_datetime"] > day_start)]
     if overlapping.empty:
-        return {"segments": [], "logged_pct": 0.0}
+        return {"segments": [], "logged_pct": 0.0, "logged_hours": 0.0}
 
     total = 24 * 60.0
     segments: List[Dict[str, Any]] = []
@@ -174,11 +176,11 @@ def build_day_timeline(df: pd.DataFrame, day: date) -> Dict[str, Any]:
                 "task": str(row.task or "").strip() or "Untitled",
                 "tag": tag,
                 "color": TAG_COLORS.get(tag, "#9CA3AF"),
-                "left": round(start_min / total * 100.0, 3),
-                "width": round((end_min - start_min) / total * 100.0, 3),
+                "left": round_half_up(start_min / total * 100.0, 3),
+                "width": round_half_up((end_min - start_min) / total * 100.0, 3),
                 "start": start.strftime("%I:%M %p").lstrip("0"),
                 "end": "12:00 AM" if end == day_end else end.strftime("%I:%M %p").lstrip("0"),
-                "hours": round((end_min - start_min) / 60.0, 2),
+                "hours": round_half_up((end_min - start_min) / 60.0, 2),
                 "important": bool(row.important),
                 "urgent": bool(row.urgent),
             }
@@ -188,7 +190,11 @@ def build_day_timeline(df: pd.DataFrame, day: date) -> Dict[str, Any]:
         else:
             covered.append([start_min, end_min])
     logged = sum(e - s for s, e in covered)
-    return {"segments": segments, "logged_pct": round(logged / total * 100.0, 1)}
+    return {
+        "segments": segments,
+        "logged_pct": round_half_up(logged / total * 100.0, 1),
+        "logged_hours": round_half_up(logged / 60.0, 1),
+    }
 
 
 def build_goal_progress(
@@ -225,16 +231,16 @@ def build_goal_progress(
         waste = float(waste_by_day.sum()) if not waste_by_day.empty else 0.0
         if target is not None:
             result["growth"] = {
-                "actual": round(growth, 1),
+                "actual": round_half_up(growth, 1),
                 "target": target,
-                "pct": round(min(100.0, growth / target * 100.0), 1) if target else 100.0,
+                "pct": round_half_up(min(100.0, growth / target * 100.0), 1) if target else 100.0,
                 "met": growth >= target,
             }
         if limit is not None:
             result["waste"] = {
-                "actual": round(waste, 1),
+                "actual": round_half_up(waste, 1),
                 "limit": limit,
-                "pct": round(min(100.0, waste / limit * 100.0), 1) if limit else (100.0 if waste else 0.0),
+                "pct": round_half_up(min(100.0, waste / limit * 100.0), 1) if limit else (100.0 if waste else 0.0),
                 "over": waste > limit,
             }
         return result
@@ -313,12 +319,12 @@ def build_daily_breakdown(period_df: pd.DataFrame, start_date: date, end_date: d
         segments = [
             {
                 "tag": tag,
-                "hours": round(tags[tag], 1),
+                "hours": round_half_up(tags[tag], 1),
                 "color": TAG_COLORS.get(tag, "#9CA3AF"),
-                "pct": round(min(tags[tag], 24.0) / 24.0 * 100.0, 2),
+                "pct": round_half_up(min(tags[tag], 24.0) / 24.0 * 100.0, 2),
             }
             for tag in TAG_ORDER + sorted(set(tags) - set(TAG_ORDER))
             if tags.get(tag)
         ]
-        result.append({"date": d, "total": round(total, 1), "segments": segments})
+        result.append({"date": d, "total": round_half_up(total, 1), "segments": segments})
     return result

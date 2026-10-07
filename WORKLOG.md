@@ -126,6 +126,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [14:21 run] UX: global error boundary - offline/network failures showed a red toast per request and, after 3, a full-screen 'unstable' overlay; now one connection hint; also removed beacon to non-existent /api/log-error
 - [14:21 run] phones: bottom nav highlighted the wrong section (Insights never lit, 'Tags' shown while reading Insights) - IntersectionObserver threshold 0.4 can't fire for sections taller than ~2.5 screens; replaced by a scroll-position spy (+ aria-current)
 - [14:21 run] dark mode: task-modal pie charts (dashboard full log, graphs Review tasks) had glaring white slice borders -> surface colour
+- [14:21 run] numbers: server rounded halves to even (3.25h -> 3.2h) while JS views show 3.3h - common with 15-min logs; core/numbers.round_half_up used in matrix/insights/dashboard. Day timeline '6.7h of 24h' (rounded % converted back) -> real hours
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
