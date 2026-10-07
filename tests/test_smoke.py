@@ -121,3 +121,11 @@ def test_non_ascii_api_token_is_401_not_500(app, monkeypatch):
     monkeypatch.setenv("TIME_TRACKER_API_TOKEN", "secret-token")
     resp = app.test_client().get("/api/tags?token=s%C3%A9cret")
     assert resp.status_code in (401, 302)
+
+
+def test_safe_next_url_rejects_browser_normalised_external_urls():
+    from time_tracker_pro.web.utils import safe_next_url
+
+    for bad in ("//evil.com", "/\\evil.com", "/\t/evil.com", "/\n/evil.com", "https://evil.com", "evil.com"):
+        assert safe_next_url(bad) is None, bad
+    assert safe_next_url("/graphs?x=1") == "/graphs?x=1"

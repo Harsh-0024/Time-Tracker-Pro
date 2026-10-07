@@ -13,6 +13,10 @@ def _ua_hash(value: str) -> str:
 def safe_next_url(raw: Optional[str]) -> Optional[str]:
     if not raw:
         return None
+    # Browsers treat '\\' like '/' and drop tabs/newlines, so '/\\evil.com' or '/\t/evil.com'
+    # would become the protocol-relative '//evil.com' (open redirect).
+    if any(ch == "\\" or ord(ch) < 32 or ord(ch) == 127 for ch in raw):
+        return None
     if raw.startswith("/") and not raw.startswith("//"):
         return raw
     return None
