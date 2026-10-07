@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 08:31 IST: session active (resumed 06:22).
+- 2026-10-07 08:42 IST: session active (resumed 06:22).
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -64,7 +64,8 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - auth: user ID format rule (no '@'/spaces, 3-32) on register+change; email can't equal another's user ID;
   identifier lookup prefers email owner; friendlier email-failure copy (no 'Check SMTP settings')
 - privacy: email masked in 'code sent to' for forgot-password / login-OTP (both accept a public user ID)
-- security: 60s resend cooldown on OTP/forgot/resend (VERIFICATION_RESEND_COOLDOWN_SECONDS)
+- security: 60s resend cooldown on OTP/forgot/resend (VERIFICATION_RESEND_COOLDOWN_SECONDS) + UI countdown
+- password reset clears login lockout
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
