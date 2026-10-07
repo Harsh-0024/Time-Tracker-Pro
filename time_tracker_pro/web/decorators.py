@@ -43,7 +43,8 @@ def token_is_valid(headers: Dict[str, str]) -> bool:
         return False
     db_name = current_app.config["DB_NAME"]
     provided = headers.get("X-API-Token") or request.args.get("token") or ""
-    return bool(provided and hmac.compare_digest(provided, expected))
+    # Compare bytes: compare_digest raises TypeError on non-ASCII str (a 500 for a bad token).
+    return bool(provided and hmac.compare_digest(provided.encode("utf-8"), expected.encode("utf-8")))
 
 
 def resolve_request_user_id(headers: Dict[str, str]) -> Optional[int]:

@@ -115,3 +115,9 @@ def test_oversized_request_is_rejected_with_413(app, db_path, login):
     resp = client.post("/api/import-csv", data="x" * 4096, content_type="application/json")
     assert resp.status_code == 413
     assert resp.is_json and "too large" in resp.get_json()["error"]
+
+
+def test_non_ascii_api_token_is_401_not_500(app, monkeypatch):
+    monkeypatch.setenv("TIME_TRACKER_API_TOKEN", "secret-token")
+    resp = app.test_client().get("/api/tags?token=s%C3%A9cret")
+    assert resp.status_code in (401, 302)
