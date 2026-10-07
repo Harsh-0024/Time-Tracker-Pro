@@ -7,14 +7,14 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 20:03 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 20:05 IST: 19:20 resume session ACTIVE.
 
 ## 19:20 run summary - most important first
 1. SECURITY: verification/welcome emails injected the registrant's name as raw HTML (phishing via someone else's address). Escaped.
 2. BUG: search 'sleep, rest' (graphs placeholder example) matched nothing; graphs chart vs Review list disagreed for 'only X' and quoted phrases ("Deep work ." rows). All aligned + tests.
 3. BUG: stale session (browser update changes UA) made /login drop ?next= -> you landed on the dashboard. Fixed.
 4. UX: Insights Top-activity rows now list exactly what they counted; Settings export toasts for empty range/errors instead of raw JSON / empty file.
-5. Features: week/month 'vs last week/month' daily averages; graphs 'By time of day' card; 'Again' on task cards; swipe week strip / day-by-day chart on phones; admin log counts.
+5. Features: Add-task name autocomplete w/ tag prefill; week/month 'vs last week/month' daily averages; graphs 'By time of day' card; 'Again' on task cards; swipe week strip / day-by-day chart on phones; admin log counts.
 6. Perf: responses gzipped (dashboard 292KB -> 53KB); graph search ~10x faster (vectorised, equivalence-tested); task lists/exports iterate records (~300ms saved at 22k logs).
 7. a11y: skip links, date-picker + graphs focus-menu keyboard support.
 All tests pass (170). Nothing pushed.
@@ -195,6 +195,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [19:20 run] perf: static URLs get ?v=<mtime> (url_defaults) and versioned requests are cached 1 year; unversioned keep revalidating. Auth/error pages switched from hard-coded /static/ to url_for (+ test)
 - [19:20 run] perf: Google Fonts preconnect on all pages
 - [19:20 run] audit (no change needed): rendered pages have no duplicate ids, no dangling label-for / aria-labelledby / describedby / controls; no |safe in templates; API token compare is constant-time
+- [19:20 run] feat: Add task name autocomplete (60 most-used recent names); picking one pre-fills its usual tags/priority if untouched (+ tests)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
