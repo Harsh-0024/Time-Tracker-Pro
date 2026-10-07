@@ -1,3 +1,4 @@
+import time
 from werkzeug.security import generate_password_hash
 
 from conftest import TEST_UA, make_user
@@ -9,6 +10,7 @@ def test_password_reset_keeps_user_logged_in(app, db_path):
     client.environ_base["HTTP_USER_AGENT"] = TEST_UA
     with client.session_transaction() as sess:
         sess["password_reset_user_id"] = uid
+        sess["password_reset_started"] = int(time.time())
 
     resp = client.post("/reset-password", data={"password": "newpassword1", "confirm_password": "newpassword1"})
     assert resp.status_code == 302
@@ -23,6 +25,7 @@ def test_password_reset_enforces_min_length(app, db_path):
     client = app.test_client()
     with client.session_transaction() as sess:
         sess["password_reset_user_id"] = uid
+        sess["password_reset_started"] = int(time.time())
     resp = client.post("/reset-password", data={"password": "short1", "confirm_password": "short1"})
     assert resp.status_code == 200
     assert b"at least 8 characters" in resp.data
@@ -222,5 +225,29 @@ def test_password_reset_lifts_login_lockout(app, db_path):
     client = app.test_client()
     with client.session_transaction() as sess:
         sess["password_reset_user_id"] = uid
+        sess["password_reset_started"] = int(time.time())
     client.post("/reset-password", data={"password": "brand-new-pass", "confirm_password": "brand-new-pass"})
     assert not login_throttle.is_locked_out(db_path, "alice@example.com")
+
+
+def test_reset_session_expires_after_code_ttl(app, db_path):
+    from time_tracker_pro.services.verification import VERIFICATION_CODE_TTL_MINUTES
+
+    uid = make_user(db_path)
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["password_reset_user_id"] = uid
+        sess["password_reset_started"] = int(time.time()) - VERIFICATION_CODE_TTL_MINUTES * 60 - 5
+    resp = client.post("/reset-password", data={"password": "newpassword1", "confirm_password": "newpassword1"})
+    assert resp.status_code == 302 and resp.headers["Location"].endswith("/forgot-password")
+    with client.session_transaction() as sess:
+        assert "password_reset_user_id" not in sess and "user_id" not in sess
+    assert "reset session expired" in client.get("/forgot-password").get_data(as_text=True)
+
+
+def test_reset_session_without_start_time_is_rejected(app, db_path):
+    uid = make_user(db_path)
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["password_reset_user_id"] = uid
+    assert client.get("/reset-password").headers["Location"].endswith("/forgot-password")

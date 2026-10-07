@@ -4,6 +4,7 @@ import hashlib
 import logging
 import os
 import re
+import time
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
@@ -25,6 +26,7 @@ from ..repositories.users import (
 )
 from ..repositories.settings import get_user_settings
 from ..services.verification import (
+    VERIFICATION_CODE_TTL_MINUTES,
     consume_verification,
     has_active_verification,
     seconds_until_resend_allowed,
@@ -146,7 +148,7 @@ def forgot_password():
         return redirect(url_for("main.dashboard"))
 
     db_name = current_app.config["DB_NAME"]
-    error: Optional[str] = None
+    error: Optional[str] = session.pop("forgot_error", None)
     success: Optional[str] = None
 
     if request.method == "POST":
@@ -318,6 +320,7 @@ def verify_email():
                     if purpose == "forgot_password":
                         session["otp_authenticated"] = True
                     session["password_reset_user_id"] = int(user["id"])
+                    session["password_reset_started"] = int(time.time())
                     return redirect(url_for("auth.reset_password"))
                 error = message
     elif not has_active_verification(db_name, int(user["id"]), purpose=purpose):
@@ -336,6 +339,7 @@ def verify_email():
         subtitle=subtitle,
         purpose=purpose,
         resend_wait=seconds_until_resend_allowed(db_name, int(user["id"]), purpose),
+        ttl_minutes=VERIFICATION_CODE_TTL_MINUTES,
     )
 
 
@@ -345,6 +349,15 @@ def reset_password():
     reset_user_id = session.get("password_reset_user_id")
     if not reset_user_id:
         return redirect(url_for("auth.login"))
+    # The page promises the window closes after the code TTL; without this a verified-but-abandoned
+    # browser session could set a new password at any later time.
+    started = int(session.get("password_reset_started") or 0)
+    if time.time() - started > VERIFICATION_CODE_TTL_MINUTES * 60:
+        session.pop("password_reset_user_id", None)
+        session.pop("password_reset_started", None)
+        session.pop("otp_authenticated", None)
+        session["forgot_error"] = "That reset session expired. Request a new code to continue."
+        return redirect(url_for("auth.forgot_password"))
 
     user = get_user_by_id(db_name, int(reset_user_id))
     if not user:
@@ -373,6 +386,7 @@ def reset_password():
                 if ident:
                     clear_failures(db_name, ident)
             session.pop("password_reset_user_id", None)
+            session.pop("password_reset_started", None)
             session.pop("otp_authenticated", None)
             session["user_id"] = int(user["id"])
             session.permanent = True
@@ -380,7 +394,9 @@ def reset_password():
             success = "Password updated."
             return redirect(url_for("main.dashboard"))
 
-    return render_template("reset_password.html", error=error, success=success)
+    return render_template(
+        "reset_password.html", error=error, success=success, ttl_minutes=VERIFICATION_CODE_TTL_MINUTES
+    )
 
 
 @bp.route("/profile/request-otp", methods=["POST"], endpoint="profile_request_otp")

@@ -61,7 +61,7 @@
                     <img src="{{ pwa_icon_url }}" alt="" width="44" height="44" class="w-11 h-11 rounded-xl shadow-md mb-4" />
                     <h1 class="text-2xl font-semibold text-gray-900 tracking-tight">{{ title or 'Verify your email' }}</h1>
                     <p class="text-sm text-gray-600 mt-1">{{ subtitle or 'We sent a 6-digit code to' }} <span class="font-semibold">{{ email }}</span></p>
-                    <p class="text-xs text-amber-600 mt-2">⏱️ Code expires in 10 minutes</p>
+                    <p class="text-xs text-amber-600 mt-2">⏱️ Code expires in {{ ttl_minutes or 10 }} minutes</p>
                 </div>
 
                 {% if error %}
