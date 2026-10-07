@@ -3532,6 +3532,21 @@
         document.addEventListener('keydown', (event) => {
             if (!graphTaskModal || !graphTaskModal.classList.contains('active')) return;
             if (event.key === 'Escape') {
+                // Close an open Edit/Delete panel first rather than the whole list.
+                const deletePanel = document.getElementById('graphTaskDeleteConfirm');
+                const editPanel = document.getElementById('graphTaskEditPanel');
+                if (deletePanel && !deletePanel.classList.contains('hidden')) {
+                    event.preventDefault();
+                    closeGraphDeleteConfirm();
+                    graphTaskModal.querySelector('button')?.focus();
+                    return;
+                }
+                if (editPanel && !editPanel.classList.contains('hidden')) {
+                    event.preventDefault();
+                    closeGraphEditPanel();
+                    graphTaskModal.querySelector('button')?.focus();
+                    return;
+                }
                 closeGraphTaskModal();
             }
             if (event.key === 'Tab') {

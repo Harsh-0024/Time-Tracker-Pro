@@ -4089,6 +4089,23 @@
                 const modal = document.getElementById('taskModal');
                 if (!modal || !modal.classList.contains('active')) return;
                 if (event.key === 'Escape') {
+                    // Close an open Add/Edit/Delete panel first so a stray Escape
+                    // doesn't throw away a half-typed task along with the whole log.
+                    const panels = [
+                        ['taskDeleteConfirm', window.closeDeleteTaskConfirm],
+                        ['taskEditPanel', window.closeEditTaskPanel],
+                        ['taskCreatePanel', window.closeCreateTaskPanel],
+                    ];
+                    for (const [id, closePanel] of panels) {
+                        const panel = document.getElementById(id);
+                        if (panel && !panel.classList.contains('hidden') && typeof closePanel === 'function') {
+                            event.preventDefault();
+                            closePanel();
+                            // Keep focus inside the dialog (the focused field is now hidden).
+                            document.getElementById('openCreateTask')?.focus();
+                            return;
+                        }
+                    }
                     window.closeModal();
                     return;
                 }
