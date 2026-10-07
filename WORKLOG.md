@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 08:18 IST: session active (resumed 06:22).
+- 2026-10-07 08:31 IST: session active (resumed 06:22).
 
 ## Done
 - fix /api/tasks 500 on NULL sheety_id (+ pytest harness tests/conftest.py)
@@ -63,6 +63,8 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - admin delete-user: no default selection + named confirm
 - auth: user ID format rule (no '@'/spaces, 3-32) on register+change; email can't equal another's user ID;
   identifier lookup prefers email owner; friendlier email-failure copy (no 'Check SMTP settings')
+- privacy: email masked in 'code sent to' for forgot-password / login-OTP (both accept a public user ID)
+- security: 60s resend cooldown on OTP/forgot/resend (VERIFICATION_RESEND_COOLDOWN_SECONDS)
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -76,6 +78,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (question) forgot-password / login-OTP say "No account found" -> account enumeration. Kept for UX; consider generic copy.
 - (question) manifest declares the icon as 512x512 PNG; the uploaded one is a 394x394 JPEG. Uploads are now PNG-checked; re-upload a real 512 PNG.
 - (question) /api/import-csv REPLACES all of a user's logs with the CSV contents (by design?). A 1-row CSV
   would wipe thousands of rows. No UI calls it today. Consider append/merge or a confirm flag.
