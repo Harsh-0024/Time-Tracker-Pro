@@ -345,6 +345,16 @@
         .calendar-cell[data-level="1"] { opacity: 0.3; }
         .calendar-cell[data-level="2"] { opacity: 0.5; }
         .calendar-cell[data-level="3"] { opacity: 0.75; }
+        /* Where supported, fade the colour instead of the cell so the note marker stays crisp. */
+        @supports (background: color-mix(in srgb, red 50%, transparent)) {
+            .calendar-cell[data-level] { opacity: 1; }
+            .calendar-cell[data-level="1"] { background: color-mix(in srgb, var(--calendar-color, #10B981) 30%, transparent); }
+            .calendar-cell[data-level="2"] { background: color-mix(in srgb, var(--calendar-color, #10B981) 50%, transparent); }
+            .calendar-cell[data-level="3"] { background: color-mix(in srgb, var(--calendar-color, #10B981) 75%, transparent); }
+        }
+        .calendar-cell { position: relative; }
+        .calendar-cell.has-note::after { content: ''; position: absolute; right: 1px; top: 1px; width: 3px; height: 3px; border-radius: 999px; background: #111827; opacity: 1; }
+        [data-theme="dark"] .calendar-cell.has-note::after { background: #F4D03F; }
         .calendar-cell.is-armed { outline: 2px solid rgba(17, 24, 39, 0.7); outline-offset: 0; }
         [data-theme="dark"] .calendar-cell.is-armed { outline-color: rgba(244, 208, 63, 0.8); }
         .calendar-cell:not(.is-out):not(.is-legend):hover { outline: 1.5px solid rgba(17, 24, 39, 0.5); outline-offset: 0; }
@@ -1079,6 +1089,7 @@
         // GitHub-style calendar of the plotted days (last 53 weeks; 26 on phones).
         // Cells are plain spans: one summary label for screen readers, click opens the day.
         let calendarLast = null;
+        let graphNotes = {};  // 'YYYY-MM-DD' -> the user's day note (from graph-data)
         function isoDay(d) {
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
@@ -1117,14 +1128,17 @@
             const level = (v) => (v <= 0 || max <= 0 ? 0 : Math.min(4, Math.ceil((v / max) * 4)));
             const color = (graphColorScheme && graphColorScheme.primary) || metricColors[currentMetric] || '#111827';
             card.style.setProperty('--calendar-color', color);
-            grid.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+            // Cells stay small squares (max 18px) when only a few weeks are shown.
+            grid.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 18px))`;
             monthsRow.style.gridTemplateColumns = grid.style.gridTemplateColumns;
             const fmt = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
             grid.innerHTML = shown.map((d, i) => {
                 const key = isoDay(d);
                 const inRange = byDay.has(key);
-                const text = `${d.toLocaleDateString(undefined, fmt)}: ${inRange ? formatGraphValue(shownValues[i], scale, 1) : 'outside range'}`;
-                return `<span class="calendar-cell${inRange ? '' : ' is-out'}" data-level="${inRange ? level(shownValues[i]) : 0}" data-day="${inRange ? key : ''}" title="${text}" style="grid-row:${(i % 7) + 1};grid-column:${Math.floor(i / 7) + 1}"></span>`;
+                const note = inRange && graphNotes[key] ? String(graphNotes[key]) : '';
+                const noteText = note ? ` · “${note.length > 80 ? note.slice(0, 79) + '…' : note}”` : '';
+                const text = escapeSuggestionHtml(`${d.toLocaleDateString(undefined, fmt)}: ${inRange ? formatGraphValue(shownValues[i], scale, 1) : 'outside range'}${noteText}`);
+                return `<span class="calendar-cell${inRange ? '' : ' is-out'}${note ? ' has-note' : ''}" data-level="${inRange ? level(shownValues[i]) : 0}" data-day="${inRange ? key : ''}" title="${text}" style="grid-row:${(i % 7) + 1};grid-column:${Math.floor(i / 7) + 1}"></span>`;
             }).join('');
             // Month names above the first column that starts in a new month.
             let lastMonth = -1;
@@ -3281,6 +3295,7 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 if (seq !== graphFetchSeq) return;
+                graphNotes = (data && typeof data.notes === 'object' && data.notes) || {};
                 if (shouldIncludeTasks) {
                     graphTasks = Array.isArray(data.tasks) ? data.tasks : [];
                     graphColorScheme = graphSearchQuery ? deriveSearchColors(graphTasks) : null;

@@ -17,6 +17,7 @@ from ..core.constants import GRAPH_TAG_MAP
 from ..core.dates import get_period_range, parse_period_param
 from ..core.tags import filter_special_tags, normalize_tag, primary_special_tag
 from ..db import get_db_connection
+from ..repositories.day_notes import get_day_notes
 from ..repositories.graph_search_history import (
     list_top_graph_search_combos,
     record_graph_search_combo,
@@ -583,6 +584,11 @@ def graph_data():
             "max_hours": max_hours,
             "by_hour": by_hour,
             "tasks": tasks,
+            # Day notes in the plotted range (shown on the calendar card).
+            "notes": {
+                day.isoformat(): text
+                for day, text in get_day_notes(db_name, user_id, start_date, end_date_to_use).items()
+            },
         }
     )
 
@@ -1877,8 +1883,6 @@ def export_csv():
             )
 
     if export_format == "json":
-        from ..repositories.day_notes import get_day_notes
-
         notes_from, notes_to = (start_date, end_date) if mode == "range" else (date.min, date.max)
         notes = get_day_notes(db_name, user_id, notes_from, notes_to)
         payload = {
