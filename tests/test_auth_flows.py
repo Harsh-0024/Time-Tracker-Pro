@@ -210,3 +210,17 @@ def test_resend_cooldown_blocks_rapid_otp_emails(app, db_path, monkeypatch):
     monkeypatch.setattr(ver, "VERIFICATION_RESEND_COOLDOWN_SECONDS", 0)
     client.post("/verify-email", data={"action": "resend"})
     assert len(sent) == 2
+
+
+def test_password_reset_lifts_login_lockout(app, db_path):
+    from time_tracker_pro.repositories import login_throttle
+
+    uid = make_user(db_path)
+    for _ in range(login_throttle.MAX_FAILURES):
+        login_throttle.record_failure(db_path, "alice@example.com")
+    assert login_throttle.is_locked_out(db_path, "alice@example.com")
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["password_reset_user_id"] = uid
+    client.post("/reset-password", data={"password": "brand-new-pass", "confirm_password": "brand-new-pass"})
+    assert not login_throttle.is_locked_out(db_path, "alice@example.com")

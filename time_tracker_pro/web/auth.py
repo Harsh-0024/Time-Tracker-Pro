@@ -367,6 +367,10 @@ def reset_password():
             )
             conn.commit()
             conn.close()
+            # The old failures were against the old password; don't leave them locked out.
+            for ident in {row_value(user, "username"), row_value(user, "user_id"), row_value(user, "email")}:
+                if ident:
+                    clear_failures(db_name, ident)
             session.pop("password_reset_user_id", None)
             session.pop("otp_authenticated", None)
             session["user_id"] = int(user["id"])
