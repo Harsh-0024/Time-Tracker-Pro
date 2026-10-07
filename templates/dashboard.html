@@ -959,11 +959,12 @@
             <div class="flex flex-col gap-4 mb-6 md:mb-8 md:flex-row md:items-center md:justify-between">
                 <div class="min-w-0 flex items-start justify-between gap-4 md:block md:w-[240px] md:flex-none">
                     <div class="min-w-0">
-                        <h2 class="{{ 'text-2xl md:text-3xl' if period == 'week' else 'text-3xl md:text-4xl' }} font-light text-gray-900 mb-1 md:mb-2 tracking-tight">{{ current_month }}</h2>
+                        <h2 class="{{ 'text-2xl md:text-3xl' if period == 'week' else ('text-2xl sm:text-3xl md:text-4xl' if period == 'month' else 'text-3xl md:text-4xl') }} font-light text-gray-900 mb-1 md:mb-2 tracking-tight">{{ current_month }}</h2>
                         <p class="text-gray-700 md:text-gray-500 text-sm">Where did your {{ period if period in ["week", "month"] else "day" }} go?</p>
                     </div>
-                    <button id="viewFullBtnMobile" onclick="viewFullDay()" class="mobile-cta md:hidden shrink-0">
-                        View Full Day
+                    {% set full_label = period|capitalize if period in ['week', 'month'] else 'Day' %}
+                    <button id="viewFullBtnMobile" onclick="viewFullDay()" class="mobile-cta md:hidden shrink-0" aria-label="View full {{ full_label|lower }} log">
+                        Full {{ full_label }}
                     </button>
                 </div>
 
@@ -996,7 +997,7 @@
 
                 <div class="hidden md:flex items-center gap-2 md:gap-4 shrink-0 lg:w-[240px] md:justify-end">
                     <button id="viewFullBtn" onclick="viewFullDay()" class="primary-cta hidden md:inline-flex">
-                        View Full Day
+                        View Full {{ full_label }}
                     </button>
                 </div>
             </div>
@@ -4608,7 +4609,11 @@
             const viewFullBtn = document.getElementById('viewFullBtn');
             const viewFullBtnMobile = document.getElementById('viewFullBtnMobile');
             if (viewFullBtn) viewFullBtn.textContent = 'View Full ' + periodLabel;
-            if (viewFullBtnMobile) viewFullBtnMobile.textContent = 'View Full ' + periodLabel;
+            // Phones: shorter label so long month names ('September 2026') stay on one line.
+            if (viewFullBtnMobile) {
+                viewFullBtnMobile.textContent = 'Full ' + periodLabel;
+                viewFullBtnMobile.setAttribute('aria-label', 'View full ' + period + ' log');
+            }
 
             window.dateCursor = window.parseLocalDate(window.currentDate);
             window.renderDateGrid();

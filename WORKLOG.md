@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 12:06 IST: resume session ACTIVE (scheduled run).
+- 2026-10-07 12:26 IST: resume session ACTIVE (scheduled run, started 12:06).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -119,6 +119,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [12:06 run] contrast: dark rose-700/900 text (graphs 'vs avg' delta, waste numbers, load-error card) + settings goal 'h / day' suffix
 - [12:06 run] feat: week/month full log (time sort) groups cards under day headers ('Tue 6 Oct · 17 tasks · 21.5 hr'); other sorts keep per-card dates
 - [12:06 run] feat: same day headers in graphs 'Review tasks'
+- [12:06 run] phones: month title no longer wraps ('September 2026' + 'View Full Month' button) -> button reads 'Full Month' (aria-label keeps full text); server renders the right period label (was 'View Full Day' until JS ran)
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
