@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 16:36 IST: 16:20 resume session ACTIVE (another run should exit).
+- 2026-10-07 16:50 IST: 16:20 resume session ACTIVE (another run should exit).
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -137,6 +137,9 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [16:20 run] settings/admin: Logout was the black primary CTA -> secondary pill; settings 'Back' -> 'Dashboard'
 - [16:20 run] Insights on today: 'Today so far vs your last 7 days'; Growth shortfall reads 'Xh to reach your average' (not a red miss mid-day)
 - [16:20 run] BUG: Back after 'Log in via OTP' restored the login page from bfcache with disabled buttons + the hidden action=login_otp, so 'Log In' then sent an OTP. _form_busy.html (markFormBusy + pageshow restore) on all auth forms + settings. Settings email/OTP busy handlers never ran (selectors matched endpoint names, not URLs) and labelled the wrong button.
+- [16:20 run] BUG: full-log stat tiles showed Growth/Drudgery/Waste only (Critical missing, didn't add up to the total) -> 4 tiles, 2x2 on phones
+- [16:20 run] dashboard loaded Tailwind with defer -> unstyled first paint (blue default buttons); other pages had already dropped defer
+- [16:20 run] verify page said 'We sent a 6-digit code' + expiry right above 'We couldn't send the email' -> honest header when the send failed (+ test)
 
 ## Questions for owner (not changed, need your call)
 - dashboard.html (end of main script): every dashboard load fires a *forced* background sync
@@ -150,6 +153,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (question) Full Day Log 'Missing time' for TODAY lists the rest of the day (e.g. '2:00 PM - 12:00 AM') as unlogged, including hours that haven't happened yet. Graphs 'Last 7 days' also includes today's partial day. Both are time-handling, so left for you.
 - (question) Adding a task REQUIRES a connected Sheety account (create_task posts to Sheety first; local-only users get an error). Update/delete of local-only rows work. If you want local-only users to add tasks, create_task needs a local path - left alone since it touches the sync model.
 - (question) Sessions are bound to the User-Agent (ua_hash). Every browser auto-update (UA version bump) or Safari 'Request Desktop Website' logs the user out. Consider hashing only the browser family/OS, not the full UA.
 - (note) dark --text-faint (#6E6045) is 3.2:1 - axe flags ~10 small labels (timeline axis, insight labels). Earlier session chose it for hierarchy; bump to ~#877858 for AA if you prefer.
