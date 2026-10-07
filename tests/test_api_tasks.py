@@ -119,6 +119,8 @@ def test_sheety_account_url_must_be_public_https(db_path, login):
         assert resp.status_code == 400, bad
     resp = client.post("/api/sheety-accounts", json={"api_base_url": "https://api.sheety.co/abc/timeLogs/sheet1"})
     assert resp.status_code == 201
+    resp = client.post("/api/sheety-accounts", json={"api_base_url": "https://api.sheety.co/" + "a" * 600})
+    assert resp.status_code == 400
 
 
 def test_import_csv_without_valid_rows_keeps_existing_logs(db_path, login):

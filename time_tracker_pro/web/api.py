@@ -1795,6 +1795,8 @@ def create_sheety_account():
         
         if not api_base_url:
             return jsonify({"error": "API base URL is required"}), 400
+        if len(api_base_url) > 500 or len(account_email) > 254 or len(api_token or "") > 1000:
+            return jsonify({"error": "One of the fields is too long."}), 400
         url_error = _api_url_error(api_base_url)
         if url_error:
             return jsonify({"error": url_error}), 400
