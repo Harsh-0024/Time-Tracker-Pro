@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 19:57 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 19:58 IST: 19:20 resume session ACTIVE.
 
 ## Morning summary (06:22-09:00 session) - most important first
 1. DATA LOSS: /api/import-csv with a CSV that had no valid rows deleted ALL of the user's logs. Fixed + test.
@@ -179,6 +179,8 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [19:20 run] a11y: dashboard date button named 'Choose date (showing ...)', aria-expanded synced, Escape closes the calendar
 - [19:20 run] a11y: graphs focus menu - arrow keys/Home/End/Escape, aria-expanded, aria-current on selected option
 - [19:20 run] graphs shortcuts: R = Review tasks, S = Settings
+- [19:20 run] SECURITY: verification + welcome emails put the registrant's free-text name into HTML unescaped -> anyone could register with someone else's address and a name like <a href=evil>Secure your account</a> (phishing inside a genuine app email). Escaped (+ test)
+- [19:20 run] fuzz: 3,920 graph-data param combos incl. overnight/zero/negative logs - 0 errors, by_hour always 24 non-negative
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
