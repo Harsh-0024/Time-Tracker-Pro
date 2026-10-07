@@ -47,6 +47,7 @@ Production uses gunicorn (`Procfile`: `web: gunicorn wsgi:app`) on Python 3.12 (
 | `BREVO_API_KEY`, `EMAIL_MODE` | Email through the Brevo API instead. |
 | `VERIFICATION_CODE_TTL_MINUTES`, `VERIFICATION_MAX_ATTEMPTS` | Email-code lifetime and attempts (default 10 min / 5). |
 | `VERIFICATION_RESEND_COOLDOWN_SECONDS` | Minimum gap between email codes for the same account and purpose (default 60). |
+| `MAX_CONTENT_LENGTH_MB` | Largest accepted request body (uploads, CSV import); bigger requests get a 413 (default 16). |
 | `LOGIN_MAX_FAILURES`, `LOGIN_FAILURE_WINDOW_MINUTES` | Password-login throttling per account (default 10 per 15 min). |
 | `SHEETY_ENDPOINT` | Fallback Sheety URL (single-user setups). Users normally add theirs under Settings → API Keys. |
 | `TIME_TRACKER_API_TOKEN` | Token for scripted access to the JSON API (`X-API-Token` header). |
