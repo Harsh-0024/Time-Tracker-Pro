@@ -278,6 +278,7 @@ def dashboard():
     idx = (selected_date.weekday() + 1) % 7
     start_of_week = selected_date - timedelta(days=idx)
     week_days: List[Dict[str, Any]] = []
+    today = datetime.now().date()
     for i in range(7):
         day = start_of_week + timedelta(days=i)
         day_data = df[df["date"] == day] if not df.empty else pd.DataFrame()
@@ -290,6 +291,7 @@ def dashboard():
                 "full_str": day.strftime("%Y-%m-%d"),
                 "hours": day_hours,
                 "is_selected": day == selected_date,
+                "is_today": day == today,
             }
         )
 

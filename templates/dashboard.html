@@ -494,6 +494,10 @@
             background: linear-gradient(135deg, #F7CF6B 0%, #F5B826 45%, #FCE7A2 100%);
             box-shadow: 0 16px 40px rgba(180, 136, 48, 0.45);
         }
+        /* Today, when another day is selected: a gold ring so it's easy to find your way back. */
+        .today-day { box-shadow: inset 0 0 0 2px #F5B826; color: #92400E; }
+        [data-theme="dark"] #weekScroller .today-day.bg-white { box-shadow: inset 0 0 0 2px rgba(245, 184, 38, 0.7) !important; color: #F4D03F !important; }
+        [data-theme="dark"] #weekScroller .text-amber-700 { color: #D4AF37; }
         .modal {
             display: none;
             position: fixed;
@@ -986,16 +990,17 @@
                 <div class="md:flex-1 md:min-w-0 md:flex md:justify-center">
                     <div id="weekScroller" class="flex justify-between gap-1.5 sm:gap-3 overflow-x-auto pt-1 pb-4 px-1 scroll-smooth scroll-px-6 md:justify-start md:gap-1.5 lg:gap-4 md:pb-3 md:max-w-[560px]">
                         {% for day in week_days %}
-                        <a href="/?date={{ day.full_str }}&period={{ period }}" class="flex flex-col items-center flex-1 min-w-0 md:flex-none md:min-w-[44px] lg:min-w-[48px] xl:min-w-[56px] group" {% if day.is_selected %}data-selected-day="true"{% endif %}>
+                        <a href="/?date={{ day.full_str }}&period={{ period }}" class="flex flex-col items-center flex-1 min-w-0 md:flex-none md:min-w-[44px] lg:min-w-[48px] xl:min-w-[56px] group" {% if day.is_selected %}data-selected-day="true"{% endif %}
+                           aria-label="{{ day.date_obj.strftime('%A') }} {{ day.day_num }} {{ day.date_obj.strftime('%B') }}{{ ', today' if day.is_today }}, {{ day.hours }} hours logged"{% if day.is_today %} aria-current="date"{% endif %}>
                             <span class="text-xs font-medium uppercase mb-3 tracking-wider
-                                {% if day.is_selected %} text-gray-900 {% else %} text-gray-400 group-hover:text-gray-600 {% endif %}">
+                                {% if day.is_selected %} text-gray-900 {% elif day.is_today %} text-amber-700 {% else %} text-gray-400 group-hover:text-gray-600 {% endif %}">
                                 {{ day.day_name }}
                             </span>
                             <div class="w-full max-w-[48px] aspect-square md:w-11 md:h-11 md:max-w-none lg:w-12 lg:h-12 xl:w-14 xl:h-14 flex items-center justify-center rounded-xl text-base font-semibold transition-all duration-200
                                 {% if day.is_selected %}
                                     selected-day text-white
                                 {% else %}
-                                    bg-white text-gray-600 hover:bg-gray-50 luxury-card
+                                    bg-white text-gray-600 hover:bg-gray-50 luxury-card{% if day.is_today %} today-day{% endif %}
                                 {% endif %}">
                                 {{ day.day_num }}
                             </div>
