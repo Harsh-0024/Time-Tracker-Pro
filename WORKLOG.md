@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 20:13 IST: 19:20 resume session ACTIVE.
+- 2026-10-07 20:15 IST: 19:20 resume session ACTIVE.
 
 ## 19:20 run summary - most important first
 1. SECURITY: verification/welcome emails injected the registrant's name as raw HTML (phishing via someone else's address). Escaped.
@@ -205,6 +205,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [19:20 run] feat: graphs reopens with last focus/range/MA (localStorage, validated; search intentionally not restored)
 - [19:20 run] perf: Add-task overlap check only reads logs whose dates touch the entry (115ms -> 2ms at 22k; new overlap test incl. overnight)
 - [19:20 run] BUG: editing ANY task failed with 'Overlapping tasks must be linked to Sheety' if the user had a single unsynced log anywhere (check ran before the overlap test). Now only overlapping logs are checked; scan date-limited (+ tests)
+- [19:20 run] BUG: full-log 'Missing time' wrapped tonight's overnight log onto this morning and ignored logs carried in from the previous evening -> /api/tasks day returns carry_in_minutes; overnight logs cover only the rest of the day (+ test). Display only; no stored times touched. (The 'future hours of today count as missing' question remains yours.)
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
