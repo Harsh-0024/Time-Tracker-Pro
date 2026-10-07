@@ -52,6 +52,7 @@
             var btn = document.getElementById(entry[1]);
             if (!btn) return;
             btn.classList.toggle('appearance-theme-btn-active', entry[0] === pref);
+            btn.setAttribute('aria-pressed', entry[0] === pref ? 'true' : 'false');
         });
     }
 
