@@ -1136,8 +1136,7 @@
 
         {% set top_tag_label = tags.labels[0] if tags.labels else 'No tags' %}
         {% set top_tag_hours = tags.data[0] if tags.data else 0 %}
-        {% set total_tag_hours = (tags.data | sum) if tags.data else 0 %}
-        {% set top_tag_pct = ((top_tag_hours / total_tag_hours) * 100) | round(1) if total_tag_hours else 0 %}
+        {% set top_tag_pct = tags.pct[0] if tags.pct else 0 %}
         {% set top_quad_label = 'Critical' %}
         {% set top_quad_sub = 'Important & Urgent' %}
         {% set top_quad_pct = matrix.q1.pct %}

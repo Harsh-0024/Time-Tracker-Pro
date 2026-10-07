@@ -299,6 +299,7 @@ def dashboard():
 
     tag_labels: List[str] = []
     tag_data: List[float] = []
+    tag_pct: List[float] = []
     if not period_df.empty:
         tag_df = period_df.copy()
         if "primary_tag" not in tag_df.columns:
@@ -306,6 +307,10 @@ def dashboard():
         tag_counts = tag_df.groupby("primary_tag")["duration"].sum().sort_values(ascending=False)
         tag_labels = list(tag_counts.index)
         tag_data = [round_half_up(float(x) / 60.0, 1) for x in tag_counts.values]
+        # Shares from raw minutes: rounding each tag's hours first skews them
+        # (4.5h of 10.25h read 43.3% here vs 43.9% on the quadrant card).
+        tag_total = float(tag_counts.sum())
+        tag_pct = [round_half_up(float(x) * 100.0 / tag_total, 1) if tag_total else 0.0 for x in tag_counts.values]
 
     if period == "day":
         period_label = selected_date.strftime("%B %Y")
@@ -333,7 +338,7 @@ def dashboard():
         render_template(
             "dashboard.html",
             matrix=matrix,
-            tags={"labels": tag_labels, "data": tag_data},
+            tags={"labels": tag_labels, "data": tag_data, "pct": tag_pct},
             task_count=task_count,
             week_days=week_days,
             week_total=round_half_up(week_total, 1),

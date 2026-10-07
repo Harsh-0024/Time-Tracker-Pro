@@ -151,3 +151,13 @@ def test_dashboard_shows_longest_growth_block(db_path, login):
         assert "Longest growth block" in html, url
         assert "Deep &lt;work&gt;" in html and "Deep <work>" not in html
     assert 'href="/?date=2026-09-21&period=day"' in client.get("/?date=2026-09-21&period=week").get_data(as_text=True)
+
+
+def test_top_category_share_uses_unrounded_hours(db_path, login):
+    uid = make_user(db_path)
+    # Waste 4.5h of 10.25h = 43.9%; from rounded hours (4.5/10.3) it read 43.7%.
+    add_log(db_path, uid, "2026-03-04", "08:00", "2026-03-04", "12:30", task="Scroll", tags="Waste", urg=0, imp=0)
+    add_log(db_path, uid, "2026-03-04", "12:30", "2026-03-04", "15:30", task="Build", tags="Work", urg=1, imp=1)
+    add_log(db_path, uid, "2026-03-04", "15:30", "2026-03-04", "18:15", task="Gym", tags="Soul", urg=0, imp=1)
+    html = login(uid).get("/?date=2026-03-04&period=day").get_data(as_text=True)
+    assert "43.9% of period" in html
