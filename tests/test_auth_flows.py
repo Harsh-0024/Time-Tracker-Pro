@@ -363,3 +363,24 @@ def test_register_error_keeps_typed_fields_but_not_passwords(app, db_path):
 def test_forgot_password_error_keeps_identifier(app):
     resp = app.test_client().post("/forgot-password", data={"identifier": "nobody-here"})
     assert 'value="nobody-here"' in resp.get_data(as_text=True)
+
+
+def test_login_page_with_stale_session_keeps_next(db_path, login):
+    from conftest import make_user
+
+    uid = make_user(db_path)
+    client = login(uid)
+    client.environ_base["HTTP_USER_AGENT"] = "a-newer-browser-version"  # UA changed: session no longer valid
+    resp = client.get("/login?next=/graphs")
+    assert resp.status_code == 200  # the form, not a bounce via the dashboard that drops ?next=
+    assert 'value="/graphs"' in resp.get_data(as_text=True)
+
+
+def test_logged_in_user_on_login_page_follows_next(db_path, login):
+    from conftest import make_user
+
+    client = login(make_user(db_path))
+    resp = client.get("/login?next=/graphs")
+    assert resp.status_code == 302 and resp.headers["Location"].endswith("/graphs")
+    resp = client.get("/login?next=//evil.example")
+    assert resp.status_code == 302 and resp.headers["Location"].endswith("/")

@@ -35,7 +35,7 @@ from ..services.verification import (
 )
 from ..services.welcome_email import send_welcome_email
 from .decorators import login_required
-from .utils import mask_email, safe_next_url
+from .utils import get_current_user_id, mask_email, safe_next_url
 
 
 bp = Blueprint("auth", __name__)
@@ -63,8 +63,11 @@ def _ua_hash(value: str) -> str:
 
 @bp.route("/login", methods=["GET", "POST"], endpoint="login")
 def login():
-    if session.get("user_id") is not None:
-        return redirect(url_for("main.dashboard"))
+    # get_current_user_id (not the raw session) so a stale session - e.g. the browser
+    # updated and its User-Agent changed - shows the form instead of bouncing to the
+    # dashboard and back here without ?next=.
+    if get_current_user_id() is not None:
+        return redirect(safe_next_url(request.args.get("next")) or url_for("main.dashboard"))
 
     db_name = current_app.config["DB_NAME"]
     next_url = safe_next_url(request.args.get("next"))
@@ -150,7 +153,7 @@ def login():
 
 @bp.route("/forgot-password", methods=["GET", "POST"], endpoint="forgot_password")
 def forgot_password():
-    if session.get("user_id") is not None:
+    if get_current_user_id() is not None:
         return redirect(url_for("main.dashboard"))
 
     db_name = current_app.config["DB_NAME"]
@@ -193,7 +196,7 @@ def forgot_password():
 
 @bp.route("/register", methods=["GET", "POST"], endpoint="register")
 def register():
-    if session.get("user_id") is not None:
+    if get_current_user_id() is not None:
         return redirect(url_for("main.dashboard"))
 
     db_name = current_app.config["DB_NAME"]
