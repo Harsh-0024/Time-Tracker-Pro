@@ -97,3 +97,13 @@ def test_error_pages_html_and_json(app, db_path, login):
     resp = login(make_user(db_path)).get("/admin/users")
     assert resp.status_code == 403
     assert b"Not allowed" in resp.data
+
+
+def test_export_csv_neutralises_formula_cells(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "06:00:00", "2026-09-20", "07:00:00", task="=HYPERLINK(\"http://x\")")
+    text = login(uid).get("/api/export-csv").get_data(as_text=True)
+    assert "'=HYPERLINK" in text
+    assert ",=HYPERLINK" not in text
+    # numbers (duration) are left alone
+    assert ",1.0," in text

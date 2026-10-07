@@ -1587,6 +1587,16 @@ def import_csv():
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 
+_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_safe_cell(value: Any) -> Any:
+    """Excel/Sheets run a cell starting with = + - @ as a formula (CSV injection); quote-prefix text cells."""
+    if isinstance(value, str) and value.startswith(_CSV_FORMULA_PREFIXES):
+        return "'" + value
+    return value
+
+
 @bp.route("/api/export-csv", endpoint="export_csv")
 @api_or_login_required
 def export_csv():
@@ -1683,7 +1693,7 @@ def export_csv():
     writer = csv.writer(output)
     writer.writerow(headers)
     for row in export_rows:
-        writer.writerow([row.get(header, "") for header in headers])
+        writer.writerow([_csv_safe_cell(row.get(header, "")) for header in headers])
 
     buffer = BytesIO(output.getvalue().encode("utf-8"))
     return send_file(
