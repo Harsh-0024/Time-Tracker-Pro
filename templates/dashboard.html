@@ -1373,12 +1373,12 @@
                             <div class="flex justify-between items-start mb-2 md:mb-4">
                                 <div>
                                     <h4 class="text-stone-600 font-semibold text-sm md:text-base mb-0.5" id="matrixTotalTitle">Total</h4>
-                                    <p class="text-[8px] md:text-[10px] text-stone-500/80 font-medium uppercase tracking-wider" id="matrixTotalSubtitle">All Time Logged</p>
+                                    <p class="text-[8px] md:text-[10px] text-stone-500/80 font-medium uppercase tracking-wider" id="matrixTotalSubtitle">Time Logged</p>
                                 </div>
                                 <div class="text-lg md:text-xl text-stone-400/70">∑</div>
                             </div>
                             <div class="text-2xl md:text-3xl font-light text-stone-700 mb-1"><span class="js-hover-hours matrix-hours" data-matrix-key="total" data-total-hours="{{ matrix.total_hours }}" data-hours="{{ matrix.total_hours }}">{{ matrix.total_hours }}h</span></div>
-                            <div class="text-[10px] md:text-xs font-medium text-stone-500/70" id="matrixTotalPct">100%</div>
+                            <div class="text-[10px] md:text-xs font-medium text-stone-500/70" id="matrixTotalPct">{% if logged_coverage is not none %}{{ logged_coverage | round(0) | int }}% of {{ period }} logged{% else %}100%{% endif %}</div>
                         </div>
                     </div>
                 </div>
@@ -2136,7 +2136,7 @@
                     subtitleEl.textContent = 'Period Total';
                 } else {
                     titleEl.textContent = 'Total';
-                    subtitleEl.textContent = 'All Time Logged';
+                    subtitleEl.textContent = 'Time Logged';
                 }
             }
             if (window.attachHoverSwap) window.attachHoverSwap();
