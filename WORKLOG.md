@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 21:45 IST: 21:20 resume session ACTIVE.
+- 2026-10-07 22:05 IST: 21:20 resume session ACTIVE.
 
 ## 19:20 run summary - most important first
 1. SECURITY: verification/welcome emails injected the registrant's name as raw HTML (phishing via someone else's address). Escaped.
@@ -208,6 +208,10 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - [19:20 run] BUG: full-log 'Missing time' wrapped tonight's overnight log onto this morning and ignored logs carried in from the previous evening -> /api/tasks day returns carry_in_minutes; overnight logs cover only the rest of the day (+ test). Display only; no stored times touched. (The 'future hours of today count as missing' question remains yours.)
 - [21:20 run] feat: Insights Top activities show trend - week/month: 'X.Xh/day · ▲ 0.4h vs last week' (per logged day, same basis as Daily average); day: 'usually Xh/day' from the last 7 days (+ ▲/▼ on past days, not today). Neutral colour (+ tests)
 - [21:20 run] audit: eslint (no-undef etc.) over every page's inline JS - only window.* globals flagged, no real issues; rendered 27 dashboard period/date combos: no None/nan leaks
+- [21:20 run] copy: login failure 'Invalid credentials.' -> 'That login and password don’t match. Check both and try again.' (still non-enumerating)
+- [21:20 run] settings: Daily Goals keeps the typed values after a validation error (was reset to saved values) (+ test)
+- [21:20 run] feat(PWA): manifest shortcuts - long-press the installed icon for Add task / This week / Graphs; '/#add-task' opens the full log with Add task focused (shared with the N shortcut; hash cleared). jsdom-verified (+ test)
+- [21:20 run] a11y: graphs export-format picker -> dialog role/label, focus to CSV, Escape closes only the picker, Tab trap, focus returns (jsdom-verified). axe (structural rules) on dashboard (incl. Add-task open), graphs, settings, login, register, forgot: no other findings
 
 ## Questions for owner (not changed, need your call)
 - (IMPORTANT) The Sheety URL placeholder in settings.html used project ID 1a861cfa9dca4f459ca9c1bf60ca2e09 (now replaced on this branch). If that is your real Sheety project, it is still in git history and in the currently deployed page; if the sheet has no Bearer auth enabled, anyone who saw it could read/write it. Consider enabling Sheety auth or rotating the project.
