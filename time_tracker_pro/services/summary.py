@@ -82,16 +82,19 @@ def build_period_summary_text(
         where = "" if period == "day" else f", {_day(block['date'])}"
         extra.append(f"Longest growth block: {block['task']} ({_h(block['hours'])}{where})")
     gp = goal_progress or {}
+    streaks = gp.get("streaks") or {}
     if gp.get("growth"):
         g = gp["growth"]
         if period == "day":
-            extra.append(f"Growth goal: {_h(g['actual'])} of {_h(g['target'])}")
+            streak = f" ({streaks['growth']}-day streak)" if (streaks.get("growth") or 0) > 1 else ""
+            extra.append(f"Growth goal: {_h(g['actual'])} of {_h(g['target'])}{streak}")
         elif g.get("days"):
             extra.append(f"Growth goal met on {g['met_days']} of {g['days']} days")
     if gp.get("waste"):
         w = gp["waste"]
         if period == "day":
-            extra.append(f"Waste limit: {_h(w['actual'])} of {_h(w['limit'])}")
+            streak = f" ({streaks['waste']} days in a row under)" if (streaks.get("waste") or 0) > 1 else ""
+            extra.append(f"Waste limit: {_h(w['actual'])} of {_h(w['limit'])}{streak}")
         elif w.get("days"):
             extra.append(f"Under the waste limit on {w['kept_days']} of {w['days']} days")
     if extra:

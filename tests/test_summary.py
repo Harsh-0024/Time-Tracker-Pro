@@ -48,3 +48,15 @@ def test_summary_json_is_script_safe(db_path, login):
     block = re.search(r'id="periodSummaryText">(.*?)</script>', html, re.S).group(1)
     assert "<" not in block
     assert "x</script><img src=x onerror=alert(1)>" in json.loads(block)
+
+
+def test_day_summary_mentions_goal_streak(db_path, login):
+    from time_tracker_pro.repositories.goals import upsert_user_goals
+
+    uid = make_user(db_path)
+    for d in ("2026-09-14", "2026-09-15"):
+        add_log(db_path, uid, d, "08:00:00", d, "13:00:00", task="Study", tags="Work", urg=0, imp=1)
+    upsert_user_goals(db_path, uid, 4.0, 2.0)
+    text = _summary(login(uid).get("/?date=2026-09-15&period=day").get_data(as_text=True))
+    assert "Growth goal: 5.0h of 4.0h (2-day streak)" in text
+    assert "Waste limit: 0.0h of 2.0h (2 days in a row under)" in text
