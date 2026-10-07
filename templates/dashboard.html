@@ -4385,6 +4385,25 @@
                 }, { passive: true });
                 area.addEventListener('touchcancel', () => { start = null; }, { passive: true });
             });
+            // New task: open the full log, then its Add-task panel once the modal is up.
+            function openAddTaskFromAnywhere() {
+                window.viewFullDay();
+                let tries = 0;
+                const openWhenReady = () => {
+                    const modal = document.getElementById('taskModal');
+                    if (modal && modal.classList.contains('active') && window.openCreateTaskPanel) {
+                        window.openCreateTaskPanel();
+                    } else if (++tries < 40) {
+                        setTimeout(openWhenReady, 50);
+                    }
+                };
+                openWhenReady();
+            }
+            // '/#add-task' (the installed app's "Add task" shortcut) opens the form straight away.
+            if (window.location.hash === '#add-task') {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+                openAddTaskFromAnywhere();
+            }
             document.addEventListener('keydown', (event) => {
                 const tag = event.target?.tagName;
                 if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
@@ -4426,19 +4445,8 @@
                         window.viewFullDay();
                     }
                 } else if (key === 'n') {
-                    // New task: open the full log, then its Add-task panel once the modal is up.
                     event.preventDefault();
-                    window.viewFullDay();
-                    let tries = 0;
-                    const openWhenReady = () => {
-                        const modal = document.getElementById('taskModal');
-                        if (modal && modal.classList.contains('active') && window.openCreateTaskPanel) {
-                            window.openCreateTaskPanel();
-                        } else if (++tries < 40) {
-                            setTimeout(openWhenReady, 50);
-                        }
-                    };
-                    openWhenReady();
+                    openAddTaskFromAnywhere();
                 } else if (key === '/') {
                     // Search: open the full log and focus its search box.
                     event.preventDefault();

@@ -218,3 +218,9 @@ def test_static_urls_are_versioned_and_long_cached(client_with_data):
     assert "max-age=31536000" in versioned.headers.get("Cache-Control", "")
     plain = client_with_data.get("/static/js/theme.js")
     assert "max-age=31536000" not in plain.headers.get("Cache-Control", "")
+
+
+def test_manifest_shortcuts(app):
+    data = app.test_client().get("/manifest.webmanifest").get_json(force=True)
+    urls = [s["url"] for s in data["shortcuts"]]
+    assert "/#add-task" in urls and "/graphs" in urls

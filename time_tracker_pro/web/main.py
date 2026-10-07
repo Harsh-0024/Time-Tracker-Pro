@@ -399,6 +399,12 @@ def manifest():
                 "purpose": "any"
             }
         ],
+        # Long-press / right-click menu on the installed app's icon.
+        "shortcuts": [
+            {"name": "Add task", "short_name": "Add", "url": "/#add-task"},
+            {"name": "This week", "short_name": "Week", "url": "/?period=week"},
+            {"name": "Graphs", "short_name": "Graphs", "url": "/graphs"},
+        ],
     }
     return current_app.response_class(
         json.dumps(payload),
