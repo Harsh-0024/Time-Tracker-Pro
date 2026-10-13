@@ -1009,7 +1009,8 @@
                         <div class="insight-stat">
                             <div class="insight-stat-label">Sleep last night</div>
                             <div class="insight-stat-value">{{ sn.hours }}h{% if sn.avg_hours is defined %} <span class="insight-stat-sub">avg {{ sn.avg_hours }}h</span>{% endif %}</div>
-                            <div class="insight-note">{{ sn.bedtime | trim('0') }} – {{ sn.wake | trim('0') }}{% if sn.delta_hours is defined %} · {% if sn.delta_hours == 0 %}same as your average{% else %}{{ '+' if sn.delta_hours > 0 else '−' }}{{ sn.delta_hours | abs }}h vs your last {{ sn.avg_nights }} nights{% endif %}{% endif %}</div>
+                            <div class="insight-note">{{ sn.bedtime | trim('0') }} – {{ sn.wake | trim('0') }}{% if sn.delta_hours is defined %} · {% if sn.delta_hours == 0 %}same as your average{% else %}{{ '+' if sn.delta_hours > 0 else '−' }}{{ sn.delta_hours | abs }}h vs your last {{ sn.avg_nights }} nights{% endif %}{% endif %}
+                                · <a class="hover:underline" href="/graphs?focus=sleep&range=30">Trend →</a></div>
                         </div>
                         {% endif %}
                     {% else %}
