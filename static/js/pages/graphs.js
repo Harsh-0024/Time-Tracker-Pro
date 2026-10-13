@@ -2829,6 +2829,27 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             }
         }
 
+        // Links into this page (e.g. the dashboard's Sleep insight): /graphs?focus=sleep&range=90&search=gym
+        function loadGraphStateFromUrl() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const focus = params.get('focus');
+                const search = (params.get('search') || '').slice(0, 200);
+                if (!focus && !search) return null;
+                const focusOk = focus && Array.from(document.querySelectorAll('.graph-focus-option')).some(o => o.dataset.value === focus);
+                const stored = loadGraphState();
+                const range = normalizeRangeValue(params.get('range') || (stored ? stored.range : '30'));
+                return {
+                    focus: focusOk ? focus : (search ? 'search_only' : 'work'),
+                    range,
+                    ma: pickDefaultMAWindowForDays(range === 'all' ? 366 : Number(range)),
+                    search,
+                };
+            } catch (e) {
+                return null;
+            }
+        }
+
         function applySavedView(view) {
             if (!view) return;
             graphExcludedIds = new Set();
@@ -3410,7 +3431,12 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
 
         syncRangePills();
         syncMAPills();
-        const restoredGraphState = loadGraphState();
+        const urlGraphState = loadGraphStateFromUrl();
+        if (urlGraphState) {
+            // Applied once; a reload then reopens wherever the user went from here.
+            try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+        }
+        const restoredGraphState = urlGraphState || loadGraphState();
         if (restoredGraphState) {
             applySavedView(restoredGraphState);
         } else {
