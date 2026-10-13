@@ -418,3 +418,48 @@ def test_profile_request_otp_answers_json_for_background_requests(app, db_path, 
 def test_settings_does_not_store_passwords_in_session_storage(db_path, login):
     html = login(make_user(db_path)).get("/settings").get_data(as_text=True)
     assert "sessionStorage.setItem" not in html
+
+
+def _session_client(app, uid, ua, ua_hash_value):
+    client = app.test_client()
+    client.environ_base["HTTP_USER_AGENT"] = ua
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
+        sess["ua_hash"] = ua_hash_value
+    return client
+
+
+CHROME_OLD = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.70 Safari/537.36"
+CHROME_NEW = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.86 Safari/537.36"
+FIREFOX = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:132.0) Gecko/20100101 Firefox/132.0"
+
+
+def test_browser_update_keeps_session(app, db_path):
+    from time_tracker_pro.web.utils import _ua_hash
+
+    uid = make_user(db_path)
+    client = _session_client(app, uid, CHROME_OLD, _ua_hash(CHROME_OLD))
+    client.environ_base["HTTP_USER_AGENT"] = CHROME_NEW  # browser auto-updated
+    assert client.get("/settings").status_code == 200
+
+
+def test_different_browser_drops_session(app, db_path):
+    from time_tracker_pro.web.utils import _ua_hash
+
+    uid = make_user(db_path)
+    client = _session_client(app, uid, CHROME_OLD, _ua_hash(CHROME_OLD))
+    client.environ_base["HTTP_USER_AGENT"] = FIREFOX
+    resp = client.get("/settings")
+    assert resp.status_code == 302 and "/login" in resp.headers["Location"]
+
+
+def test_legacy_full_ua_session_is_upgraded(app, db_path):
+    from time_tracker_pro.web.utils import _legacy_ua_hash, _ua_hash
+
+    uid = make_user(db_path)
+    client = _session_client(app, uid, CHROME_OLD, _legacy_ua_hash(CHROME_OLD))
+    assert client.get("/settings").status_code == 200
+    with client.session_transaction() as sess:
+        assert sess["ua_hash"] == _ua_hash(CHROME_OLD)
+    client.environ_base["HTTP_USER_AGENT"] = CHROME_NEW
+    assert client.get("/settings").status_code == 200

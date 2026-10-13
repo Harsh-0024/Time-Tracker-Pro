@@ -1,12 +1,30 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from typing import Optional
 
 from flask import request, session
 
 
+_VERSION_NUMBERS = re.compile(r"\d+(?:[._]\d+)*")
+
+
+def _ua_family(value: str) -> str:
+    """The User-Agent without version numbers ('Chrome/131.0.6778.86' -> 'Chrome/').
+
+    Sessions are bound to the browser + OS, not its exact version, so an automatic
+    browser update doesn't log everyone out; a different browser or device still does.
+    """
+    return _VERSION_NUMBERS.sub("", value or "")
+
+
 def _ua_hash(value: str) -> str:
+    return hashlib.sha256(("v2:" + _ua_family(value)).encode("utf-8")).hexdigest()
+
+
+def _legacy_ua_hash(value: str) -> str:
+    # Sessions created before versions were ignored hashed the full User-Agent.
     return hashlib.sha256((value or "").encode("utf-8")).hexdigest()
 
 
@@ -27,7 +45,11 @@ def get_current_user_id() -> Optional[int]:
     if uid is None:
         return None
     expected = session.get("ua_hash")
-    current = _ua_hash(request.headers.get("User-Agent") or "")
+    user_agent = request.headers.get("User-Agent") or ""
+    current = _ua_hash(user_agent)
+    if expected and expected != current and expected == _legacy_ua_hash(user_agent):
+        session["ua_hash"] = current  # upgrade an old session in place
+        expected = current
     if not expected or expected != current:
         session.clear()
         return None

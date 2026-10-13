@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import logging
 import re
 import time
@@ -33,7 +32,7 @@ from ..services.verification import (
 )
 from ..services.welcome_email import send_welcome_email
 from .decorators import login_required
-from .utils import get_current_user_id, mask_email, safe_next_url
+from .utils import _ua_hash, get_current_user_id, mask_email, safe_next_url
 
 
 bp = Blueprint("auth", __name__)
@@ -55,8 +54,6 @@ SEND_FAILED_MESSAGE = "We couldn't send the email right now. Please try again in
 REGISTER_SEND_FAILED_MESSAGE = "Your account was created, but we couldn't send the code. Tap Resend code to try again."
 
 
-def _ua_hash(value: str) -> str:
-    return hashlib.sha256((value or "").encode("utf-8")).hexdigest()
 
 
 @bp.route("/login", methods=["GET", "POST"], endpoint="login")
