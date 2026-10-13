@@ -2260,6 +2260,29 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 pointHitRadius: 0
             };
 
+            const tooltipCallbacks = {
+                title: function(items) {
+                    const idx = items && items.length ? items[0].dataIndex : null;
+                    const rawDate = idx != null ? graphRawDates[idx] : '';
+                    return rawDate ? formatGraphDetailDate(rawDate) : '';
+                },
+                label: function(context) {
+                    const kind = context?.dataset?.__kind;
+                    const y = Number(context?.parsed?.y || 0);
+                    if (kind === 'raw') return `Day: ${formatGraphValue(y, valueScale, 2)}`;
+                    if (kind === 'goal') return context.dataset.label;
+                    if (kind === 'prev') return `Previous period: ${formatGraphValue(y, valueScale, 2)}`;
+                    return `MA (${maWindow}d): ${formatGraphValue(y, valueScale, 2)}`;
+                },
+                // The day's note (as on the calendar card), shortened to keep the tooltip small.
+                afterBody: function(items) {
+                    const idx = items && items.length ? items[0].dataIndex : null;
+                    const note = idx != null ? graphNotes[graphRawDates[idx]] : '';
+                    if (!note) return [];
+                    const text = String(note);
+                    return ['', `“${text.length > 80 ? `${text.slice(0, 79)}…` : text}”`];
+                }
+            };
             // Long ranges on a narrow chart: dots and dashes every few pixels turn into noise,
             // so draw the daily series as a thin, faint solid line under the average instead.
             const plotWidth = (ctx.canvas.parentElement || ctx.canvas).clientWidth || 600;
@@ -2313,21 +2336,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 }
                 if (chartInstance.options?.plugins?.tooltip) {
                     chartInstance.options.plugins.tooltip.enabled = !mobile;
-                    chartInstance.options.plugins.tooltip.callbacks = {
-                        title: function(items) {
-                            const idx = items && items.length ? items[0].dataIndex : null;
-                            const rawDate = idx != null ? graphRawDates[idx] : '';
-                            return rawDate ? formatGraphDetailDate(rawDate) : '';
-                        },
-                        label: function(context) {
-                            const kind = context?.dataset?.__kind;
-                            const y = Number(context?.parsed?.y || 0);
-                            if (kind === 'raw') return `Day: ${formatGraphValue(y, valueScale, 2)}`;
-                            if (kind === 'goal') return context.dataset.label;
-                            if (kind === 'prev') return `Previous period: ${formatGraphValue(y, valueScale, 2)}`;
-                            return `MA (${maWindow}d): ${formatGraphValue(y, valueScale, 2)}`;
-                        }
-                    };
+                    chartInstance.options.plugins.tooltip.callbacks = tooltipCallbacks;
                 }
                 chartInstance.$currentProjection = projectionConfig;
                 chartInstance.options.animation = { duration: 650, easing: 'easeOutQuart' };
@@ -2382,21 +2391,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                                 padding: 12,
                                 titleFont: { family: 'Inter', size: 12, weight: '600' },
                                 bodyFont: { family: 'Inter', size: 12, weight: '400' },
-                                callbacks: {
-                                    title: function(items) {
-                                        const idx = items && items.length ? items[0].dataIndex : null;
-                                        const rawDate = idx != null ? graphRawDates[idx] : '';
-                                        return rawDate ? formatGraphDetailDate(rawDate) : '';
-                                    },
-                                    label: function(context) {
-                                        const kind = context?.dataset?.__kind;
-                                        const y = Number(context?.parsed?.y || 0);
-                                        if (kind === 'raw') return `Day: ${formatGraphValue(y, valueScale, 2)}`;
-                                        if (kind === 'goal') return context.dataset.label;
-                            if (kind === 'prev') return `Previous period: ${formatGraphValue(y, valueScale, 2)}`;
-                                        return `MA (${maWindow}d): ${formatGraphValue(y, valueScale, 2)}`;
-                                    }
-                                }
+                                callbacks: tooltipCallbacks
                             }
                         },
                         onHover: (evt) => {
