@@ -559,7 +559,10 @@ def graph_data():
             # Sleep: average over the nights actually logged (a missing night isn't 0h).
             avg_hours = round(total_hours / max(1, sum(1 for v in values if v > 0)), 2)
     max_hours = round(max(values) if values else 0, 2)
-    by_hour = _minutes_by_hour(df, start_date, end_date_to_use, active_days if first_logged_index is not None else days)
+    hour_days = active_days if first_logged_index is not None else days
+    if nights is not None:
+        hour_days = max(1, len(nights))  # sleep: per night logged, like avg_hours
+    by_hour = _minutes_by_hour(df, start_date, end_date_to_use, hour_days)
 
     tasks: List[Dict[str, Any]] = []
     if include_tasks and not df.empty:

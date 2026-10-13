@@ -430,3 +430,12 @@ def test_graph_data_sleep_average_skips_unlogged_nights(db_path, login):
     # Sep 16-20: nothing logged.
     data = login(uid).get("/api/graph-data?metric=sleep&days=7&end=2026-09-20").get_json()
     assert data["avg_hours"] == 7.0  # per night logged, not 14h / 7 days
+
+
+def test_graph_data_sleep_by_hour_is_per_night_logged(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-14", "23:00:00", "2026-09-15", "07:00:00", task="Sleep")
+    add_log(db_path, uid, "2026-09-15", "23:00:00", "2026-09-16", "07:00:00", task="Sleep")
+    # Sep 17-20: nothing logged.
+    data = login(uid).get("/api/graph-data?metric=sleep&days=7&end=2026-09-20").get_json()
+    assert data["by_hour"][3] == 60.0  # minutes asleep 3-4 AM per night logged (not per day)

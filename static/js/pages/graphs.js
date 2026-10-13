@@ -410,7 +410,7 @@ function tagBadgeTextColor(hex) {
                     // Phones: just 'Peak 2–3 PM' so the header stays on one line.
                     const lead = document.createElement('span');
                     lead.className = 'hidden sm:inline';
-                    lead.textContent = 'Average per day · peak ';
+                    lead.textContent = currentMetric === 'sleep' ? 'Average per night logged · peak ' : 'Average per day · peak ';
                     const short = document.createElement('span');
                     short.className = 'sm:hidden';
                     short.textContent = 'Peak ';
