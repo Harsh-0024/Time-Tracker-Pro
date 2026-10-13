@@ -203,3 +203,10 @@ def build_sleep_goal_progress(
             state = "met" if hours[d] >= target else "missed"
         calendar[d] = {"sleep": state, "sleep_hours": round_half_up(hours.get(d, 0.0), 1)}
     return {"item": item, "calendar": calendar}
+
+
+def sleep_debt(df: pd.DataFrame, start_date: date, end_date: date, goal_hours: float) -> Dict[str, Any]:
+    """How far the logged nights in the range fell short of the goal, in total."""
+    nights = sleep_minutes_by_night(df, start_date, end_date)
+    short = [goal_hours - minutes / 60.0 for minutes in nights.values() if minutes / 60.0 < goal_hours]
+    return {"hours": round_half_up(sum(short), 1), "nights": len(short)}

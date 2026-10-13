@@ -281,3 +281,18 @@ def test_sleep_goal_streak_on_day_view(db_path, login):
     html = client.get("/?date=2026-09-19").get_data(as_text=True)
     assert "2 nights in a row" in html and "best 3" in html
     assert "Best sleep streak: 3 nights" in client.get("/?date=2026-09-17").get_data(as_text=True)
+
+
+def test_week_sleep_insight_shows_debt_against_goal(db_path, login):
+    from datetime import date as _date
+
+    from time_tracker_pro.services.sleep import sleep_debt
+
+    uid = make_user(db_path)
+    _sleep_nights(db_path, uid)  # 8h, 6h, 7.5h nights ending Sep 14-16
+    df = fetch_local_data(db_path, uid)
+    assert sleep_debt(df, _date(2026, 9, 13), _date(2026, 9, 19), 7.0) == {"hours": 1.0, "nights": 1}
+    assert sleep_debt(df, _date(2026, 9, 13), _date(2026, 9, 19), 9.0) == {"hours": 5.5, "nights": 3}
+    client = login(uid)
+    client.post("/settings/goals", data={"growth_hours": "", "waste_limit_hours": "", "sleep_hours": "7"})
+    assert "1.0h short of your 7h goal over 1 night" in client.get("/?date=2026-09-15&period=week").get_data(as_text=True)

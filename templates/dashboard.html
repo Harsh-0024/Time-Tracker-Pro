@@ -1059,6 +1059,9 @@
                             {% else %}
                             <div class="insight-note">Bed and wake times vary too much to average.</div>
                             {% endif %}
+                            {% if sl.debt is defined %}
+                            <div class="insight-note mt-1">{% if sl.debt.nights %}{{ sl.debt.hours }}h short of your {{ '%g' | format(sl.goal_hours) }}h goal over {{ sl.debt.nights }} night{{ '' if sl.debt.nights == 1 else 's' }}{% else %}Every night met your {{ '%g' | format(sl.goal_hours) }}h goal{% endif %}</div>
+                            {% endif %}
                             <div class="insight-note mt-1 flex flex-wrap gap-x-3">
                                 <a class="hover:underline" href="/?date={{ sl.shortest.date }}&period=day">Shortest: {{ sl.shortest.date.strftime('%a, %b %-d') }} · {{ sl.shortest.hours }}h</a>
                                 <a class="hover:underline" href="/graphs?focus=sleep&range=90">Trend →</a>

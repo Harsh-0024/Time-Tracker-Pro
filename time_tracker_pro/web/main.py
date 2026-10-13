@@ -31,7 +31,7 @@ from ..repositories.goals import (
 from ..repositories.logs import fetch_local_data, get_first_log_date
 from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
-from ..services.sleep import build_sleep_goal_progress
+from ..services.sleep import build_sleep_goal_progress, sleep_debt
 from ..services.insights import (
     build_daily_breakdown,
     find_overlaps,
@@ -290,6 +290,10 @@ def dashboard():
     daily_breakdown = build_daily_breakdown(period_df, start_date, end_date) if period != "day" and not df.empty else None
     logged_coverage = _logged_coverage(float(matrix.get("total_hours") or 0.0), start_date, end_date)
     goals = get_user_goals(db_name, user_id)
+    if insights.get("sleep") and goals.get("sleep_hours"):
+        last_day = min(end_date, datetime.now().date())
+        insights["sleep"]["debt"] = sleep_debt(df, start_date, last_day, float(goals["sleep_hours"]))
+        insights["sleep"]["goal_hours"] = float(goals["sleep_hours"])
     onboarding = None
     if df.empty:
         try:
