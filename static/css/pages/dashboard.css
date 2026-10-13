@@ -440,7 +440,9 @@
         .goal-dots.is-month { gap: 4px; }
         .goal-dot { width: 12px; height: 12px; border-radius: 999px; flex: none; box-sizing: border-box; }
         .goal-dots.is-month .goal-dot { width: 9px; height: 9px; }
-        a.goal-dot { transition: transform 0.15s ease; }
+        a.goal-dot { transition: transform 0.15s ease; position: relative; }
+        /* Bigger tap target than the 9-12px dot, without overlapping its neighbours (gap 4-5px). */
+        a.goal-dot::after { content: ''; position: absolute; inset: -2px; border-radius: 999px; }
         a.goal-dot:hover { transform: scale(1.35); }
         .goal-dot.is-met { background: #10B981; }
         .goal-dot.is-missed { background: #F5B826; }
