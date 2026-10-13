@@ -7,7 +7,11 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-07 23:15 IST: 22:20 resume session finished (idle - next scheduled run may continue).
+- 2026-10-13 22:19 IST: owner resumed the run (said keep going until 'stop'). Working in main session.
+
+## 2026-10-13 run (main session)
+- pyflakes cleanups outside sync
+- Per-category daily goals (Settings > Daily Goals > Category goals; user_tag_goals table)
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
