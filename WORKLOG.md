@@ -7,11 +7,16 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-13 22:19 IST: owner resumed the run (said keep going until 'stop'). Working in main session.
+- 2026-10-13 22:32 IST: main session active (owner resumed; keep going until 'stop').
 
 ## 2026-10-13 run (main session)
 - pyflakes cleanups outside sync
 - Per-category daily goals (Settings > Daily Goals > Category goals; user_tag_goals table)
+- Overlapping-entries warning card (read-only; real data has 3 overlaps: Feb 17, Feb 21, Mar 8)
+- Tailwind precompiled to static/css/tailwind.css (was 407KB in-browser CDN JIT). Rebuild cmd in README.
+  REMEMBER: after adding new Tailwind classes, rebuild the CSS (scratch: npm i tailwindcss@3.4.17).
+- iOS Simulator (owner attached it): fixed zoom-on-focus + date/time fields overflowing Add task;
+  graphs buttons 2x2 on phones.
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
@@ -284,7 +289,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 
 ## Ideas / TODO queue
 - (question, 22:20 run) Installed app / long-lived tab: the dashboard is server-rendered for the day it was loaded. Reopen the app the next morning (page still in memory) and it shows yesterday as 'today' (Today button hidden, 'Today so far' copy) until you pull to sync/reload. A visibilitychange handler that reloads when the local date changed (or after ~30 min hidden) would fix it. Not done: day rollover is time handling.
-- (note) Chart.js (pinned 4.5.1 on jsdelivr) could get an SRI integrity hash, but cdn.tailwindcss.com (unpinnable, loaded on every page) makes that moot until Tailwind is compiled locally.
+- (note) Chart.js (pinned 4.5.1 on jsdelivr) could now get an SRI integrity hash (Tailwind is compiled locally since 2026-10-13).
 - (question) DISABLE_CLOUD_SYNC is truthy-checked (sync.py, __init__.py): DISABLE_CLOUD_SYNC=0 or =false DISABLES sync. Not changed: if a deployment sets =0 today, fixing it would switch background sync on. Check your env, then parse it like SESSION_COOKIE_SECURE.
 - (question) graph/full-log search: '-' is the NOT operator even inside words, so 'deep-work' = deep AND NOT work and a date like 2026-10-05 searches '2026 NOT 10 NOT 05'. Quoting ("e-mail") works. Could treat '-' as NOT only after whitespace/start - left as is since it changes query semantics.
 - (question) Full Day Log 'Missing time' for TODAY lists the rest of the day (e.g. '2:00 PM - 12:00 AM') as unlogged, including hours that haven't happened yet. Graphs 'Last 7 days' also includes today's partial day. Both are time-handling, so left for you.
