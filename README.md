@@ -66,7 +66,7 @@ Production uses gunicorn (`Procfile`: `web: gunicorn wsgi:app`) on Python 3.12 (
 | `VERIFICATION_RESEND_COOLDOWN_SECONDS` | Minimum gap between email codes for the same account and purpose (default 60). |
 | `MAX_CONTENT_LENGTH_MB` | Largest accepted request body (uploads, CSV import); bigger requests get a 413 (default 16). |
 | `DISABLE_CSP` | Set to `1` to drop the Content-Security-Policy header (only if a deployment needs extra script/style origins). |
-| `DISABLE_GZIP` | Set to `1` if a proxy in front already compresses responses (the app gzips HTML/JSON itself otherwise). |
+| `DISABLE_GZIP` | Set to `1` if a proxy in front already compresses responses (the app gzips HTML/JSON and versioned JS/CSS itself otherwise). |
 | `LOGIN_MAX_FAILURES`, `LOGIN_FAILURE_WINDOW_MINUTES` | Password-login throttling per account (default 10 per 15 min). |
 | `SHEETY_ENDPOINT` | Fallback Sheety URL (single-user setups). Users normally add theirs under Settings → API Keys. |
 | `TIME_TRACKER_API_TOKEN` | Token for scripted access to the JSON API (`X-API-Token` header). |
