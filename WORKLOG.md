@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-13 22:32 IST: main session active (owner resumed; keep going until 'stop').
+- 2026-10-13 22:43 IST: main session active (owner resumed; keep going until 'stop').
 
 ## 2026-10-13 run (main session)
 - pyflakes cleanups outside sync
@@ -16,7 +16,10 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - Tailwind precompiled to static/css/tailwind.css (was 407KB in-browser CDN JIT). Rebuild cmd in README.
   REMEMBER: after adding new Tailwind classes, rebuild the CSS (scratch: npm i tailwindcss@3.4.17).
 - iOS Simulator (owner attached it): fixed zoom-on-focus + date/time fields overflowing Add task;
-  graphs buttons 2x2 on phones.
+  graphs buttons 2x2 on phones; settings tabs 2x2 on phones; 3 summary cards from 640px (iPad mini).
+- Category goals as graph reference lines; full-log search 'note:word'; graphs 'vs previous period' overlay.
+- New guard tests: tests/test_inline_js.py (node --check every inline script), tests/test_tailwind_css.py
+  (template classes present in the prebuilt CSS).
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
