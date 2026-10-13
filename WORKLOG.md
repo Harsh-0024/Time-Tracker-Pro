@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-13 23:58 IST: main session active (owner resumed; keep going until 'stop').
+- 2026-10-14 00:05 IST: main session active (owner resumed; keep going until 'stop').
 
 ## 2026-10-13 run (main session)
 - pyflakes cleanups outside sync
@@ -28,6 +28,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - Big inline scripts/styles of dashboard, graphs, settings moved to static/js/pages/*.js + static/css/pages/*.css
   (cached). Per-request values come from <script type=application/json id=...Config> blocks in each template.
   Dashboard gz HTML 64.5KB -> 20.9KB; graphs -> 10.5KB. Verified identical computed styles + text.
+- Shared toast / error-boundary / form-busy scripts are static files too (were ~15KB inline on every page).
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
