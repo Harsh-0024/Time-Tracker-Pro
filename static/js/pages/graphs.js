@@ -2474,7 +2474,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             }
             chartSubtitle.textContent = subtitleParts.join(' · ');
             // Screen readers get the gist of the chart; the stat cards below carry the details.
-            ctx.canvas.setAttribute('aria-label', `${chartTitle.textContent}, ${chartSubtitle.textContent}: average ${formatGraphValue(avg_hours, valueScale, 1)}, best day ${formatGraphValue(max_hours, valueScale, 1)}.`);
+            ctx.canvas.setAttribute('aria-label', `${chartTitle.textContent}, ${chartSubtitle.textContent}: average ${formatGraphValue(avg_hours, valueScale, 1)}${perNightLabels ? ' a night' : ''}, ${perNightLabels ? 'longest night' : 'best day'} ${formatGraphValue(max_hours, valueScale, 1)}.`);
             updateGraphEmptyState(values, displayedDays);
             applyCompareOverlay(labels, values, rangeDays, valueScale);
         }
