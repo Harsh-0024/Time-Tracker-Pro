@@ -114,8 +114,12 @@ def test_dashboard_embeds_period_notes_safely(db_path, login):
     client = login(uid)
     client.put("/api/day-notes/2026-09-16", json={"note": "</script><script>alert(1)</script>"})
     html = client.get("/?date=2026-09-15&period=week").get_data(as_text=True)
-    line = next(l for l in html.splitlines() if "const PERIOD_NOTES" in l)
-    assert "</script>" not in line and "2026-09-16" in line
+    import json
+    import re
+
+    block = re.search(r'<script type="application/json" id="dashboardConfig">(.*?)</script>', html, re.S).group(1)
+    assert "</script>" not in block and "<script>" not in block
+    assert json.loads(block)["periodNotes"]["2026-09-16"] == "</script><script>alert(1)</script>"
 
 
 def test_list_day_notes_api(db_path, login):

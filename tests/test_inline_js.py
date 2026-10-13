@@ -53,3 +53,14 @@ def test_inline_scripts_parse(db_path, login, app):
     anon = app.test_client()
     for url in ANON_PAGES:
         _check(anon.get(url).get_data(as_text=True), url)
+
+
+def test_static_scripts_parse():
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for dirpath, _, files in os.walk(os.path.join(root, "static", "js")):
+        for name in files:
+            if not name.endswith(".js") or name.endswith(".min.js"):
+                continue
+            path = os.path.join(dirpath, name)
+            result = subprocess.run([NODE, "--check", path], capture_output=True, text=True, timeout=30)
+            assert result.returncode == 0, f"{path}: {result.stderr[:500]}"
