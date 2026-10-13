@@ -12,7 +12,8 @@ Eisenhower matrix (urgent × important).
   - **Day view:** an hour-by-hour 24h timeline.
   - **Week and Month views:** a "Day by day" stacked chart.
   - **Insights:** top activities (each with its change vs the previous period, or vs your usual day), the day vs your
-    7-day average (week/month: vs the previous period), best and worst days, and fully-logged days.
+    7-day average (week/month: vs the previous period), best and worst days, fully-logged days, and
+    sleep (week/month: hours a night and typical bed/wake times, from tasks named "Sleep").
   - **Copy summary:** a plain-text recap of the period for a journal or message; **Export Summary** downloads its rows.
   - **Day notes:** a private line or two about the day (autosaved, `J`); week/month views, the full log and graphs show them, and Copy summary / JSON export include them. API: `GET /api/day-notes?start=YYYY-MM-DD&end=YYYY-MM-DD`, `PUT /api/day-notes/YYYY-MM-DD` with `{"note": "..."}`.
   - **Daily goals:** a Growth target and a Waste limit, plus optional per-category goals (e.g. Soul ≥ 1h, Rest ≤ 2h),

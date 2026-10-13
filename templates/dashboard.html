@@ -1012,6 +1012,17 @@
                             {% endif %}
                         </div>
                         {% endif %}
+                        {% if insights.sleep %}
+                        {% set sl = insights.sleep %}
+                        <div class="insight-stat">
+                            <div class="insight-stat-label">Sleep</div>
+                            <div class="insight-stat-value text-base">{{ sl.avg_hours }}h a night <span class="insight-stat-sub">{{ sl.nights }} nights</span></div>
+                            {% if sl.bedtime or sl.wake %}
+                            <div class="insight-note">{% if sl.bedtime %}to bed ~{{ sl.bedtime | trim('0') }}{% endif %}{% if sl.bedtime and sl.wake %} · {% endif %}{% if sl.wake %}up ~{{ sl.wake | trim('0') }}{% endif %}</div>
+                            {% endif %}
+                            <a class="insight-note mt-1 block hover:underline" href="/?date={{ sl.shortest.date }}&period=day">Shortest: {{ sl.shortest.date.strftime('%a, %b %-d') }} · {{ sl.shortest.hours }}h</a>
+                        </div>
+                        {% endif %}
                         {% if insights.best_growth_day %}
                         <a class="insight-stat insight-link" href="/?date={{ insights.best_growth_day.date }}&period=day">
                             <div class="insight-stat-label">Best growth day</div>

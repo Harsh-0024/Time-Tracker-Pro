@@ -266,3 +266,73 @@ def test_logging_streak(db_path):
     assert logging_streak(df, date(2026, 9, 20), today=date(2026, 9, 25)) == {"current": 0, "best": 3}
     assert logging_streak(df, date(2026, 9, 16), today=date(2026, 9, 25)) == {"current": 3, "best": 3}
     assert logging_streak(df, date(2026, 9, 17), today=date(2026, 9, 25))["current"] == 0
+
+
+
+def _row(d1, t1, d2, t2, task):
+    return (d1, f"{t1}:00", d2, f"{t2}:00", task)
+
+
+def _sleep_df(db_path, rows):
+    uid = make_user(db_path)
+    for d1, t1, d2, t2, task in rows:
+        add_log(db_path, uid, d1, t1, d2, t2, task=task)
+    return _df(db_path, uid)
+
+
+def test_sleep_summary_merges_midnight_split_nights(db_path):
+    from time_tracker_pro.services.insights import sleep_summary
+
+    rows = []
+    for day in range(14, 21):  # nights ending Sep 14..20: 23:30 -> 00:00 + 00:00 -> 07:00
+        rows.append(_row(f"2026-09-{day - 1:02d}", "23:30", f"2026-09-{day}", "00:00", task="Sleep"))
+        rows.append(_row(f"2026-09-{day}", "00:00", f"2026-09-{day}", "07:00", task="Sleep ."))
+    rows.append(_row("2026-09-16", "14:00", "2026-09-16", "15:00", task="sleep"))  # a nap: ignored
+    rows.append(_row("2026-09-17", "07:00", "2026-09-17", "08:00", task="Sleepwalk club"))  # not sleep
+    df = _sleep_df(db_path, rows)
+    result = sleep_summary(df, date(2026, 9, 14), date(2026, 9, 20))
+    assert result["nights"] == 7 and result["avg_hours"] == 7.5
+    assert result["bedtime"] == "11:30 PM" and result["wake"] == "07:00 AM"
+    # Fewer than 3 nights: nothing to say.
+    assert sleep_summary(df, date(2026, 9, 14), date(2026, 9, 15)) is None
+
+
+def test_sleep_summary_circular_average(db_path):
+    from time_tracker_pro.services.insights import sleep_summary
+
+    rows = [
+        _row("2026-09-13", "23:00", "2026-09-14", "06:00", task="Sleep"),
+        _row("2026-09-15", "01:00", "2026-09-15", "08:00", task="Sleep"),
+        _row("2026-09-16", "00:00", "2026-09-16", "06:00", task="Sleep"),
+    ]
+    result = sleep_summary(_sleep_df(db_path, rows), date(2026, 9, 14), date(2026, 9, 20))
+    assert result["bedtime"] == "12:00 AM"  # 23:00, 01:00, 00:00 -> midnight, not noon
+    assert result["avg_hours"] == 6.7
+    assert result["shortest"] == {"date": date(2026, 9, 16), "hours": 6.0}
+
+
+def test_sleep_summary_scattered_bedtimes_are_not_averaged(db_path):
+    from time_tracker_pro.services.insights import sleep_summary
+
+    rows = [
+        _row("2026-09-13", "22:00", "2026-09-14", "05:00", task="Sleep"),
+        _row("2026-09-15", "04:00", "2026-09-15", "11:00", task="Sleep"),
+        _row("2026-09-16", "10:00", "2026-09-16", "17:00", task="Sleep"),
+        _row("2026-09-17", "16:00", "2026-09-17", "23:00", task="Sleep"),
+    ]
+    result = sleep_summary(_sleep_df(db_path, rows), date(2026, 9, 14), date(2026, 9, 20))
+    assert result["nights"] == 4 and result["bedtime"] is None and result["wake"] is None
+
+
+def test_week_dashboard_shows_sleep(db_path, login):
+    import json
+    import re
+
+    uid = make_user(db_path)
+    for day in (14, 15, 16):
+        add_log(db_path, uid, f"2026-09-{day - 1}", "23:30:00", f"2026-09-{day}", "00:00:00", task="Sleep")
+        add_log(db_path, uid, f"2026-09-{day}", "00:00:00", f"2026-09-{day}", "07:00:00", task="Sleep")
+    html = login(uid).get("/?date=2026-09-15&period=week").get_data(as_text=True)
+    assert "7.5h a night" in html and "to bed ~11:30 PM · up ~7:00 AM" in html
+    summary = json.loads(re.search(r'id="periodSummaryText">(.*?)</script>', html, re.S).group(1))
+    assert "Sleep: 7.5h a night (bed ~11:30 PM, up ~7:00 AM)" in summary
