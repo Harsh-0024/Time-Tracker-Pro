@@ -216,7 +216,7 @@
                     <div id="weekScroller" data-swipe-period="week" class="flex justify-between gap-1.5 sm:gap-3 overflow-x-auto pt-1 pb-4 px-1 scroll-smooth scroll-px-6 md:justify-start md:gap-1.5 lg:gap-4 md:pb-3 md:max-w-[560px]">
                         {% for day in week_days %}
                         <a href="/?date={{ day.full_str }}&period={{ period }}" class="flex flex-col items-center flex-1 min-w-0 md:flex-none md:min-w-[44px] lg:min-w-[48px] xl:min-w-[56px] group" {% if day.is_selected %}data-selected-day="true"{% endif %}
-                           aria-label="{{ day.date_obj.strftime('%A') }} {{ day.day_num }} {{ day.date_obj.strftime('%B') }}{{ ', today' if day.is_today }}, {{ day.hours }} hours logged"{% if day.is_today %} aria-current="date"{% endif %}>
+                           aria-label="{{ day.date_obj.strftime('%A') }} {{ day.day_num }} {{ day.date_obj.strftime('%B') }}{{ ', today' if day.is_today }}, {{ day.hours }} hours logged{{ ', has a note' if day.has_note }}"{% if day.is_today %} aria-current="date"{% endif %}>
                             <span class="text-xs font-medium uppercase mb-3 tracking-wider
                                 {% if day.is_selected %} text-gray-900 {% elif day.is_today %} text-amber-700 {% else %} text-gray-400 group-hover:text-gray-600 {% endif %}">
                                 {{ day.day_name }}
@@ -226,8 +226,9 @@
                                     selected-day text-white
                                 {% else %}
                                     bg-white text-gray-600 hover:bg-gray-50 luxury-card{% if day.is_today %} today-day{% endif %}
-                                {% endif %}">
+                                {% endif %} relative">
                                 {{ day.day_num }}
+                                {% if day.has_note %}<span class="day-note-dot" title="Has a note" aria-hidden="true"></span>{% endif %}
                             </div>
                             {% set coverage = [((day.hours / 24.0) * 100) | round(0, 'floor'), 100] | min %}
                             <span class="day-coverage mt-2" title="{{ day.hours }}h logged" aria-label="{{ day.hours }} hours logged">

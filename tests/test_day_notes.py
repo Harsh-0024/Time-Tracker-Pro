@@ -132,3 +132,14 @@ def test_list_day_notes_api(db_path, login):
     assert client.get("/api/day-notes?start=2026-09-20&end=2026-09-01").status_code == 400
     assert client.get("/api/day-notes?start=nope&end=2026-09-01").status_code == 400
     assert client.get("/api/day-notes").status_code == 400
+
+
+def test_week_strip_marks_days_with_notes(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-15", "08:00:00", "2026-09-15", "10:00:00", task="Study", tags="Work", urg=0, imp=1)
+    client = login(uid)
+    client.put("/api/day-notes/2026-09-16", json={"note": "Gym day"})
+    client.put("/api/day-notes/2026-09-25", json={"note": "Another week"})
+    html = client.get("/?date=2026-09-15&period=day").get_data(as_text=True)
+    assert html.count('class="day-note-dot"') == 1
+    assert "Wednesday 16 September, 0.0 hours logged, has a note" in html
