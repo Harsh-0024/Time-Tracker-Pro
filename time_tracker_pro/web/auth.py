@@ -301,7 +301,7 @@ def verify_email():
         title = "Reset your password"
         subtitle = "We sent a 6-digit code to"
     if purpose == "login_otp":
-        title = "Log in with OTP"
+        title = "Log in with an email code"
         subtitle = "We sent a 6-digit code to"
 
     if request.method == "POST":
