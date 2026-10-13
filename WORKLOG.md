@@ -11,7 +11,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## 2026-10-14 summary - most important first
 1. BUGS fixed (several pre-existing): editing a task that ends at midnight pre-filled an end date before the
-   start, so saving failed (prefill now uses the task's end_date; close to time handling, revert ff if you prefer -
+   start, so saving failed (prefill now uses the task's end_date; close to time handling, revert it if you prefer:
    commit 'fix: editing a task that ends at midnight'); graphs kept the previous (longer) range's Total/Avg/Best, weekday bars and calendar after
    switching to a shorter range (pre-existing; now refetches); graphs drew every line too high when 'vs previous period' was on at page load (Chart.js race,
    reproduced by stepping the animator); the full-log pie ignored the search box (0.0h stats next to a full pie);
