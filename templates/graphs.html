@@ -15,7 +15,6 @@
     <title>Graphs - Time Tracker Pro</title>
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -362,6 +361,7 @@
         [data-theme="dark"] .calendar-cell.is-out { background: transparent; }
         [data-theme="dark"] .calendar-cell:not(.is-out):not(.is-legend):hover { outline-color: rgba(244, 208, 63, 0.6); }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
 </head>
 <body class="antialiased">
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[10001] focus:px-4 focus:py-2 focus:rounded-full focus:bg-gray-900 focus:text-amber-300 focus:text-sm focus:font-semibold focus:shadow-lg">Skip to content</a>

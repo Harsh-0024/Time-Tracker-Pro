@@ -68,6 +68,15 @@ Production uses gunicorn (`Procfile`: `web: gunicorn wsgi:app`) on Python 3.12 (
   It signs you in as `LOCAL_AUTH_USER_ID`, or the first user.
 - `LOG_VERIFICATION_CODES=1` writes email codes to the log when sending fails.
 
+### Styles
+
+Tailwind is precompiled into `static/css/tailwind.css` (no in-browser CDN). After adding Tailwind classes to a
+template or script, rebuild it:
+
+```bash
+npx tailwindcss@3.4.17 -c tailwind.config.js -i static/css/tailwind.src.css -o static/css/tailwind.css --minify
+```
+
 ## Tests
 
 ```bash

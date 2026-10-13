@@ -15,7 +15,6 @@
     <title>Verify Email - Time Tracker Pro</title>
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -55,6 +54,7 @@
         [data-theme="dark"] .bg-white\/80 { background: #0E0C08 !important; }
         [data-theme="dark"] .text-amber-600 { color: #F4D03F !important; }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
 </head>
 <body class="antialiased">
     <main class="min-h-screen flex items-center justify-center px-6 py-12">

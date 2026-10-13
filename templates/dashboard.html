@@ -15,7 +15,6 @@
     <title>{{ (selected_date.strftime('%a ') ~ selected_date.day ~ selected_date.strftime(' %b')) if period == 'day' else current_month }} · Time Tracker Pro</title>
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -879,6 +878,7 @@
             border: 1px solid rgba(212,175,55,0.12) !important;
         }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
 </head>
 <body class="antialiased overflow-x-hidden" data-sync-stats="{{ (sync_stats or {}) | tojson | e }}">
     <a href="#top" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[10001] focus:px-4 focus:py-2 focus:rounded-full focus:bg-gray-900 focus:text-amber-300 focus:text-sm focus:font-semibold focus:shadow-lg">Skip to content</a>
