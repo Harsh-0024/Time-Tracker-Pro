@@ -3215,7 +3215,7 @@ function tagBadgeTextColor(hex) {
                 return;
             }
             if (graphEditStartRaw) {
-                graphEditStartRaw.value = formatGraphTaskDateTime(neighbors.prev.date, neighbors.prev.end_time);
+                graphEditStartRaw.value = formatGraphTaskDateTime(neighbors.prev.end_date || neighbors.prev.date, neighbors.prev.end_time);
             }
         };
 

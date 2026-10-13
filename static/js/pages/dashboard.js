@@ -3013,7 +3013,7 @@ function tagBadgeTextColor(hex) {
                     if (editStartMode) editStartMode.value = 'manual';
                     return;
                 }
-                if (editStartRaw) editStartRaw.value = window.formatTaskDateTime(neighbors.prev.date, neighbors.prev.end_time);
+                if (editStartRaw) editStartRaw.value = window.formatTaskDateTime(neighbors.prev.end_date || neighbors.prev.date, neighbors.prev.end_time);
             };
 
             const fillEditEndFromNextStart = async () => {
