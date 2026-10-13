@@ -439,6 +439,8 @@
         .goal-bar.is-limit.is-over > span { background: linear-gradient(90deg, #E11D48, #FB7185); }
         [data-theme="dark"] .goal-bar { background: rgba(212, 175, 55, 0.10); }
         [data-theme="dark"] .goal-streak { color: #6EE7B7; }
+        .log-streak { color: #047857; font-weight: 600; }
+        [data-theme="dark"] .log-streak { color: #6EE7B7; }
         .pull-sync {
             position: fixed; top: env(safe-area-inset-top, 0px); left: 50%; z-index: 1500;
             transform: translate(-50%, -48px); opacity: 0; pointer-events: none;
@@ -1232,7 +1234,7 @@
         <section class="day-timeline-card luxury-card rounded-2xl px-4 py-4 md:px-6 md:py-5 mb-6 md:mb-8" aria-labelledby="dayTimelineTitle">
             <div class="flex items-baseline justify-between gap-3 mb-3">
                 <h3 id="dayTimelineTitle" class="text-xs font-semibold tracking-[0.16em] text-gray-500 uppercase">Your day<span class="hidden sm:inline">, hour by hour</span></h3>
-                <span class="text-[11px] text-gray-400">{% if day_timeline.logged_pct >= 99.95 %}Fully logged{% else %}{{ day_timeline.logged_hours }}h of 24h logged{% endif %}</span>
+                <span class="text-[11px] text-gray-400 text-right">{% if day_timeline.logged_pct >= 99.95 %}Fully logged{% else %}{{ day_timeline.logged_hours }}h of 24h logged{% endif %}{% if log_streak and log_streak.current > 1 %}<span class="log-streak" title="Consecutive fully-logged days{% if log_streak.best > log_streak.current %} (best: {{ log_streak.best }}){% endif %}"> · {{ log_streak.current }} days in a row</span>{% endif %}</span>
             </div>
             <div class="day-timeline" role="group" aria-label="Activities by time of day">
                 {% for seg in day_timeline.segments %}

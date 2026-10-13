@@ -548,3 +548,36 @@ def find_overlaps(df: pd.DataFrame, start_date: date, end_date: date, limit: int
         if latest is None or row.end_datetime > latest.end_datetime:
             latest = row
     return {"pairs": pairs[:limit], "count": len(pairs), "minutes": int(round(total_minutes))}
+
+
+def logging_streak(df: pd.DataFrame, day: date, today: Optional[date] = None, max_days: int = 366) -> Dict[str, int]:
+    """Consecutive fully-logged days (>= 23.5h) ending on ``day``, plus the best run in the window.
+
+    ``day`` only counts if it's complete; if it isn't (e.g. today, still in progress)
+    the run is counted up to the day before instead of being broken.
+    """
+    today = today or date.today()
+    if df.empty:
+        return {"current": 0, "best": 0}
+    window = df[(df["date"] <= day) & (df["date"] > day - timedelta(days=max_days))]
+    if window.empty:
+        return {"current": 0, "best": 0}
+    totals = window.groupby("date")["duration"].sum()
+    complete = {d for d, minutes in totals.items() if float(minutes) >= FULL_DAY_MINUTES}
+
+    current = 0
+    cursor = day if day in complete else day - timedelta(days=1)
+    if day not in complete and day != today:
+        # A past day that isn't fully logged ends the run.
+        cursor = None
+    while cursor is not None and cursor in complete:
+        current += 1
+        cursor -= timedelta(days=1)
+
+    best = run = 0
+    previous = None
+    for d in sorted(complete):
+        run = run + 1 if previous is not None and d - previous == timedelta(days=1) else 1
+        best = max(best, run)
+        previous = d
+    return {"current": current, "best": max(best, current)}

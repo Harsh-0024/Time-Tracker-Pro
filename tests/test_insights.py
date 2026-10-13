@@ -247,3 +247,22 @@ def test_find_overlaps(db_path):
 
     # The day before only has Sleep: nothing reported there.
     assert find_overlaps(df, date(2026, 9, 19), date(2026, 9, 19))["count"] == 0
+
+
+def test_logging_streak(db_path):
+    from time_tracker_pro.services.insights import logging_streak
+
+    uid = make_user(db_path)
+    for day in ("2026-09-14", "2026-09-15", "2026-09-16", "2026-09-18", "2026-09-19"):
+        nxt = {"2026-09-14": "2026-09-15", "2026-09-15": "2026-09-16", "2026-09-16": "2026-09-17",
+               "2026-09-18": "2026-09-19", "2026-09-19": "2026-09-20"}[day]
+        add_log(db_path, uid, day, "00:00:00", nxt, "00:00:00")  # a full 24h day
+    add_log(db_path, uid, "2026-09-20", "00:00:00", "2026-09-20", "10:00:00")  # partial
+    df = _df(db_path, uid)
+
+    # Today (20th) is partial and in progress: run counts 18-19.
+    assert logging_streak(df, date(2026, 9, 20), today=date(2026, 9, 20)) == {"current": 2, "best": 3}
+    # Viewing the 20th later (not today): the partial day ends the run.
+    assert logging_streak(df, date(2026, 9, 20), today=date(2026, 9, 25)) == {"current": 0, "best": 3}
+    assert logging_streak(df, date(2026, 9, 16), today=date(2026, 9, 25)) == {"current": 3, "best": 3}
+    assert logging_streak(df, date(2026, 9, 17), today=date(2026, 9, 25))["current"] == 0

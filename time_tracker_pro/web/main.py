@@ -39,6 +39,7 @@ from ..services.insights import (
     build_tag_goal_progress,
     build_insights,
     goal_streaks,
+    logging_streak,
     task_name_suggestions,
 )
 from ..core.numbers import round_half_up
@@ -308,6 +309,7 @@ def dashboard():
         recent = build_goal_progress(recent_df, "week", recent_start, selected_date, goals)
         goal_progress["recent"] = recent["calendar"] if recent else None
     overlaps = find_overlaps(df, start_date, end_date)
+    log_streak = logging_streak(df, selected_date) if period == "day" else None
     tag_goals = get_tag_goals(db_name, user_id)
     if tag_goals:
         tag_progress = build_tag_goal_progress(period_df, period, start_date, end_date, tag_goals)
@@ -419,6 +421,7 @@ def dashboard():
             logged_coverage=logged_coverage,
             goal_progress=goal_progress,
             overlaps=overlaps,
+            log_streak=log_streak,
             day_note=period_notes.get(selected_date, "") if period == "day" else None,
             period_notes=period_notes if period != "day" else None,
             period_notes_json={day.isoformat(): text for day, text in period_notes.items()},
