@@ -59,7 +59,7 @@ Verification: 240 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop swee
 - Graphs: 'Sleep per night' focus (per wake-up day, midnight splits merged; saveable as a view). Unlogged nights are gaps, not 0h (averages, weekday bars, compare note, moving average, last 7 days); cards say Avg/Night, Longest Night.
 - Week strip (day view) marks days that have a note with a small dot.
 - BUG (graphs, pre-existing): range pills re-zoomed the loaded payload, so stats/weekday/calendar described the old range. Now refetch.
-- Graphs: tapped-point popup (phones) shows that day's note; missing average shows '–'. README: 'How sleep is counted'.
+- Graphs: chart tooltip (desktop) and tapped-point popup (phones) show that day's note; missing average shows '–'. README: 'How sleep is counted'.
 - Emails: plain-text verification email states the expiry; (c) year no longer hard-coded 2026. Graphs: C = compare shortcut. Page titles unified ('X · Time Tracker Pro').
 - a11y: trend chart canvas has a live summary label; legend-backed modal pies hidden from screen readers.
 - Graphs deep links: /graphs?focus=&search=&range= (applied once, then removed from the URL). Sleep insight has 'Trend ->'.
