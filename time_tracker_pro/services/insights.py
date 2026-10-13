@@ -805,3 +805,22 @@ def build_sleep_goal_progress(
             state = "met" if hours[d] >= target else "missed"
         calendar[d] = {"sleep": state, "sleep_hours": round_half_up(hours.get(d, 0.0), 1)}
     return {"item": item, "calendar": calendar}
+
+
+def recent_goal_averages(df: pd.DataFrame, today: Optional[date] = None, days: int = 30) -> Dict[str, Optional[float]]:
+    """What the user actually did over the last ``days`` days, shown next to the goal
+    fields in Settings: Growth and Waste hours per logged day, sleep per night logged."""
+    today = today or date.today()
+    start = today - timedelta(days=days - 1)
+    result: Dict[str, Optional[float]] = {"growth": None, "waste": None, "sleep": None}
+    if df.empty:
+        return result
+    window = df[(df["date"] >= start) & (df["date"] <= today)]
+    logged_days = int(window["date"].nunique()) if not window.empty else 0
+    if logged_days:
+        result["growth"] = round_half_up(float(window[_growth_mask(window)]["duration"].sum()) / logged_days / 60.0, 1)
+        result["waste"] = round_half_up(float(window[_waste_mask(window)]["duration"].sum()) / logged_days / 60.0, 1)
+    nights = sleep_minutes_by_night(df, start, today)
+    if nights:
+        result["sleep"] = round_half_up(sum(nights.values()) / len(nights) / 60.0, 1)
+    return result

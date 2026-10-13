@@ -40,6 +40,7 @@ from ..services.insights import (
     build_insights,
     build_sleep_goal_progress,
     goal_streaks,
+    recent_goal_averages,
     logging_streak,
     task_name_suggestions,
 )
@@ -130,6 +131,7 @@ def settings():
         profile_success=session.pop("profile_success", None),
         pending_email=session.get("pending_email_new"),
         goals=get_user_goals(db_name, user_id),
+        goal_recent=recent_goal_averages(fetch_local_data(db_name, user_id)),
         tag_goals={g["tag"]: g for g in get_tag_goals(db_name, user_id)},
         goal_tags=GOAL_TAGS,
         goals_error=session.pop("goals_error", None),

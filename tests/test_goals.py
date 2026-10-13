@@ -235,3 +235,26 @@ def test_json_export_includes_goals(db_path, login):
     data = json.loads(client.get("/api/export-csv?mode=all&format=json").get_data(as_text=True))
     assert data["goals"] == {"growth_hours": 4.0, "waste_limit_hours": None, "sleep_hours": 7.5}
     assert data["category_goals"] == [{"tag": "Soul", "kind": "min", "hours": 1.0}]
+
+
+def test_settings_shows_recent_averages_next_to_goals(db_path, login):
+    from datetime import timedelta
+
+    from time_tracker_pro.services.insights import recent_goal_averages
+
+    uid = make_user(db_path)
+    today = date(2026, 9, 20)
+    for offset in (1, 2):  # two logged days, 3h growth + 1h waste each, 7h sleep each night
+        day = today - timedelta(days=offset)
+        prev = day - timedelta(days=1)
+        add_log(db_path, uid, str(prev), "23:00:00", str(day), "06:00:00", task="Sleep", urg=0, imp=1)
+        add_log(db_path, uid, str(day), "09:00:00", str(day), "12:00:00", task="Study", urg=0, imp=1)
+        add_log(db_path, uid, str(day), "20:00:00", str(day), "21:00:00", task="Scrolling", urg=0, imp=0)
+    averages = recent_goal_averages(fetch_local_data(db_path, uid), today=today)
+    # Logged days: Sep 17 (the first night's start), 18, 19 -> 2h waste over 3 days.
+    assert averages["sleep"] == 7.0 and averages["waste"] == 0.7
+    assert recent_goal_averages(fetch_local_data(db_path, uid), today=date(2027, 1, 1)) == {
+        "growth": None, "waste": None, "sleep": None,
+    }
+    html = login(uid).get("/settings").get_data(as_text=True)
+    assert 'name="sleep_hours"' in html
