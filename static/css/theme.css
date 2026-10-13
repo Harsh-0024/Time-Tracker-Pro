@@ -666,3 +666,31 @@
         scroll-behavior: auto !important;
     }
 }
+
+/* ── iOS Safari form fixes (only iOS matches -webkit-touch-callout) ──
+   1. Focusing a field with text under 16px makes iOS zoom the whole page (and it stays zoomed),
+      so form controls use 16px there.
+   2. Native date/time inputs get an intrinsic width that ignores width:100% (they spilled out of
+      the Add task panel), centre their value, and collapse when empty. */
+@supports (-webkit-touch-callout: none) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"] {
+        -webkit-appearance: none;
+        appearance: none;
+        display: block;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 2.75rem;
+    }
+    input[type="date"]::-webkit-date-and-time-value,
+    input[type="time"]::-webkit-date-and-time-value,
+    input[type="datetime-local"]::-webkit-date-and-time-value {
+        text-align: left;
+    }
+}
