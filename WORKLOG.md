@@ -7,20 +7,25 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-14 04:00 IST: main session active (owner resumed; keep going until 'stop').
+- 2026-10-14 04:10 IST: main session active (owner resumed; keep going until 'stop').
 
 ## 2026-10-14 summary - most important first
 1. BUGS fixed: graphs drew every line too high when 'vs previous period' was on at page load (Chart.js race,
    reproduced by stepping the animator); the full-log pie ignored the search box (0.0h stats next to a full pie);
-   matrix cards on phones misaligned when a subtitle wrapped; Waste 'at least' goals got red dots.
-2. SLEEP (from tasks named exactly "Sleep", nights merged across midnight, counted on the wake-up day, naps < 3h ignored):
-   day view 'Sleep last night'; week/month hours a night + typical bed/wake times; graphs 'Sleep per night' focus;
-   a Sleep goal in Settings > Daily Goals (dots per night + graph goal line). New nullable column user_goals.sleep_hours (auto-added).
+   phones: Settings category-goal names squeezed to ~36px, graphs 'Tasks in this graph' stats spilling out of
+   their cards, matrix cards misaligned when a subtitle wrapped; Waste 'at least' goals got red dots.
+2. SLEEP (tasks named exactly "Sleep", nights merged across midnight, counted on the wake-up day, naps < 3h ignored):
+   day view 'Sleep last night'; week/month hours a night + typical bed/wake times (±spread); graphs 'Sleep per
+   night' focus (unlogged nights are gaps, not 0h); Sleep goal in Settings > Daily Goals (dots per night + graph
+   goal line). New nullable column user_goals.sleep_hours (auto-added on startup).
 3. Insights: 'Biggest changes vs last week/month' for activities outside the top five.
-4. Graphs: deep links (/graphs?focus=sleep&range=90, ?search=gym), CSV download of the plotted days, no-match message,
-   long ranges drawn as a thin line on narrow charts.
-5. Perf/cleanup: shared toast/error/form-busy scripts cached as static files; unused JS removed; JSON export now includes goals.
-Verification: 236 tests (py3.14 + 3.12), browser pane + iPhone 17 Pro simulator. Nothing pushed.
+4. Settings: each goal shows your last-30-days average next to it.
+5. Graphs: deep links (/graphs?focus=sleep&range=90, ?search=gym), CSV download of the plotted days, no-match
+   message, long ranges drawn as a thin line on narrow charts, C = compare shortcut.
+6. Small: week strip marks days with a note; one activity's entries don't show the day's Missing time card;
+   Cache-Control: private, no-cache on pages/JSON; JSON export includes goals; a11y labels; consistent page titles.
+Verification: 240 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop sweeps) + iPhone 17 Pro simulator
+(light + dark). Nothing pushed.
 
 ## 2026-10-13 run (main session)
 - pyflakes cleanups outside sync
