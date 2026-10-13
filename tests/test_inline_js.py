@@ -30,9 +30,8 @@ LOGGED_IN_PAGES = [
 ANON_PAGES = ["/login", "/register", "/forgot-password"]
 
 
-def _check(html: str, label: str) -> None:
+def _check(html: str, label: str) -> int:
     scripts = SCRIPT_RE.findall(html)
-    assert scripts or label.startswith("/no-such"), f"no inline scripts found on {label}"
     for i, body in enumerate(scripts):
         fd, path = tempfile.mkstemp(suffix=".js")
         try:
@@ -42,17 +41,18 @@ def _check(html: str, label: str) -> None:
         finally:
             os.remove(path)
         assert result.returncode == 0, f"{label} script #{i}: {result.stderr[:500]}"
+    return len(scripts)
 
 
 def test_inline_scripts_parse(db_path, login, app):
     uid = make_user(db_path, role="admin")
     add_log(db_path, uid, "2026-09-20", "09:00:00", "2026-09-20", "10:00:00", task="Work")
     client = login(uid)
-    for url in LOGGED_IN_PAGES:
-        _check(client.get(url).get_data(as_text=True), url)
+    checked = sum(_check(client.get(url).get_data(as_text=True), url) for url in LOGGED_IN_PAGES)
     anon = app.test_client()
-    for url in ANON_PAGES:
-        _check(anon.get(url).get_data(as_text=True), url)
+    checked += sum(_check(anon.get(url).get_data(as_text=True), url) for url in ANON_PAGES)
+    # Most page code lives in static/js now; make sure the regex still finds what is left inline.
+    assert checked >= 5
 
 
 def test_static_scripts_parse():
