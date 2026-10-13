@@ -310,6 +310,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
   with the Tailwind CLI would be faster, but classes built in JS strings need care, so I left it.
 
 ## Ideas / TODO queue
+- (question, 2026-10-14) Add task pre-fills Start from the last entry's end rounded DOWN to the minute; when logs carry seconds (e.g. 23:21:40) the new entry 'overlaps' the previous one by 40s and the overlap warning lists it. Rounding the pre-fill up (or ignoring <1 min overlaps) would fix it - time handling, so left for you.
 - (question, 22:20 run) Installed app / long-lived tab: the dashboard is server-rendered for the day it was loaded. Reopen the app the next morning (page still in memory) and it shows yesterday as 'today' (Today button hidden, 'Today so far' copy) until you pull to sync/reload. A visibilitychange handler that reloads when the local date changed (or after ~30 min hidden) would fix it. Not done: day rollover is time handling.
 - (done) Chart.js 4.5.1 loaded with an SRI integrity hash; if you bump the version, update integrity= in dashboard.html and graphs.html.
 - (question) DISABLE_CLOUD_SYNC is truthy-checked (sync.py, __init__.py): DISABLE_CLOUD_SYNC=0 or =false DISABLES sync. Not changed: if a deployment sets =0 today, fixing it would switch background sync on. Check your env, then parse it like SESSION_COOKIE_SECURE.
