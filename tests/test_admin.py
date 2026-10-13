@@ -87,8 +87,10 @@ def test_admin_cannot_delete_admin_listed_in_admin_emails(db_path, login, monkey
     boss = make_user(db_path, username="boss", email="boss@example.com", role="user")
     resp = login(admin).post("/admin/delete-user", data={"user_id": str(boss), "message": "bye"})
     assert "cannot+delete+another+admin" in resp.headers["Location"]
-    import sqlite3
-    assert sqlite3.connect(db_path).execute("SELECT COUNT(*) FROM users WHERE id = ?", (boss,)).fetchone()[0] == 1
+    from contextlib import closing
+
+    with closing(sqlite3.connect(db_path)) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM users WHERE id = ?", (boss,)).fetchone()[0] == 1
 
 
 def test_admin_list_shows_email_admins_as_admin(db_path, login, monkeypatch):

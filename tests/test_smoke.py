@@ -244,10 +244,10 @@ def test_graphs_has_calendar_card(db_path, login):
 
 def test_service_worker_and_offline_page_are_public(app):
     client = app.test_client()
-    resp = client.get("/sw.js")
-    assert resp.status_code == 200
-    assert resp.mimetype == "text/javascript" and resp.headers["Cache-Control"] == "no-cache"
-    body = resp.get_data(as_text=True)
+    with client.get("/sw.js") as resp:
+        assert resp.status_code == 200
+        assert resp.mimetype == "text/javascript" and resp.headers["Cache-Control"] == "no-cache"
+        body = resp.get_data(as_text=True)
     assert "const OFFLINE_URL = '/offline';" in body and "mode !== 'navigate'" in body
     resp = client.get("/offline")
     assert resp.status_code == 200 and "You're offline" in resp.get_data(as_text=True)
@@ -259,9 +259,11 @@ def test_pages_and_json_are_private_no_cache(client_with_data):
     for url in ("/", "/graphs", "/api/tags"):
         assert client_with_data.get(url).headers["Cache-Control"] == "private, no-cache", url
     # Static files and the service worker keep their own caching.
-    assert client_with_data.get("/sw.js").headers["Cache-Control"] == "no-cache"
+    with client_with_data.get("/sw.js") as resp:
+        assert resp.headers["Cache-Control"] == "no-cache"
     html = client_with_data.get("/settings").get_data(as_text=True)
     import re
 
     css = re.search(r'/static/css/theme\.css\?v=\d+', html).group(0)
-    assert "max-age=31536000" in client_with_data.get(css).headers["Cache-Control"]
+    with client_with_data.get(css) as resp:
+        assert "max-age=31536000" in resp.headers["Cache-Control"]

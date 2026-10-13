@@ -360,8 +360,10 @@ def test_sleep_last_night_on_day_view(db_path, login):
     assert "avg_hours" not in sleep_last_night(df, date(2026, 9, 15))  # only 1 night before
 
     import sqlite3
+    from contextlib import closing
 
-    uid = sqlite3.connect(db_path).execute("SELECT id FROM users").fetchone()[0]
+    with closing(sqlite3.connect(db_path)) as conn:
+        uid = conn.execute("SELECT id FROM users").fetchone()[0]
     html = login(uid).get("/?date=2026-09-17").get_data(as_text=True)
     assert "Sleep last night" in html and "11:30 PM – 6:30 AM · −1.0h vs your last 3 nights" in html
     import json

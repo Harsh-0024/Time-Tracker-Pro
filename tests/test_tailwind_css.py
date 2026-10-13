@@ -37,13 +37,15 @@ def _escape(token: str) -> str:
 
 
 def test_template_classes_are_compiled():
-    css = open(os.path.join(ROOT, "static", "css", "tailwind.css"), encoding="utf-8").read()
+    with open(os.path.join(ROOT, "static", "css", "tailwind.css"), encoding="utf-8") as fh:
+        css = fh.read()
     missing = {}
     sources = glob.glob(os.path.join(ROOT, "templates", "*.html")) + glob.glob(
         os.path.join(ROOT, "static", "js", "**", "*.js"), recursive=True
     )
     for path in sources:
-        source = open(path, encoding="utf-8").read()
+        with open(path, encoding="utf-8") as fh:
+            source = fh.read()
         for match in re.finditer(r'class="([^"]*)"', source):
             value = re.sub(r"\{\{.*?\}\}|\{%.*?%\}|\$\{.*?\}", " ", match.group(1))
             for token in value.split():
