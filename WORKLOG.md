@@ -60,7 +60,7 @@ Verification: 243 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop swee
 - Phones: matrix cards keep hours aligned per row when a subtitle wraps (Waste at 375px).
 - BUG: full-log pie ignored the search box (stats said 0.0h next to a full pie); now follows it, empty pie area collapses.
 - Graphs: a search with no matches says so (with Clear search) instead of a silent flat line.
-- Graphs: 'Sleep per night' focus (per wake-up day, midnight splits merged; saveable as a view). Unlogged nights are gaps, not 0h (averages, weekday bars, compare note, moving average, last 7 days); cards say Avg/Night, Longest Night.
+- Graphs: 'Sleep per night' focus (per wake-up day, midnight splits merged; saveable as a view). Unlogged nights are gaps, not 0h (averages, weekday bars, by time of day, compare note, moving average, last 7 days); cards say Avg/Night, Longest Night.
 - Week strip (day view) marks days that have a note with a small dot.
 - BUG (graphs, pre-existing): range pills re-zoomed the loaded payload, so stats/weekday/calendar described the old range. Now refetch.
 - Graphs: chart tooltip (desktop) and tapped-point popup (phones) show that day's note; missing average shows '–'. README: 'How sleep is counted'.
