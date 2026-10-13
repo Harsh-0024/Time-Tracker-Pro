@@ -307,6 +307,7 @@ def test_sleep_summary_circular_average(db_path):
     ]
     result = sleep_summary(_sleep_df(db_path, rows), date(2026, 9, 14), date(2026, 9, 20))
     assert result["bedtime"] == "12:00 AM"  # 23:00, 01:00, 00:00 -> midnight, not noon
+    assert result["bedtime_spread_min"] == 50  # circular SD of +-1h around midnight
     assert result["avg_hours"] == 6.7
     assert result["shortest"] == {"date": date(2026, 9, 16), "hours": 6.0}
 
@@ -333,7 +334,8 @@ def test_week_dashboard_shows_sleep(db_path, login):
         add_log(db_path, uid, f"2026-09-{day - 1}", "23:30:00", f"2026-09-{day}", "00:00:00", task="Sleep")
         add_log(db_path, uid, f"2026-09-{day}", "00:00:00", f"2026-09-{day}", "07:00:00", task="Sleep")
     html = login(uid).get("/?date=2026-09-15&period=week").get_data(as_text=True)
-    assert "7.5h a night" in html and "to bed ~11:30 PM · up ~7:00 AM" in html
+    assert "7.5h a night" in html and "up ~7:00 AM" in html
+    assert "to bed ~11:30 PM ·" in html  # same bedtime every night: no ± spread shown
     assert 'href="/graphs?focus=sleep&range=90"' in html
     summary = json.loads(re.search(r'id="periodSummaryText">(.*?)</script>', html, re.S).group(1))
     assert "Sleep: 7.5h a night (bed ~11:30 PM, up ~7:00 AM)" in summary

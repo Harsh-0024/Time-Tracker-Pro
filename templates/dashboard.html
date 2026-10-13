@@ -1047,7 +1047,9 @@
                             <div class="insight-stat-label">Sleep</div>
                             <div class="insight-stat-value text-base">{{ sl.avg_hours }}h a night <span class="insight-stat-sub">{{ sl.nights }} nights</span></div>
                             {% if sl.bedtime or sl.wake %}
-                            <div class="insight-note">{% if sl.bedtime %}to bed ~{{ sl.bedtime | trim('0') }}{% endif %}{% if sl.bedtime and sl.wake %} · {% endif %}{% if sl.wake %}up ~{{ sl.wake | trim('0') }}{% endif %}</div>
+                            <div class="insight-note">{% if sl.bedtime %}to bed ~{{ sl.bedtime | trim('0') }}{% if sl.bedtime_spread_min %} <span title="How much your bedtime moves around (circular standard deviation)">(±{{ sl.bedtime_spread_min | human_minutes }})</span>{% endif %}{% endif %}{% if sl.bedtime and sl.wake %} · {% endif %}{% if sl.wake %}up ~{{ sl.wake | trim('0') }}{% endif %}</div>
+                            {% else %}
+                            <div class="insight-note">Bed and wake times vary too much to average.</div>
                             {% endif %}
                             <div class="insight-note mt-1 flex flex-wrap gap-x-3">
                                 <a class="hover:underline" href="/?date={{ sl.shortest.date }}&period=day">Shortest: {{ sl.shortest.date.strftime('%a, %b %-d') }} · {{ sl.shortest.hours }}h</a>

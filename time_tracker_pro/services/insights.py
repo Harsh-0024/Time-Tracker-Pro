@@ -681,6 +681,14 @@ def _typical_clock(times: List[pd.Timestamp]) -> Optional[str]:
     return _clock_label((math.atan2(y, x) % (2 * math.pi)) * 1440.0 / (2 * math.pi))
 
 
+def _clock_spread_minutes(times: List[pd.Timestamp]) -> int:
+    """Circular standard deviation of clock times, in minutes (rounded to 5)."""
+    angles = [2 * math.pi * (t.hour * 60 + t.minute + t.second / 60.0) / 1440.0 for t in times]
+    r = math.hypot(sum(math.cos(a) for a in angles), sum(math.sin(a) for a in angles)) / len(angles)
+    spread = math.sqrt(-2.0 * math.log(max(min(r, 1.0), 1e-9))) * 1440.0 / (2 * math.pi)
+    return int(round(spread / 5.0) * 5)
+
+
 def sleep_summary(
     df: pd.DataFrame,
     start_date: date,
@@ -712,6 +720,8 @@ def sleep_summary(
         "wake": _typical_clock([d["longest"]["end"] for d in days.values()]),
         "shortest": {"date": shortest_day, "hours": round_half_up(days[shortest_day]["minutes"] / 60.0, 1)},
     }
+    if result["bedtime"]:
+        result["bedtime_spread_min"] = _clock_spread_minutes([d["longest"]["start"] for d in days.values()])
     return result
 
 
