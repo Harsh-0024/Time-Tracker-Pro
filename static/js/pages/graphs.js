@@ -2499,7 +2499,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             if (!chartInstance) return;
             const datasets = chartInstance.data.datasets || [];
             const idx = datasets.findIndex(d => d.__kind === 'prev');
-            if (idx >= 0) { datasets.splice(idx, 1); chartInstance.update('none'); }
+            if (idx >= 0) { datasets.splice(idx, 1); chartInstance.update(); }
         }
 
         function isoMinusDays(iso, days) {
@@ -2556,7 +2556,10 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             const datasets = chartInstance.data.datasets;
             const idx = datasets.findIndex(d => d.__kind === 'prev');
             if (idx >= 0) datasets[idx] = dataset; else datasets.push(dataset);
-            chartInstance.update('none');
+            // Animated on purpose: after update('none') an entry/update animation that is still
+            // running finishes at its old targets (laid out for the old y max), so with the overlay
+            // raising the axis every line ended up drawn too high. update() re-targets it.
+            chartInstance.update();
 
             const windowValues = values.slice(startIndex, endIndex + 1).map(v => Number(v) || 0);
             const nowAvg = windowValues.reduce((a, b) => a + b, 0) / Math.max(1, span);
