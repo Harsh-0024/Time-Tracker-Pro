@@ -61,6 +61,7 @@ Verification: 240 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop swee
 - BUG (graphs, pre-existing): range pills re-zoomed the loaded payload, so stats/weekday/calendar described the old range. Now refetch.
 - Graphs: chart tooltip (desktop) and tapped-point popup (phones) show that day's note; missing average shows '–'. README: 'How sleep is counted'.
 - PERF (regression from my 10-13 move of page scripts to static files): first loads fetched ~190KB scripts uncompressed; versioned static JS/CSS now gzipped (38KB).
+- Times shown without leading zeros in insights, full log and graphs review (display only).
 - Auth pages: email-domain chips in a 2x2 grid (was 3 + 1 orphan).
 - Emails: plain-text verification email states the expiry; (c) year no longer hard-coded 2026. Graphs: C = compare shortcut. Page titles unified ('X · Time Tracker Pro').
 - a11y: trend chart canvas has a live summary label; legend-backed modal pies hidden from screen readers.
