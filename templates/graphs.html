@@ -760,6 +760,7 @@
 
         const firstLogDateStr = "{{ first_log_date or '' }}";
         const USER_GOALS = {{ (goals or {}) | tojson }};
+        const USER_TAG_GOALS = {{ (tag_goals or []) | tojson }};
 
         // Daily goal shown as a reference line: Growth target on the Growth (q2) graph,
         // Waste limit on the Waste-quadrant (q4) graph. Not drawn for filtered/search views.
@@ -770,6 +771,12 @@
             }
             if (metricKey === 'q4' && USER_GOALS.waste_limit_hours != null) {
                 return { value: Number(USER_GOALS.waste_limit_hours), label: 'Limit', color: '#E11D48' };
+            }
+            // Category goals (Settings > Daily Goals) on the matching category graph.
+            const tagGoal = USER_TAG_GOALS.find(g => String(g.tag || '').toLowerCase() === metricKey);
+            if (tagGoal) {
+                const isMin = tagGoal.kind === 'min';
+                return { value: Number(tagGoal.hours), label: isMin ? 'Goal' : 'Limit', color: isMin ? '#10B981' : '#E11D48' };
             }
             return null;
         }

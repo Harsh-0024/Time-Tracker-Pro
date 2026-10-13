@@ -530,4 +530,5 @@ def graphs():
         is_admin=is_admin,
         first_log_date=(first_log_date.strftime("%Y-%m-%d") if first_log_date else ""),
         goals=get_user_goals(db_name, user_id),
+        tag_goals=get_tag_goals(db_name, user_id),
     )

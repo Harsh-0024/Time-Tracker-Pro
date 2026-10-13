@@ -93,3 +93,10 @@ def test_copy_summary_mentions_tag_goals(db_path, login):
     html = login(uid).get("/?date=2026-09-20").get_data(as_text=True)
     raw = re.search(r'id="periodSummaryText">(.*?)</script>', html, re.S).group(1)
     assert "Soul ≥ 1.0h: 2.0h ✓" in json.loads(raw)
+
+
+def test_graphs_page_exposes_tag_goals(db_path, login):
+    uid = make_user(db_path)
+    replace_tag_goals(db_path, uid, [{"tag": "Soul", "kind": "min", "hours": 1.0}])
+    html = login(uid).get("/graphs").get_data(as_text=True)
+    assert 'const USER_TAG_GOALS = [{"hours": 1.0, "kind": "min", "tag": "Soul"}];' in html
