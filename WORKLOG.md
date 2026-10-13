@@ -10,7 +10,8 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - 2026-10-14 resumed after usage limit: main session active (owner resumed; keep going until 'stop').
 
 ## 2026-10-14 summary - most important first
-1. BUGS fixed: graphs drew every line too high when 'vs previous period' was on at page load (Chart.js race,
+1. BUGS fixed: graphs kept the previous (longer) range's Total/Avg/Best, weekday bars and calendar after
+   switching to a shorter range (pre-existing; now refetches); graphs drew every line too high when 'vs previous period' was on at page load (Chart.js race,
    reproduced by stepping the animator); the full-log pie ignored the search box (0.0h stats next to a full pie);
    phones: Settings category-goal names squeezed to ~36px, graphs 'Tasks in this graph' stats spilling out of
    their cards, matrix cards misaligned when a subtitle wrapped; Waste 'at least' goals got red dots.
@@ -57,6 +58,8 @@ Verification: 240 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop swee
 - Graphs: a search with no matches says so (with Clear search) instead of a silent flat line.
 - Graphs: 'Sleep per night' focus (per wake-up day, midnight splits merged; saveable as a view). Unlogged nights are gaps, not 0h (averages, weekday bars, compare note, moving average, last 7 days); cards say Avg/Night, Longest Night.
 - Week strip (day view) marks days that have a note with a small dot.
+- BUG (graphs, pre-existing): range pills re-zoomed the loaded payload, so stats/weekday/calendar described the old range. Now refetch.
+- Graphs: tapped-point popup (phones) shows that day's note; missing average shows '–'. README: 'How sleep is counted'.
 - Emails: plain-text verification email states the expiry; (c) year no longer hard-coded 2026. Graphs: C = compare shortcut. Page titles unified ('X · Time Tracker Pro').
 - a11y: trend chart canvas has a live summary label; legend-backed modal pies hidden from screen readers.
 - Graphs deep links: /graphs?focus=&search=&range= (applied once, then removed from the URL). Sleep insight has 'Trend ->'.
