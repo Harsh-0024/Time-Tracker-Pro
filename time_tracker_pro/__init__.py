@@ -82,6 +82,19 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
 
     app.jinja_env.filters["short_date"] = _short_date
 
+    def _human_minutes(value: Any) -> str:
+        """95 -> '1h 35m', 40 -> '40 min'."""
+        try:
+            total = max(0, int(round(float(value or 0))))
+        except (TypeError, ValueError):
+            return ""
+        hours, minutes = divmod(total, 60)
+        if not hours:
+            return f"{minutes} min"
+        return f"{hours}h {minutes}m" if minutes else f"{hours}h"
+
+    app.jinja_env.filters["human_minutes"] = _human_minutes
+
     from .web.admin import bp as admin_bp
     from .web.api import bp as api_bp
     from .web.auth import bp as auth_bp

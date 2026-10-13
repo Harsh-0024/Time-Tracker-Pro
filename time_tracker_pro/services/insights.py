@@ -512,3 +512,39 @@ def build_tag_goal_progress(
             entry[f"{key}_hours"] = round_half_up(h, 1)
         calendar.append(entry)
     return {"items": items, "calendar": calendar}
+
+
+def find_overlaps(df: pd.DataFrame, start_date: date, end_date: date, limit: int = 20) -> Dict[str, Any]:
+    """Logs that overlap an earlier log, for entries starting in [start_date, end_date].
+
+    Each overlapping pair is time counted twice in every total. Read-only:
+    nothing is changed, the list just points at rows to fix in the sheet.
+    """
+    empty = {"pairs": [], "count": 0, "minutes": 0}
+    if df.empty or "start_datetime" not in df.columns:
+        return empty
+    # Include the day before so a late-night log can be caught overlapping.
+    window = df[(df["date"] >= start_date - timedelta(days=1)) & (df["date"] <= end_date)]
+    if window.empty:
+        return empty
+    window = window.sort_values(["start_datetime", "end_datetime"])
+    pairs: List[Dict[str, Any]] = []
+    total_minutes = 0.0
+    latest = None  # the row reaching furthest so far
+    for row in window.itertuples(index=False):
+        if latest is not None and row.start_datetime < latest.end_datetime and row.date >= start_date:
+            overlap_end = min(row.end_datetime, latest.end_datetime)
+            minutes = (overlap_end - row.start_datetime).total_seconds() / 60.0
+            if minutes > 0:
+                total_minutes += minutes
+                pairs.append(
+                    {
+                        "date": row.date,
+                        "first": {"task": str(latest.task or "").strip(), "start": latest.start_time, "end": latest.end_time},
+                        "second": {"task": str(row.task or "").strip(), "start": row.start_time, "end": row.end_time},
+                        "minutes": int(round(minutes)),
+                    }
+                )
+        if latest is None or row.end_datetime > latest.end_datetime:
+            latest = row
+    return {"pairs": pairs[:limit], "count": len(pairs), "minutes": int(round(total_minutes))}

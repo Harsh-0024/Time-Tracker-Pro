@@ -161,3 +161,16 @@ def test_top_category_share_uses_unrounded_hours(db_path, login):
     add_log(db_path, uid, "2026-03-04", "15:30", "2026-03-04", "18:15", task="Gym", tags="Soul", urg=0, imp=1)
     html = login(uid).get("/?date=2026-03-04&period=day").get_data(as_text=True)
     assert "43.9% of period" in html
+
+
+def test_dashboard_lists_overlaps(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-20", "13:00:00", "2026-09-20", "18:00:00", task="Trip")
+    add_log(db_path, uid, "2026-09-20", "14:00:00", "2026-09-20", "15:35:00", task="Call")
+    client = login(uid)
+    html = client.get("/?date=2026-09-20").get_data(as_text=True)
+    assert "overlapping entry on this day" in html and "1h 35m counted twice" in html
+    week = client.get("/?date=2026-09-20&period=week").get_data(as_text=True)
+    assert "overlapping entry this week" in week and "/?date=2026-09-20&period=day" in week
+    add_log(db_path, uid, "2026-09-21", "09:00:00", "2026-09-21", "10:00:00", task="Solo")
+    assert "counted twice" not in client.get("/?date=2026-09-21").get_data(as_text=True)

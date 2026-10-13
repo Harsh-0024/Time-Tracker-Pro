@@ -33,6 +33,7 @@ from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
 from ..services.insights import (
     build_daily_breakdown,
+    find_overlaps,
     build_day_timeline,
     build_goal_progress,
     build_tag_goal_progress,
@@ -306,6 +307,7 @@ def dashboard():
         recent_df = df[(df["date"] >= recent_start) & (df["date"] <= selected_date)] if not df.empty else df
         recent = build_goal_progress(recent_df, "week", recent_start, selected_date, goals)
         goal_progress["recent"] = recent["calendar"] if recent else None
+    overlaps = find_overlaps(df, start_date, end_date)
     tag_goals = get_tag_goals(db_name, user_id)
     if tag_goals:
         tag_progress = build_tag_goal_progress(period_df, period, start_date, end_date, tag_goals)
@@ -416,6 +418,7 @@ def dashboard():
             daily_breakdown=daily_breakdown,
             logged_coverage=logged_coverage,
             goal_progress=goal_progress,
+            overlaps=overlaps,
             day_note=period_notes.get(selected_date, "") if period == "day" else None,
             period_notes=period_notes if period != "day" else None,
             period_notes_json={day.isoformat(): text for day, text in period_notes.items()},

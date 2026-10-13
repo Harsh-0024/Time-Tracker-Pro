@@ -224,3 +224,26 @@ def test_day_dashboard_activity_vs_recent_days(db_path, login):
     assert "usually 1.5h/day" in html
     assert '<span class="sr-only">up</span> 1.5h' in html
     assert "new vs your last 2 days" in html
+
+
+def test_find_overlaps(db_path):
+    from time_tracker_pro.services.insights import find_overlaps
+
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-19", "23:00:00", "2026-09-20", "07:00:00", task="Sleep")
+    add_log(db_path, uid, "2026-09-20", "06:30:00", "2026-09-20", "08:00:00", task="Gym")      # 30 min into Sleep
+    add_log(db_path, uid, "2026-09-20", "08:00:00", "2026-09-20", "12:00:00", task="Work")     # touches, no overlap
+    add_log(db_path, uid, "2026-09-20", "13:00:00", "2026-09-20", "18:00:00", task="Trip")
+    add_log(db_path, uid, "2026-09-20", "14:00:00", "2026-09-20", "15:00:00", task="Call")     # inside Trip
+    add_log(db_path, uid, "2026-09-20", "16:00:00", "2026-09-20", "16:30:00", task="Snack")    # inside Trip too
+    df = _df(db_path, uid)
+
+    result = find_overlaps(df, date(2026, 9, 20), date(2026, 9, 20))
+    assert result["count"] == 3
+    assert result["minutes"] == 30 + 60 + 30
+    first = result["pairs"][0]
+    assert (first["first"]["task"], first["second"]["task"], first["minutes"]) == ("Sleep", "Gym", 30)
+    assert [p["first"]["task"] for p in result["pairs"][1:]] == ["Trip", "Trip"]
+
+    # The day before only has Sleep: nothing reported there.
+    assert find_overlaps(df, date(2026, 9, 19), date(2026, 9, 19))["count"] == 0
