@@ -1,6 +1,17 @@
 // Dashboard page script (moved out of templates/dashboard.html so browsers cache it).
 // Per-request values come from the JSON block #dashboardConfig rendered by the template.
 const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').textContent || '{}');
+
+// Tag badges: the tag colour itself is too dark to read on the dark theme's near-black
+// cards (Waste red 3.9:1, Soul indigo 4.2:1), so mix in white there to pass WCAG AA.
+function tagBadgeTextColor(hex) {
+    if (document.documentElement.getAttribute('data-theme') !== 'dark') return hex;
+    const m = /^#([0-9a-f]{6})$/i.exec(String(hex || ''));
+    if (!m) return hex;
+    const n = parseInt(m[1], 16);
+    const mix = (c) => Math.round(c + (255 - c) * 0.45);
+    return `rgb(${mix((n >> 16) & 255)}, ${mix((n >> 8) & 255)}, ${mix(n & 255)})`;
+}
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, ch => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -1498,7 +1509,7 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
                 let tagBadge = '';
                 if (displayTag) {
                     const tagColor = TAG_COLOR_MAP[primaryTag] || '#6B7280';
-                    const tagStyle = `background-color: ${tagColor}15; color: ${tagColor}; border: 1px solid ${tagColor}30;`;
+                    const tagStyle = `background-color: ${tagColor}15; color: ${tagBadgeTextColor(tagColor)}; border: 1px solid ${tagColor}30;`;
                     tagBadge = `<span class="px-2 py-0.5 rounded-full text-xs font-medium" style="${tagStyle}">${displayTag}</span>`;
                 }
                 const taskId = Number(task.sheety_id || task.id || 0);
