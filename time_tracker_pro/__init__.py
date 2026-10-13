@@ -150,6 +150,10 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         if csp_enabled and response.mimetype == "text/html":
             response.headers.setdefault("Content-Security-Policy", CONTENT_SECURITY_POLICY)
+        if response.mimetype in ("text/html", "application/json") and "Cache-Control" not in response.headers:
+            # Pages and API answers are per-user: never kept by shared caches, and the
+            # browser checks back instead of showing a stale copy (back/forward cache unaffected).
+            response.headers["Cache-Control"] = "private, no-cache"
         return response
 
     # Static files: url_for('static', ...) gets ?v=<mtime>, and versioned requests are
