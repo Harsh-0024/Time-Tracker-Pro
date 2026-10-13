@@ -2444,6 +2444,11 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 chartInstance.update('none');
             }
 
+            const perNightLabels = metricKey === 'sleep';
+            const avgLabelEl = document.getElementById('avgHoursLabel');
+            const maxLabelEl = document.getElementById('maxHoursLabel');
+            if (avgLabelEl) avgLabelEl.textContent = perNightLabels ? 'Avg/Night' : 'Avg/Day';
+            if (maxLabelEl) maxLabelEl.textContent = perNightLabels ? 'Longest Night' : 'Best Day';
             totalHoursEl.textContent = formatGraphValue(total_hours, valueScale, 1);
             avgHoursEl.textContent = formatGraphValue(avg_hours, valueScale, 1);
             maxHoursEl.textContent = formatGraphValue(max_hours, valueScale, 1);
