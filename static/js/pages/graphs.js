@@ -1182,9 +1182,9 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 graphTaskStatsMode = 'total';
             }
             const statItem = (value, label, extraClass = '', extraAttrs = '') => `
-                <div class="rounded-xl border border-slate-100 bg-white/80 px-3 py-3 text-center ${extraClass}" ${extraAttrs}>
+                <div class="min-w-0 rounded-xl border border-slate-100 bg-white/80 px-2 sm:px-3 py-3 text-center ${extraClass}" ${extraAttrs}>
                     <div class="text-xl md:text-2xl font-light text-gray-900">${value}</div>
-                    <div class="text-[10px] md:text-xs text-gray-500 mt-1 uppercase tracking-wider">${label}</div>
+                    <div class="text-[10px] md:text-xs text-gray-500 mt-1 uppercase tracking-wide sm:tracking-wider">${label}</div>
                 </div>
             `;
             const useAverage = graphTaskStatsMode === 'avg' && canAverage;
@@ -1199,8 +1199,8 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 ? String(perWeekRounded)
                 : perWeekRounded.toFixed(1);
             const consistencyValue = graphTaskConsistencyMode === 'weekly'
-                ? `${perWeekText}<span class="text-[10px] md:text-xs text-gray-400 ml-0.5">days/week</span>`
-                : `${consistencyDays}<span class="text-[10px] md:text-xs text-gray-400 ml-0.5">/ ${spanDays || 0} days</span>`;
+                ? `${perWeekText}<span class="block sm:inline text-[10px] md:text-xs text-gray-400 sm:ml-0.5">days/week</span>`
+                : `${consistencyDays}<span class="block sm:inline text-[10px] md:text-xs text-gray-400 sm:ml-0.5">/ ${spanDays || 0} days</span>`;
             const consistencyTitle = graphTaskConsistencyMode === 'weekly'
                 ? 'Click to show total days'
                 : 'Click to show days/week';
