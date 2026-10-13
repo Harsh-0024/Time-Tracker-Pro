@@ -336,3 +336,33 @@ def test_week_dashboard_shows_sleep(db_path, login):
     assert "7.5h a night" in html and "to bed ~11:30 PM · up ~7:00 AM" in html
     summary = json.loads(re.search(r'id="periodSummaryText">(.*?)</script>', html, re.S).group(1))
     assert "Sleep: 7.5h a night (bed ~11:30 PM, up ~7:00 AM)" in summary
+
+
+def test_sleep_last_night_on_day_view(db_path, login):
+    from time_tracker_pro.services.insights import sleep_last_night
+
+    rows = [_row(f"2026-09-{d - 1:02d}", "23:00", f"2026-09-{d:02d}", "07:00", task="Sleep") for d in (14, 15, 16)]
+    rows += [
+        _row("2026-09-16", "23:30", "2026-09-17", "00:00", task="Sleep"),
+        _row("2026-09-17", "00:00", "2026-09-17", "06:30", task="Sleep"),
+        _row("2026-09-17", "15:00", "2026-09-17", "16:00", task="Sleep"),  # nap: not counted
+    ]
+    df = _sleep_df(db_path, rows)
+    night = sleep_last_night(df, date(2026, 9, 17))
+    assert night == {
+        "hours": 7.0, "bedtime": "11:30 PM", "wake": "06:30 AM",
+        "avg_hours": 8.0, "delta_hours": -1.0, "avg_nights": 3,
+    }
+    assert sleep_last_night(df, date(2026, 9, 18)) is None
+    assert "avg_hours" not in sleep_last_night(df, date(2026, 9, 15))  # only 1 night before
+
+    import sqlite3
+
+    uid = sqlite3.connect(db_path).execute("SELECT id FROM users").fetchone()[0]
+    html = login(uid).get("/?date=2026-09-17").get_data(as_text=True)
+    assert "Sleep last night" in html and "11:30 PM – 6:30 AM · −1.0h vs your last 3 nights" in html
+    import json
+    import re
+
+    summary = json.loads(re.search(r'id="periodSummaryText">(.*?)</script>', html, re.S).group(1))
+    assert "Sleep last night: 7.0h (11:30 PM – 6:30 AM)" in summary

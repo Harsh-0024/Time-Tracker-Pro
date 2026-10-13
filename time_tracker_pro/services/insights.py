@@ -169,6 +169,9 @@ def build_insights(
                 "waste_avg": round_half_up(float(window[_waste_mask(window)]["duration"].sum()) / logged_days / 60.0, 1),
             }
             _add_activity_trends(insights["top_activities"], period_df, 1, window, int(logged_days))
+        night = sleep_last_night(df, start_date)
+        if night:
+            insights["sleep_night"] = night
         return insights
 
     # Week / month: only count days that have started.
@@ -667,4 +670,29 @@ def sleep_summary(
         "wake": _typical_clock([d["longest"]["end"] for d in days.values()]),
         "shortest": {"date": shortest_day, "hours": round_half_up(days[shortest_day]["minutes"] / 60.0, 1)},
     }
+    return result
+
+
+def sleep_last_night(df: pd.DataFrame, day: date) -> Optional[Dict[str, Any]]:
+    """The night that ended on ``day`` (see ``sleep_summary``), vs the 7 nights before."""
+    nights = _sleep_nights(df, day - timedelta(days=7), day)
+    tonight = [n for n in nights if n["date"] == day]
+    if not tonight:
+        return None
+    longest = max(tonight, key=lambda n: n["minutes"])
+    minutes = sum(n["minutes"] for n in tonight)
+    result: Dict[str, Any] = {
+        "hours": round_half_up(minutes / 60.0, 1),
+        "bedtime": _clock_label(longest["start"].hour * 60 + longest["start"].minute),
+        "wake": _clock_label(longest["end"].hour * 60 + longest["end"].minute),
+    }
+    before: Dict[date, float] = {}
+    for night in nights:
+        if night["date"] < day:
+            before[night["date"]] = before.get(night["date"], 0.0) + night["minutes"]
+    if len(before) >= 3:
+        avg = sum(before.values()) / len(before)
+        result["avg_hours"] = round_half_up(avg / 60.0, 1)
+        result["delta_hours"] = round_half_up((minutes - avg) / 60.0, 1) + 0.0
+        result["avg_nights"] = len(before)
     return result

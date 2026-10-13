@@ -31,6 +31,8 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - Shared toast / error-boundary / form-busy scripts are static files too (were ~15KB inline on every page).
 - Week/month Insights: Sleep (hours a night from tasks named 'Sleep', midnight-split rows merged, naps <3h ignored;
   typical bed/wake via circular mean, hidden when too scattered - your real data is often irregular; shortest night link). Also in Copy summary.
+  Day view: 'Sleep last night' (hours, bed - wake, vs previous 7 nights).
+- Removed unused JS variables/helpers flagged by eslint; a11y scan (unlabelled controls) of 5 pages: none.
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
