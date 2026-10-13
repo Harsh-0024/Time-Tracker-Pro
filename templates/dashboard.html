@@ -15,7 +15,7 @@
     <title>{{ (selected_date.strftime('%a ') ~ selected_date.day ~ selected_date.strftime(' %b')) if period == 'day' else current_month }} · Time Tracker Pro</title>
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
