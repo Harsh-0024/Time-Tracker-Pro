@@ -1821,7 +1821,7 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
                 statsContainer.onkeydown = null;
             }
             const chartContainer = document.getElementById('modalChart');
-            chartContainer.innerHTML = '<div class="relative w-full" style="height: 280px;"><canvas id="filterChart" class="w-full h-full"></canvas></div><div id="mobileModalLegend" class="mt-4 mb-4 md:hidden flex flex-wrap gap-2 justify-center text-[11px] text-gray-700 px-2"></div><div id="desktopModalLegend" class="mt-4 hidden md:flex flex-wrap gap-3 justify-center text-[11px] text-gray-700 px-4"></div>';
+            chartContainer.innerHTML = '<div class="relative w-full" style="height: 280px;"><canvas id="filterChart" class="w-full h-full" aria-hidden="true"></canvas></div><div id="mobileModalLegend" class="mt-4 mb-4 md:hidden flex flex-wrap gap-2 justify-center text-[11px] text-gray-700 px-2"></div><div id="desktopModalLegend" class="mt-4 hidden md:flex flex-wrap gap-3 justify-center text-[11px] text-gray-700 px-4"></div>';
             const sortLabels = {
                 time_desc: 'Time ↓',
                 time_asc: 'Time ↑',

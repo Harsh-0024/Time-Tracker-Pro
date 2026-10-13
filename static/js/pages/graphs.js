@@ -1360,7 +1360,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             let colors = view.colors;
             let labelToKey = view.keyMap;
             const isModalMobile = window.matchMedia('(max-width: 767px)').matches;
-            graphTaskChart.innerHTML = '<div class="relative w-full px-4 md:px-8" style="height: 300px;"><canvas id="graphTaskChartCanvas" class="w-full h-full"></canvas></div><div id="graphTaskMobileLegend" class="mt-6 mb-2 md:hidden flex flex-wrap gap-2 justify-center text-[11px] text-gray-700 px-2"></div><div id="graphTaskDesktopLegend" class="mt-4 hidden md:flex flex-wrap gap-3 justify-center text-[11px] text-gray-700 px-4"></div>';
+            graphTaskChart.innerHTML = '<div class="relative w-full px-4 md:px-8" style="height: 300px;"><canvas id="graphTaskChartCanvas" class="w-full h-full" aria-hidden="true"></canvas></div><div id="graphTaskMobileLegend" class="mt-6 mb-2 md:hidden flex flex-wrap gap-2 justify-center text-[11px] text-gray-700 px-2"></div><div id="graphTaskDesktopLegend" class="mt-4 hidden md:flex flex-wrap gap-3 justify-center text-[11px] text-gray-700 px-4"></div>';
             const mobileLegendEl = document.getElementById('graphTaskMobileLegend');
             const desktopLegendEl = document.getElementById('graphTaskDesktopLegend');
             const buildLegendItems = () => {
@@ -2467,6 +2467,8 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 subtitleParts.push('Filtered');
             }
             chartSubtitle.textContent = subtitleParts.join(' · ');
+            // Screen readers get the gist of the chart; the stat cards below carry the details.
+            ctx.canvas.setAttribute('aria-label', `${chartTitle.textContent}, ${chartSubtitle.textContent}: average ${formatGraphValue(avg_hours, valueScale, 1)}, best day ${formatGraphValue(max_hours, valueScale, 1)}.`);
             updateGraphEmptyState(values, displayedDays);
             applyCompareOverlay(labels, values, rangeDays, valueScale);
         }
