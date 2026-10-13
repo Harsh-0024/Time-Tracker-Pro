@@ -37,6 +37,11 @@ from .utils import _ua_hash, get_current_user_id, mask_email, safe_next_url
 
 bp = Blueprint("auth", __name__)
 
+
+def _login_lock_key(user, identifier: str) -> str:
+    """Throttle key for password logins: the account when it exists, else what was typed."""
+    return f"account #{int(row_value(user, 'id'))}" if user else identifier
+
 logger = logging.getLogger(__name__)
 
 _PROFILE_OTP_PURPOSES = {"change_password", "change_username"}
@@ -102,17 +107,21 @@ def login():
                     return redirect(url_for("auth.verify_email", next=next_url or ""))
         elif not identifier or not password:
             error = "Username, email, or user ID and password are required."
-        elif is_locked_out(db_name, identifier):
-            error = "Too many failed attempts. Try again in a few minutes, or log in with an email code."
         else:
             user = get_user_by_username_or_id_or_email(db_name, identifier)
-            if not user:
-                record_failure(db_name, identifier)
+            # Count failures per account, not per typed identifier: otherwise switching between
+            # username, user ID and email gives three times the guesses. (The key has a space,
+            # which identifiers can't, so it can't collide with one.)
+            lock_key = _login_lock_key(user, identifier)
+            if is_locked_out(db_name, lock_key):
+                error = "Too many failed attempts. Try again in a few minutes, or log in with an email code."
+            elif not user:
+                record_failure(db_name, lock_key)
                 error = "That login and password don’t match. Check both and try again."
             else:
                 pw_hash = row_value(user, "password_hash") or ""
                 if len(password) > MAX_PASSWORD_LENGTH or not check_password_hash(pw_hash, password):
-                    record_failure(db_name, identifier)
+                    record_failure(db_name, lock_key)
                     error = "That login and password don’t match. Check both and try again."
                 elif not int(row_value(user, "is_verified") or 0):
                     session.clear()
@@ -126,7 +135,7 @@ def login():
 
                     return redirect(url_for("auth.verify_email", next=next_url or ""))
                 else:
-                    clear_failures(db_name, identifier)
+                    clear_failures(db_name, lock_key)
                     session.clear()
                     session["user_id"] = int(row_value(user, "id"))
                     session.permanent = remember
@@ -401,6 +410,7 @@ def reset_password():
             conn.commit()
             conn.close()
             # The old failures were against the old password; don't leave them locked out.
+            clear_failures(db_name, _login_lock_key(user, ""))
             for ident in {row_value(user, "username"), row_value(user, "user_id"), row_value(user, "email")}:
                 if ident:
                     clear_failures(db_name, ident)

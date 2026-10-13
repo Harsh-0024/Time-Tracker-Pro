@@ -76,6 +76,20 @@ def test_login_locks_out_after_repeated_failures(app, db_path):
     assert b"Too many failed attempts" in resp.data
 
 
+def test_login_lockout_counts_per_account_not_per_identifier(app, db_path):
+    """Switching between username, user ID and email must not multiply the guesses."""
+    from time_tracker_pro.repositories import login_throttle
+
+    uid = make_user(db_path)  # username/user_id "alice", email alice@example.com
+    _set_password(db_path, uid, "correct-horse")
+    client = app.test_client()
+    identifiers = ["alice", "alice@example.com", "Alice"]
+    for i in range(login_throttle.MAX_FAILURES):
+        client.post("/login", data={"identifier": identifiers[i % 3], "password": "wrong"})
+    resp = client.post("/login", data={"identifier": "alice@example.com", "password": "correct-horse"})
+    assert b"Too many failed attempts" in resp.data
+
+
 def test_successful_login_clears_failures(app, db_path):
     uid = make_user(db_path)
     _set_password(db_path, uid, "correct-horse")
