@@ -41,7 +41,6 @@ def token_is_valid(headers: Dict[str, str]) -> bool:
     expected = os.getenv(API_AUTH_TOKEN_ENV) or ""
     if not expected:
         return False
-    db_name = current_app.config["DB_NAME"]
     # request.headers is case-insensitive; the plain dict callers pass is not
     # (werkzeug spells it 'X-Api-Token', so a header token never matched).
     provided = request.headers.get("X-API-Token") or request.args.get("token") or ""

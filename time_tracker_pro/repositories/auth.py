@@ -3,8 +3,6 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
-import sqlite3
-
 from ..db import get_db_connection
 
 

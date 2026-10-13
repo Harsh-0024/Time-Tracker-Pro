@@ -4,7 +4,7 @@ Stored in the ``graph_bookmarks`` table; ``days`` = 0 means the "All" range.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from ..db import get_db_connection
 
