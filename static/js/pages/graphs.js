@@ -1855,7 +1855,8 @@ function tagBadgeTextColor(hex) {
             if (startMode) startMode.value = 'manual';
             if (endMode) endMode.value = 'manual';
             if (startRaw) startRaw.value = formatGraphTaskDateTime(task.date, task.start_time);
-            if (endRaw) endRaw.value = formatGraphTaskDateTime(task.date, task.end_time);
+            // Its own end date: a task ending at/after midnight ends the next day.
+            if (endRaw) endRaw.value = formatGraphTaskDateTime(task.end_date || task.date, task.end_time);
             panel.classList.remove('hidden');
             try {
                 panel.scrollIntoView({ behavior: 'smooth', block: 'center' });

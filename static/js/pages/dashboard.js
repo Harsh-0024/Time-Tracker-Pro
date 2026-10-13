@@ -1007,7 +1007,9 @@ function tagBadgeTextColor(hex) {
                 startRaw.value = normalizeTaskDateTime(task.date, task.start_time);
             }
             if (endRaw) {
-                endRaw.value = normalizeTaskDateTime(task.date, task.end_time);
+                // A task ending at/after midnight ends on the next day: use its own end date,
+                // or saving unchanged fails with "End time must be after start time".
+                endRaw.value = normalizeTaskDateTime(task.end_date || task.date, task.end_time);
             }
             panel.classList.remove('hidden');
             try {
