@@ -33,7 +33,8 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
    colour (your call, see Ideas); dark tag badges fixed.
 9. Small: week strip marks days with a note; notes in chart tooltips; times without leading zeros; one activity's entries don't show the day's Missing time card;
    Cache-Control: private, no-cache on pages/JSON; JSON export includes goals; a11y labels; consistent page titles.
-Verification: 248 tests (py3.14 + 3.12), gunicorn -w 2 smoke run on a copy of the real DB (sleep_hours added once, no errors), browser pane (phone/tablet/desktop sweeps) + iPhone 17 Pro simulator
+Verification: 248 tests (py3.14 + 3.12), gunicorn -w 2 smoke run on a copy of the real DB (sleep_hours added once, no errors),
+2,400 randomized requests (graph-data, tasks, dashboard params, day notes, saved views, goals) with no 5xx, browser pane (phone/tablet/desktop sweeps) + iPhone 17 Pro simulator
 (light + dark). Nothing pushed.
 
 ## 2026-10-13 run (main session)
