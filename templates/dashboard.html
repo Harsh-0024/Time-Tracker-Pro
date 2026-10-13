@@ -3290,6 +3290,13 @@
         }
 
         function modalTermMatches(task, term) {
+            // note:tired matches entries on days whose day note mentions "tired"; note: alone = any note.
+            const noteTerm = String(term || '').trim().replace(/^["']|["']$/g, '').match(/^notes?:(.*)$/i);
+            if (noteTerm) {
+                const note = normalizeModalValue(PERIOD_NOTES[String(task.date || '')] || '');
+                const wanted = normalizeModalValue(noteTerm[1]);
+                return wanted ? note.includes(wanted) : Boolean(note);
+            }
             const clean = normalizeModalValue(term);
             if (!clean) return false;
             if (clean === 'imp' || clean === 'important') {
