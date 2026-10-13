@@ -387,3 +387,33 @@ def test_graph_view_can_save_sleep_focus(db_path, login):
     resp = client.post("/api/graph-views", json={"name": "Sleep", "focus": "sleep", "search": "", "range": "30", "ma": 7})
     assert resp.status_code in (200, 201), resp.get_json()
     assert client.get("/api/graph-views").get_json()["views"][0]["focus"] == "sleep"
+
+
+def test_biggest_changes_skips_top_activities(db_path, login):
+    from time_tracker_pro.services.insights import biggest_changes
+
+    uid = make_user(db_path)
+    # Previous week (Sep 6-12): 1h of Reading a day; this week (Sep 13-19): Instagram instead.
+    for day in range(6, 13):
+        add_log(db_path, uid, f"2026-09-{day:02d}", "20:00:00", f"2026-09-{day:02d}", "21:00:00", task="Reading")
+        add_log(db_path, uid, f"2026-09-{day:02d}", "08:00:00", f"2026-09-{day:02d}", "16:00:00", task="Work block")
+    for day in range(13, 20):
+        add_log(db_path, uid, f"2026-09-{day:02d}", "20:00:00", f"2026-09-{day:02d}", "22:00:00", task="Instagram .")
+        add_log(db_path, uid, f"2026-09-{day:02d}", "08:00:00", f"2026-09-{day:02d}", "16:10:00", task="Work block")
+    df = _df(db_path, uid)
+    this = df[(df["date"] >= date(2026, 9, 13)) & (df["date"] <= date(2026, 9, 19))]
+    prev = df[(df["date"] >= date(2026, 9, 6)) & (df["date"] <= date(2026, 9, 12))]
+    changes = biggest_changes(this, 7, prev, 7, skip=["Work block"])
+    assert changes == [
+        {"name": "Instagram", "per_day": 2.0, "prev_per_day": 0.0, "delta_per_day": 2.0},
+        {"name": "Reading", "per_day": 0.0, "prev_per_day": 1.0, "delta_per_day": -1.0},
+    ]
+    html = login(uid).get("/?date=2026-09-15&period=week").get_data(as_text=True)
+    assert "Biggest changes vs last week" in html
+    # On the dashboard Instagram is a top activity (with its own trend), so only Reading is listed.
+    assert "none · was 1.0h/day" in html and "new · 2.0h/day" not in html
+    import json
+    import re
+
+    summary = json.loads(re.search(r'id="periodSummaryText">(.*?)</script>', html, re.S).group(1))
+    assert "Biggest changes vs last week: Reading −1.0h/day" in summary

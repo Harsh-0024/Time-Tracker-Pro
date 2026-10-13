@@ -75,6 +75,10 @@ def build_period_summary_text(
                 return ("+" if v > 0 else "−" if v < 0 else "±") + f"{abs(v):.1f}h"
             line += f" ({signed(prev['growth_delta'])} growth, {signed(prev['waste_delta'])} waste vs last {period})"
         extra.append(line)
+    changes = insights.get("biggest_changes") or []
+    if changes:
+        parts = [f"{c['name']} {'+' if c['delta_per_day'] > 0 else '−'}{abs(c['delta_per_day']):.1f}h/day" for c in changes]
+        extra.append(f"Biggest changes vs last {period}: " + ", ".join(parts))
     night = insights.get("sleep_night")
     if night:
         extra.append(f"Sleep last night: {_h(night['hours'])} ({night['bedtime'].lstrip('0')} – {night['wake'].lstrip('0')})")

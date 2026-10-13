@@ -77,6 +77,43 @@ def _add_activity_trends(
         item["delta_per_day"] = round_half_up(now_per_day - prev_per_day, 1)
 
 
+def biggest_changes(
+    period_df: pd.DataFrame,
+    days: int,
+    prev_df: pd.DataFrame,
+    prev_days: int,
+    skip: List[str],
+    limit: int = 3,
+    min_hours_per_day: float = 0.3,
+) -> List[Dict[str, Any]]:
+    """Activities (outside ``skip``, e.g. the top five, which show their own trend) whose
+    time per logged day moved the most vs the previous period."""
+    if not days or not prev_days or period_df.empty or prev_df.empty:
+        return []
+    current = period_df.groupby(_activity_keys(period_df["task"]))["duration"].sum() / days / 60.0
+    previous = prev_df.groupby(_activity_keys(prev_df["task"]))["duration"].sum() / prev_days / 60.0
+    both = pd.concat([current.rename("now"), previous.rename("prev")], axis=1).fillna(0.0)
+    skip_keys = {re.sub(r"[\s.,;:]+$", "", name).strip().lower() for name in skip}
+    both = both[(both.index != "") & (~both.index.isin(skip_keys))]
+    both["delta"] = both["now"] - both["prev"]
+    both = both[both["delta"].abs() >= min_hours_per_day]
+    if both.empty:
+        return []
+    both = both.reindex(both["delta"].abs().sort_values(ascending=False).index).head(limit)
+    names = pd.concat([period_df["task"], prev_df["task"]]).fillna("").astype(str)
+    names = names.str.replace(r"[\s.,;:]+$", "", regex=True).str.strip()
+    display = names.groupby(names.str.lower()).agg(lambda s: s.value_counts().index[0])
+    return [
+        {
+            "name": display.get(key, key),
+            "per_day": round_half_up(float(row["now"]), 1),
+            "prev_per_day": round_half_up(float(row["prev"]), 1),
+            "delta_per_day": round_half_up(float(row["delta"]), 1),
+        }
+        for key, row in both.iterrows()
+    ]
+
+
 def task_name_suggestions(df: pd.DataFrame, limit: int = 60, recent: int = 1500) -> List[Dict[str, Any]]:
     """Most-used task names among the latest ``recent`` logs, each with the tags and
     priority of its newest entry (Add task autocompletes and pre-fills from these)."""
@@ -213,6 +250,11 @@ def build_insights(
                 "days": prev_days,
             }
             _add_activity_trends(insights["top_activities"], period_df, logged_days, prev_df, prev_days)
+            changes = biggest_changes(
+                period_df, logged_days, prev_df, prev_days, [a["name"] for a in insights["top_activities"]]
+            )
+            if changes:
+                insights["biggest_changes"] = changes
     sleep = sleep_summary(df, start_date, last_day)
     if sleep:
         insights["sleep"] = sleep
