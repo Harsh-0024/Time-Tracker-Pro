@@ -199,7 +199,7 @@ def test_sleep_goal_saved_and_shown(db_path, login):
     assert 'name="sleep_hours"' in client.get("/settings").get_data(as_text=True)
 
     week = client.get("/?date=2026-09-15&period=week").get_data(as_text=True)
-    assert "Sleep ≥ 7h" in week and ">2</span> / 3 days" in week
+    assert "Sleep ≥ 7h" in week and ">2</span> / 3 nights" in week
     assert "goal met (8h)" in week and "below goal (6h)" in week
 
     day = client.get("/?date=2026-09-16").get_data(as_text=True)

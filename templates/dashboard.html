@@ -955,7 +955,7 @@
                             {% for tg in goal_progress.tags or [] %}
                             <div class="flex items-baseline justify-between text-sm {{ 'mt-2' if goal_progress.growth or goal_progress.waste or not loop.first else '' }}">
                                 <span class="text-gray-700 inline-flex items-center gap-1.5"><span class="inline-block w-2 h-2 rounded-full" style="background: {{ tg.color }}"></span>{{ tg.tag }} {{ '≥' if tg.kind == 'min' else '≤' }} {{ '%g' | format(tg.hours) }}h</span>
-                                <span class="tabular-nums text-gray-600"><span class="text-lg font-light text-gray-900">{{ tg.met_days }}</span> / {{ tg.days }} days</span>
+                                <span class="tabular-nums text-gray-600"><span class="text-lg font-light text-gray-900">{{ tg.met_days }}</span> / {{ tg.days }} {{ 'nights' if tg.key == 'sleep' else 'days' }}</span>
                             </div>
                             {% if goal_progress.tag_calendar %}{{ goal_dots(goal_progress.tag_calendar, tg.key, tg.tag ~ ' goal by day', 'goal met' if tg.kind == 'min' else 'under limit', 'below goal' if tg.kind == 'min' else 'over limit') }}{% endif %}
                             {% endfor %}
