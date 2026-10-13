@@ -210,7 +210,6 @@ def test_forgot_password_by_user_id_does_not_reveal_email(app, db_path, monkeypa
 
 def test_resend_cooldown_blocks_rapid_otp_emails(app, db_path, monkeypatch):
     import time_tracker_pro.services.verification as ver
-    import time_tracker_pro.web.auth as auth_mod
 
     sent = []
     monkeypatch.setattr(ver, "send_email", lambda *a, **k: sent.append(a[0]) or True)

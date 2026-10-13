@@ -31,6 +31,7 @@ from ..repositories.goals import (
 from ..repositories.logs import fetch_local_data, get_first_log_date
 from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
+from ..services.sleep import build_sleep_goal_progress
 from ..services.insights import (
     build_daily_breakdown,
     find_overlaps,
@@ -38,7 +39,6 @@ from ..services.insights import (
     build_goal_progress,
     build_tag_goal_progress,
     build_insights,
-    build_sleep_goal_progress,
     goal_streaks,
     recent_goal_averages,
     logging_streak,

@@ -26,7 +26,7 @@ from ..repositories.logs import fetch_local_data
 from ..repositories.users import get_user_count, get_user_by_id
 from ..core.rows import row_value
 from ..services.import_csv import import_csv_content
-from ..services.insights import is_sleep_task, sleep_minutes_by_night
+from ..services.sleep import is_sleep_task, sleep_minutes_by_night
 from ..services.sync import sync_cloud_data, sync_status_payload, get_last_sync_stats
 from .decorators import api_or_login_required, resolve_request_user_id, token_is_valid
 from .utils import get_current_user_id, request_date_param

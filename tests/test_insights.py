@@ -281,7 +281,7 @@ def _sleep_df(db_path, rows):
 
 
 def test_sleep_summary_merges_midnight_split_nights(db_path):
-    from time_tracker_pro.services.insights import sleep_summary
+    from time_tracker_pro.services.sleep import sleep_summary
 
     rows = []
     for day in range(14, 21):  # nights ending Sep 14..20: 23:30 -> 00:00 + 00:00 -> 07:00
@@ -298,7 +298,7 @@ def test_sleep_summary_merges_midnight_split_nights(db_path):
 
 
 def test_sleep_summary_circular_average(db_path):
-    from time_tracker_pro.services.insights import sleep_summary
+    from time_tracker_pro.services.sleep import sleep_summary
 
     rows = [
         _row("2026-09-13", "23:00", "2026-09-14", "06:00", task="Sleep"),
@@ -313,7 +313,7 @@ def test_sleep_summary_circular_average(db_path):
 
 
 def test_sleep_summary_scattered_bedtimes_are_not_averaged(db_path):
-    from time_tracker_pro.services.insights import sleep_summary
+    from time_tracker_pro.services.sleep import sleep_summary
 
     rows = [
         _row("2026-09-13", "22:00", "2026-09-14", "05:00", task="Sleep"),
@@ -342,7 +342,7 @@ def test_week_dashboard_shows_sleep(db_path, login):
 
 
 def test_sleep_last_night_on_day_view(db_path, login):
-    from time_tracker_pro.services.insights import sleep_last_night
+    from time_tracker_pro.services.sleep import sleep_last_night
 
     rows = [_row(f"2026-09-{d - 1:02d}", "23:00", f"2026-09-{d:02d}", "07:00", task="Sleep") for d in (14, 15, 16)]
     rows += [
