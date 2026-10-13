@@ -113,7 +113,8 @@ def build_period_summary_text(
         sign = "≥" if tg["kind"] == "min" else "≤"
         if period == "day":
             mark = "✓" if tg.get("ok") else "✗"
-            extra.append(f"{tg['tag']} {sign} {_h(tg['hours'])}: {_h(tg['actual'])} {mark}")
+            streak = f" ({tg['streak']} nights in a row)" if (tg.get("streak") or 0) > 1 else ""
+            extra.append(f"{tg['tag']} {sign} {_h(tg['hours'])}: {_h(tg['actual'])} {mark}{streak}")
         elif tg.get("days"):
             extra.append(f"{tg['tag']} {sign} {_h(tg['hours'])} on {tg['met_days']} of {tg['days']} days")
     if extra:

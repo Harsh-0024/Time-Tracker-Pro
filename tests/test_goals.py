@@ -271,7 +271,13 @@ def test_sleep_goal_streak_on_day_view(db_path, login):
     add_log(db_path, uid, "2026-09-17", "02:00:00", "2026-09-17", "07:00:00", task="Sleep")
     client = login(uid)
     client.post("/settings/goals", data={"growth_hours": "", "waste_limit_hours": "", "sleep_hours": "7"})
-    assert "3 nights in a row" in client.get("/?date=2026-09-16").get_data(as_text=True)
+    day16 = client.get("/?date=2026-09-16").get_data(as_text=True)
+    assert "3 nights in a row" in day16
+    import json
+    import re
+
+    summary = json.loads(re.search(r'id="periodSummaryText">(.*?)</script>', day16, re.S).group(1))
+    assert "Sleep ≥ 7.0h: 8.0h ✓ (3 nights in a row)" in summary
     html = client.get("/?date=2026-09-19").get_data(as_text=True)
     assert "2 nights in a row" in html and "best 3" in html
     assert "Best sleep streak: 3 nights" in client.get("/?date=2026-09-17").get_data(as_text=True)
