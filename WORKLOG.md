@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-14 resumed after usage limit: main session active (owner resumed; keep going until 'stop').
+- 2026-10-14 (after usage-limit reset, ~05:15 local): main session active; keep going until 'stop'.
 
 ## 2026-10-14 summary - most important first
 1. BUGS fixed (several pre-existing): graphs kept the previous (longer) range's Total/Avg/Best, weekday bars and calendar after
@@ -65,6 +65,7 @@ Verification: 248 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop swee
 - Graphs: 'Sleep per night' focus (per wake-up day, midnight splits merged; saveable as a view). Unlogged nights are gaps, not 0h (averages, weekday bars, by time of day, compare note, moving average, last 7 days); cards say Avg/Night, Longest Night.
 - Week strip (day view) marks days that have a note with a small dot.
 - BUG (graphs, pre-existing): range pills re-zoomed the loaded payload, so stats/weekday/calendar described the old range. Now refetch.
+- Security pass: data access is scoped per user everywhere checked (tasks, Sheety accounts, notes); Sheety URLs are https/public only; login throttling now per account (see summary).
 - Graphs: chart tooltip (desktop) and tapped-point popup (phones) show that day's note; missing average shows '–'. README: 'How sleep is counted'.
 - PERF (regression from my 10-13 move of page scripts to static files): first loads fetched ~190KB scripts uncompressed; versioned static JS/CSS now gzipped (38KB).
 - a11y (dark): tag badges in full log/review list now pass AA (axe-core).
