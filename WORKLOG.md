@@ -67,6 +67,7 @@ Verification: 248 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop swee
 - Graphs: 'Sleep per night' focus (per wake-up day, midnight splits merged; saveable as a view). Unlogged nights are gaps, not 0h (averages, weekday bars, by time of day, compare note, moving average, last 7 days); cards say Avg/Night, Longest Night.
 - Week strip (day view) marks days that have a note with a small dot.
 - BUG (graphs, pre-existing): range pills re-zoomed the loaded payload, so stats/weekday/calendar described the old range. Now refetch.
+- Copy: 'email code' instead of 'OTP' on buttons. DB: sleep_hours migration tolerates concurrent workers.
 - Edit/Delete panels checked at 360px (scratch DB rows given fake sheety_ids): delete confirm drops the duplicate 'Close' on phones.
 - Refactor: sleep code moved to services/sleep.py (+ services/activity.py helpers); no behaviour change.
 - Security pass: data access is scoped per user everywhere checked (tasks, Sheety accounts, notes); Sheety URLs are https/public only; login throttling now per account (see summary).
