@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-13 22:50 IST: main session active (owner resumed; keep going until 'stop').
+- 2026-10-13 23:58 IST: main session active (owner resumed; keep going until 'stop').
 
 ## 2026-10-13 run (main session)
 - pyflakes cleanups outside sync
@@ -25,6 +25,9 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - Logging streak on the day timeline ('Fully logged · N days in a row').
 - Chart.js SRI hash; Content-Security-Policy on HTML pages (DISABLE_CSP=1 escape hatch).
   If you add a new external script/style/font origin, extend CONTENT_SECURITY_POLICY in time_tracker_pro/__init__.py.
+- Big inline scripts/styles of dashboard, graphs, settings moved to static/js/pages/*.js + static/css/pages/*.css
+  (cached). Per-request values come from <script type=application/json id=...Config> blocks in each template.
+  Dashboard gz HTML 64.5KB -> 20.9KB; graphs -> 10.5KB. Verified identical computed styles + text.
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
