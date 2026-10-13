@@ -61,6 +61,7 @@ Verification: 240 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop swee
 - BUG (graphs, pre-existing): range pills re-zoomed the loaded payload, so stats/weekday/calendar described the old range. Now refetch.
 - Graphs: chart tooltip (desktop) and tapped-point popup (phones) show that day's note; missing average shows '–'. README: 'How sleep is counted'.
 - PERF (regression from my 10-13 move of page scripts to static files): first loads fetched ~190KB scripts uncompressed; versioned static JS/CSS now gzipped (38KB).
+- a11y (dark): tag badges in full log/review list now pass AA (axe-core).
 - Times shown without leading zeros in insights, full log and graphs review (display only).
 - Auth pages: email-domain chips in a 2x2 grid (was 3 + 1 orphan).
 - Emails: plain-text verification email states the expiry; (c) year no longer hard-coded 2026. Graphs: C = compare shortcut. Page titles unified ('X · Time Tracker Pro').
@@ -355,7 +356,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - (question) Full Day Log 'Missing time' for TODAY lists the rest of the day (e.g. '2:00 PM - 12:00 AM') as unlogged, including hours that haven't happened yet. Graphs 'Last 7 days' also includes today's partial day. Both are time-handling, so left for you.
 - (question) Adding a task REQUIRES a connected Sheety account (create_task posts to Sheety first; local-only users get an error). Update/delete of local-only rows work. If you want local-only users to add tasks, create_task needs a local path - left alone since it touches the sync model.
 - (done 2026-10-13) Session UA binding now ignores version numbers (browser updates no longer log out); old sessions upgraded in place.
-- (note) dark --text-faint (#6E6045) is 3.2:1 - axe flags ~10 small labels (timeline axis, insight labels). Earlier session chose it for hierarchy; bump to ~#877858 for AA if you prefer.
+- (note, re-checked 2026-10-14 with axe-core: light mode has zero contrast failures; dark mode's only remaining ones are this colour) dark --text-faint (#6E6045) is 3.2:1 - axe flags ~10 small labels (timeline axis, insight labels). Earlier session chose it for hierarchy; bump to ~#877858 for AA if you prefer.
 - (question) /sync-status answers anonymous callers with config booleans (sheety configured, db exists). Harmless-ish; could 401.
 - (note) a dev server with LOCAL_AUTH_BYPASS was blocked by the session's permission classifier; verification done via pytest/Flask test client.
 - (question) ~174 distinct task names are stored with a trailing ' .' (e.g. 'Instagram .' x396 vs 'Instagram' x14) -
