@@ -1888,6 +1888,7 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
                     search.value = String(window.modalQuery || '');
                     search.oninput = () => {
                         window.modalQuery = search.value;
+                        if (window.__modalRefreshChart) window.__modalRefreshChart();
                         window.renderModalTasks();
                     };
                 }
@@ -1918,6 +1919,7 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
                     });
                 }
             }
+            window.__modalRefreshChart = null;
             if (data.tasks.length > 0) {
                 const ctx = document.getElementById('filterChart').getContext('2d');
                 let labels = [];
@@ -1982,9 +1984,29 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
                     const aboveThreshold = entries.filter(entry => (entry.value / total) >= minOtherShare).length;
                     return Math.max(baseSlots, aboveThreshold);
                 };
+                // The pie follows the search box like the list and stats do; colours and
+                // keys stay those of the whole period so slices don't change colour.
+                const entryKeyOf = (task) => showTaskBreakdown
+                    ? normalizeModalLabel(task.task)
+                    : (normalizeTagName(task.tag) || modalFallbackLabel);
+                const searchedEntries = () => {
+                    const query = String(window.modalQuery || '').trim();
+                    const expr = query ? parseModalQuery(query) : null;
+                    if (!expr) return allEntries;
+                    const totals = {};
+                    data.tasks.forEach(task => {
+                        if (!modalTaskMatchesQuery(task, expr)) return;
+                        const key = entryKeyOf(task);
+                        totals[key] = (totals[key] || 0) + (Number(task.duration) || 0);
+                    });
+                    return allEntries
+                        .map(entry => ({ ...entry, value: totals[entry.key] || 0 }))
+                        .filter(entry => entry.value > 0)
+                        .sort((a, b) => b.value - a.value);
+                };
                 const buildChartView = () => {
                     const hidden = window.hiddenTags || {};
-                    const visible = allEntries.filter(e => !hidden[e.key]);
+                    const visible = searchedEntries().filter(e => !hidden[e.key]);
                     const maxSlots = getExpandedSlots(visible);
                     const top = visible.slice(0, maxSlots);
                     const rest = visible.slice(maxSlots);
@@ -2196,6 +2218,11 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
                 });
                 updateMobileLegend(chart);
                 updateDesktopLegend(chart);
+                window.__modalRefreshChart = () => {
+                    applyChartView(chart);
+                    updateMobileLegend(chart);
+                    updateDesktopLegend(chart);
+                };
                 const legendClickHandler = (e) => {
                     const legendItem = e.target.closest('[data-legend-key]');
                     if (!legendItem) return;
