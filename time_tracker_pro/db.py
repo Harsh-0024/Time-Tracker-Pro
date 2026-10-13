@@ -272,6 +272,10 @@ def init_db(db_name: str) -> None:
         """
     )
 
+    goal_cols = [row["name"] for row in conn.execute("PRAGMA table_info(user_goals)").fetchall()]
+    if "sleep_hours" not in goal_cols:
+        conn.execute("ALTER TABLE user_goals ADD COLUMN sleep_hours REAL")
+
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS day_notes (

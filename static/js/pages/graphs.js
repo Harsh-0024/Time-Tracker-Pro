@@ -81,6 +81,9 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             if (metricKey === 'q4' && USER_GOALS.waste_limit_hours != null) {
                 return { value: Number(USER_GOALS.waste_limit_hours), label: 'Limit', color: '#E11D48' };
             }
+            if (metricKey === 'sleep' && USER_GOALS.sleep_hours != null) {
+                return { value: Number(USER_GOALS.sleep_hours), label: 'Goal', color: '#10B981' };
+            }
             // Category goals (Settings > Daily Goals) on the matching category graph.
             const tagGoal = USER_TAG_GOALS.find(g => String(g.tag || '').toLowerCase() === metricKey);
             if (tagGoal) {

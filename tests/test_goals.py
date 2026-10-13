@@ -18,10 +18,10 @@ def test_parse_goal_hours():
 
 def test_goals_round_trip(db_path):
     uid = make_user(db_path)
-    assert get_user_goals(db_path, uid) == {"growth_hours": None, "waste_limit_hours": None}
+    assert get_user_goals(db_path, uid) == {"growth_hours": None, "waste_limit_hours": None, "sleep_hours": None}
     upsert_user_goals(db_path, uid, 4.0, 3.0)
     upsert_user_goals(db_path, uid, 5.0, None)
-    assert get_user_goals(db_path, uid) == {"growth_hours": 5.0, "waste_limit_hours": None}
+    assert get_user_goals(db_path, uid) == {"growth_hours": 5.0, "waste_limit_hours": None, "sleep_hours": None}
 
 
 def test_update_goals_route(db_path, login):
@@ -29,10 +29,10 @@ def test_update_goals_route(db_path, login):
     client = login(uid)
     resp = client.post("/settings/goals", data={"growth_hours": "4", "waste_limit_hours": "2.5"})
     assert resp.status_code == 302 and resp.headers["Location"].endswith("#goals-settings")
-    assert get_user_goals(db_path, uid) == {"growth_hours": 4.0, "waste_limit_hours": 2.5}
+    assert get_user_goals(db_path, uid) == {"growth_hours": 4.0, "waste_limit_hours": 2.5, "sleep_hours": None}
 
     resp = client.post("/settings/goals", data={"growth_hours": "99", "waste_limit_hours": ""})
-    assert get_user_goals(db_path, uid) == {"growth_hours": 4.0, "waste_limit_hours": 2.5}  # unchanged
+    assert get_user_goals(db_path, uid) == {"growth_hours": 4.0, "waste_limit_hours": 2.5, "sleep_hours": None}  # unchanged
     with client.session_transaction() as sess:
         assert "between 0 and 24" in sess["goals_error"]
     html = client.get("/settings").get_data(as_text=True)
@@ -177,3 +177,49 @@ def test_dashboard_shows_best_streak(db_path, login):
     assert "🔥 2-day Growth streak" in html and "· best 3" in html
     html = client.get("/?date=2026-09-07&period=day").get_data(as_text=True)
     assert "Growth streak" in html and "Best Growth streak: 3 days" in html and "🔥" not in html.split("Best Growth streak")[0][-300:]
+
+
+def _sleep_nights(db_path, uid):
+    # Nights ending Sep 14 (8h), Sep 15 (6h), Sep 16 (7.5h, split at midnight).
+    add_log(db_path, uid, "2026-09-13", "23:00:00", "2026-09-14", "07:00:00", task="Sleep")
+    add_log(db_path, uid, "2026-09-15", "01:00:00", "2026-09-15", "07:00:00", task="Sleep")
+    add_log(db_path, uid, "2026-09-15", "23:30:00", "2026-09-16", "00:00:00", task="Sleep")
+    add_log(db_path, uid, "2026-09-16", "00:00:00", "2026-09-16", "07:00:00", task="Sleep")
+
+
+def test_sleep_goal_saved_and_shown(db_path, login):
+    import json
+    import re
+
+    uid = make_user(db_path)
+    _sleep_nights(db_path, uid)
+    client = login(uid)
+    client.post("/settings/goals", data={"growth_hours": "", "waste_limit_hours": "", "sleep_hours": "7"})
+    assert get_user_goals(db_path, uid)["sleep_hours"] == 7.0
+    assert 'name="sleep_hours"' in client.get("/settings").get_data(as_text=True)
+
+    week = client.get("/?date=2026-09-15&period=week").get_data(as_text=True)
+    assert "Sleep ≥ 7h" in week and ">2</span> / 3 days" in week
+    assert "goal met (8h)" in week and "below goal (6h)" in week
+
+    day = client.get("/?date=2026-09-16").get_data(as_text=True)
+    assert "7.5h <span" in day and "Sleep goal" in day
+    summary = json.loads(re.search(r'id="periodSummaryText">(.*?)</script>', day, re.S).group(1))
+    assert "Sleep ≥ 7.0h: 7.5h ✓" in summary
+    # A day whose night isn't logged: no Sleep goal row (rather than "0h / 7h").
+    assert "Sleep goal" not in client.get("/?date=2026-09-17").get_data(as_text=True)
+
+
+def test_sleep_goal_column_added_to_old_databases(tmp_path):
+    import sqlite3
+
+    from time_tracker_pro.db import init_db
+
+    path = str(tmp_path / "old.db")
+    conn = sqlite3.connect(path)
+    conn.execute("CREATE TABLE user_goals (user_id INTEGER PRIMARY KEY, growth_hours REAL, waste_limit_hours REAL, updated_at TEXT)")
+    conn.execute("INSERT INTO user_goals VALUES (1, 4, 2, 'x')")
+    conn.commit()
+    conn.close()
+    init_db(path)
+    assert get_user_goals(path, 1) == {"growth_hours": 4.0, "waste_limit_hours": 2.0, "sleep_hours": None}

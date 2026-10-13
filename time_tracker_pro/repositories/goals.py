@@ -12,14 +12,18 @@ def get_user_goals(db_name: str, user_id: int) -> Dict[str, Optional[float]]:
     conn = get_db_connection(db_name)
     try:
         row = conn.execute(
-            "SELECT growth_hours, waste_limit_hours FROM user_goals WHERE user_id = ?",
+            "SELECT growth_hours, waste_limit_hours, sleep_hours FROM user_goals WHERE user_id = ?",
             (int(user_id),),
         ).fetchone()
     finally:
         conn.close()
     if not row:
-        return {"growth_hours": None, "waste_limit_hours": None}
-    return {"growth_hours": row["growth_hours"], "waste_limit_hours": row["waste_limit_hours"]}
+        return {"growth_hours": None, "waste_limit_hours": None, "sleep_hours": None}
+    return {
+        "growth_hours": row["growth_hours"],
+        "waste_limit_hours": row["waste_limit_hours"],
+        "sleep_hours": row["sleep_hours"],
+    }
 
 
 def parse_goal_hours(raw: Optional[str]) -> Optional[float]:
@@ -38,19 +42,21 @@ def upsert_user_goals(
     user_id: int,
     growth_hours: Optional[float],
     waste_limit_hours: Optional[float],
+    sleep_hours: Optional[float] = None,
 ) -> None:
     conn = get_db_connection(db_name)
     try:
         conn.execute(
             """
-            INSERT INTO user_goals (user_id, growth_hours, waste_limit_hours, updated_at)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO user_goals (user_id, growth_hours, waste_limit_hours, sleep_hours, updated_at)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(user_id) DO UPDATE SET
                 growth_hours = excluded.growth_hours,
                 waste_limit_hours = excluded.waste_limit_hours,
+                sleep_hours = excluded.sleep_hours,
                 updated_at = excluded.updated_at
             """,
-            (int(user_id), growth_hours, waste_limit_hours, datetime.now(timezone.utc).isoformat()),
+            (int(user_id), growth_hours, waste_limit_hours, sleep_hours, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     finally:

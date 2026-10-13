@@ -38,6 +38,7 @@ from ..services.insights import (
     build_goal_progress,
     build_tag_goal_progress,
     build_insights,
+    build_sleep_goal_progress,
     goal_streaks,
     logging_streak,
     task_name_suggestions,
@@ -145,6 +146,7 @@ def update_goals():
     try:
         growth = parse_goal_hours(request.form.get("growth_hours"))
         waste = parse_goal_hours(request.form.get("waste_limit_hours"))
+        sleep = parse_goal_hours(request.form.get("sleep_hours"))
         tag_goals = parse_tag_goals(request.form)
     except ValueError as exc:
         message = str(exc)
@@ -152,14 +154,14 @@ def update_goals():
             message = "Goals must be numbers of hours between 0 and 24."
         session["goals_error"] = message
         # Re-show what was typed so it can be corrected rather than retyped.
-        form_keys = ["growth_hours", "waste_limit_hours"] + [
+        form_keys = ["growth_hours", "waste_limit_hours", "sleep_hours"] + [
             f"tag_goal_{part}_{tag}" for tag in GOAL_TAGS for part in ("kind", "hours")
         ]
         session["goals_form"] = {key: (request.form.get(key) or "")[:20] for key in form_keys}
         return redirect(url_for("main.settings") + "#goals-settings")
-    upsert_user_goals(db_name, user_id, growth, waste)
+    upsert_user_goals(db_name, user_id, growth, waste, sleep)
     replace_tag_goals(db_name, user_id, tag_goals)
-    any_goal = growth is not None or waste is not None or bool(tag_goals)
+    any_goal = growth is not None or waste is not None or sleep is not None or bool(tag_goals)
     session["goals_success"] = "Goals saved." if any_goal else "Goals cleared."
     return redirect(url_for("main.settings") + "#goals-settings")
 
@@ -324,6 +326,22 @@ def dashboard():
             )["calendar"]
         else:
             goal_progress["tag_calendar"] = tag_progress["calendar"]
+    if goals.get("sleep_hours") is not None:
+        # Day view: last night vs the goal, dots for the last 7 nights.
+        sleep_goal = build_sleep_goal_progress(df, period, start_date, end_date, goals["sleep_hours"])
+        sleep_dots = sleep_goal
+        if period == "day":
+            sleep_dots = build_sleep_goal_progress(
+                df, "week", selected_date - timedelta(days=6), selected_date, goals["sleep_hours"]
+            )
+        if sleep_goal:  # day view: only once that night is logged
+            if goal_progress is None:
+                goal_progress = {"period": period}
+            goal_progress.setdefault("tags", []).append(sleep_goal["item"])
+            calendar = goal_progress.get("tag_calendar") or [{"date": d} for d in sleep_dots["calendar"]]
+            for entry in calendar:
+                entry.update(sleep_dots["calendar"].get(entry["date"], {"sleep": "none", "sleep_hours": 0.0}))
+            goal_progress["tag_calendar"] = calendar
     task_count = int(len(period_df)) if not period_df.empty else 0
 
     idx = (selected_date.weekday() + 1) % 7

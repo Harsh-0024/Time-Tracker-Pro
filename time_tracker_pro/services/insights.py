@@ -750,3 +750,48 @@ def sleep_minutes_by_night(df: pd.DataFrame, start_date: date, end_date: date) -
 
 def is_sleep_task(tasks: pd.Series) -> pd.Series:
     return _activity_keys(tasks) == "sleep"
+
+
+SLEEP_GOAL_COLOR = "#8B5CF6"
+
+
+def build_sleep_goal_progress(
+    df: pd.DataFrame,
+    period: str,
+    start_date: date,
+    end_date: date,
+    target_hours: float,
+    today: Optional[date] = None,
+) -> Optional[Dict[str, Any]]:
+    """An "at least N hours a night" goal, shaped like a category goal (see
+    ``build_tag_goal_progress``) so the dashboard renders it the same way.
+
+    Nights count on the day you woke up. ``calendar`` maps each day of
+    [start_date, end_date] to its dot (``sleep`` / ``sleep_hours`` keys); a day
+    without a logged night is "none". Day view: ``None`` if that night isn't logged.
+    """
+    today = today or date.today()
+    target = float(target_hours)
+    nights = sleep_minutes_by_night(df, start_date, end_date)
+    hours = {d: minutes / 60.0 for d, minutes in nights.items()}
+    item: Dict[str, Any] = {"tag": "Sleep", "kind": "min", "hours": target, "color": SLEEP_GOAL_COLOR, "key": "sleep"}
+    if period == "day":
+        if end_date not in hours:
+            return None
+        actual = hours[end_date]
+        item["actual"] = round_half_up(actual, 1)
+        item["ok"] = actual >= target
+        item["pct"] = round_half_up(min(100.0, actual / target * 100.0), 1) if target else 100.0
+    else:
+        item["met_days"] = sum(1 for h in hours.values() if h >= target)
+        item["days"] = len(hours)
+    calendar: Dict[date, Dict[str, Any]] = {}
+    for d in _days(start_date, end_date):
+        if d > max(today, start_date):
+            state = "future"
+        elif d not in hours:
+            state = "none"
+        else:
+            state = "met" if hours[d] >= target else "missed"
+        calendar[d] = {"sleep": state, "sleep_hours": round_half_up(hours.get(d, 0.0), 1)}
+    return {"item": item, "calendar": calendar}
