@@ -216,7 +216,6 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
         let currentDays = getAllDaysDefault();
         let chartInstance = null;
         let lastGraphPayload = null;
-        let lastGraphDays = 0;
         let currentMetric = 'work';
         let graphFocusValue = 'work';
         let maWindow = 14;
@@ -2820,7 +2819,6 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 }
                 updateChart(data, metricKey);
                 lastGraphPayload = data;
-                lastGraphDays = currentDays;
                 if (openModal && shouldIncludeTasks) {
                     openGraphTaskModal();
                 }
@@ -3065,17 +3063,8 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 currentDays = nextDays;
                 shouldAutoMAOnNextRender = true;
                 syncRangePills();
-                if (lastGraphPayload && lastGraphDays >= currentDays) {
-                    if (shouldAutoMAOnNextRender) {
-                        maWindow = pickDefaultMAWindowForDays(
-                            getDisplayedSpanDaysForRange(lastGraphPayload.labels, lastGraphPayload.values, currentRange)
-                        );
-                        syncMAPills();
-                        shouldAutoMAOnNextRender = false;
-                    }
-                    updateChart(lastGraphPayload, currentMetric, currentDays);
-                    return;
-                }
+                // Always refetch: re-zooming a longer payload left Total/Avg/Best, the weekday
+                // bars and the calendar describing the previous (longer) range.
                 fetchGraphData();
             });
         });
