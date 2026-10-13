@@ -807,12 +807,13 @@ def build_sleep_goal_progress(
     return {"item": item, "calendar": calendar}
 
 
-def recent_goal_averages(df: pd.DataFrame, today: Optional[date] = None, days: int = 30) -> Dict[str, Optional[float]]:
+def recent_goal_averages(df: pd.DataFrame, today: Optional[date] = None, days: int = 30) -> Dict[str, Any]:
     """What the user actually did over the last ``days`` days, shown next to the goal
-    fields in Settings: Growth and Waste hours per logged day, sleep per night logged."""
+    fields in Settings: Growth, Waste and each category (``tags``) per logged day,
+    sleep per night logged."""
     today = today or date.today()
     start = today - timedelta(days=days - 1)
-    result: Dict[str, Optional[float]] = {"growth": None, "waste": None, "sleep": None}
+    result: Dict[str, Any] = {"growth": None, "waste": None, "sleep": None, "tags": {}}
     if df.empty:
         return result
     window = df[(df["date"] >= start) & (df["date"] <= today)]
@@ -820,6 +821,9 @@ def recent_goal_averages(df: pd.DataFrame, today: Optional[date] = None, days: i
     if logged_days:
         result["growth"] = round_half_up(float(window[_growth_mask(window)]["duration"].sum()) / logged_days / 60.0, 1)
         result["waste"] = round_half_up(float(window[_waste_mask(window)]["duration"].sum()) / logged_days / 60.0, 1)
+        if "primary_tag" in window.columns:
+            per_tag = window.groupby("primary_tag")["duration"].sum() / logged_days / 60.0
+            result["tags"] = {str(tag): round_half_up(float(hours), 1) for tag, hours in per_tag.items()}
     nights = sleep_minutes_by_night(df, start, today)
     if nights:
         result["sleep"] = round_half_up(sum(nights.values()) / len(nights) / 60.0, 1)

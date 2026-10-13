@@ -253,8 +253,9 @@ def test_settings_shows_recent_averages_next_to_goals(db_path, login):
     averages = recent_goal_averages(fetch_local_data(db_path, uid), today=today)
     # Logged days: Sep 17 (the first night's start), 18, 19 -> 2h waste over 3 days.
     assert averages["sleep"] == 7.0 and averages["waste"] == 0.7
+    assert averages["tags"] == {"Work": 7.3}  # add_log tags everything Work: (14 + 6 + 2) h / 3 days
     assert recent_goal_averages(fetch_local_data(db_path, uid), today=date(2027, 1, 1)) == {
-        "growth": None, "waste": None, "sleep": None,
+        "growth": None, "waste": None, "sleep": None, "tags": {},
     }
     html = login(uid).get("/settings").get_data(as_text=True)
     assert 'name="sleep_hours"' in html

@@ -369,7 +369,7 @@
                         {% set kind_value = goals_form['tag_goal_kind_' ~ tag] if goals_form else (saved.kind if saved else '') %}
                         {% set hours_value = goals_form['tag_goal_hours_' ~ tag] if goals_form else (('%g' | format(saved.hours)) if saved else '') %}
                         <div class="tag-goal-row grid grid-cols-[minmax(0,1fr)_auto_7rem] items-center gap-2">
-                            <span class="inline-flex items-center gap-2 text-sm text-gray-800"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background: {{ tag_colors[tag] }}"></span>{{ tag }}</span>
+                            <span class="inline-flex items-center gap-2 text-sm text-gray-800 min-w-0"><span class="inline-block w-2.5 h-2.5 rounded-full shrink-0" style="background: {{ tag_colors[tag] }}"></span>{{ tag }}{% if goal_recent and goal_recent.tags %}<span class="text-xs text-gray-500 tabular-nums truncate" title="Your average per logged day over the last 30 days">{{ goal_recent.tags.get(tag, 0.0) }}h/day</span>{% endif %}</span>
                             <select name="tag_goal_kind_{{ tag }}" aria-label="{{ tag }} goal type" class="px-3 py-2 rounded-xl bg-white border border-[rgba(148,126,86,0.35)] text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
                                 <option value="" {{ 'selected' if not kind_value }}>Off</option>
                                 <option value="min" {{ 'selected' if kind_value == 'min' }}>At least</option>
