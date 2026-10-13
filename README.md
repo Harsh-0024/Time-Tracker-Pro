@@ -15,7 +15,8 @@ Eisenhower matrix (urgent × important).
     7-day average (week/month: vs the previous period), best and worst days, and fully-logged days.
   - **Copy summary:** a plain-text recap of the period for a journal or message; **Export Summary** downloads its rows.
   - **Day notes:** a private line or two about the day (autosaved, `J`); week/month views, the full log and graphs show them, and Copy summary / JSON export include them. API: `GET /api/day-notes?start=YYYY-MM-DD&end=YYYY-MM-DD`, `PUT /api/day-notes/YYYY-MM-DD` with `{"note": "..."}`.
-  - **Daily goals:** a Growth target and a Waste limit, with progress, streaks, and a met/missed dot per day.
+  - **Daily goals:** a Growth target and a Waste limit, plus optional per-category goals (e.g. Soul ≥ 1h, Rest ≤ 2h),
+    with progress, streaks, and a met/missed dot per day.
   - **Full log modal:** search (`gym, reading` · `only lunch` · `-waste`), sort, export, and create/edit/delete entries
     (written back to the sheet), with task-name autocomplete, "Again" to re-log a task, and tap-a-gap to fill missing time.
   - On phones, swipe the week strip or the day-by-day chart to move between periods.

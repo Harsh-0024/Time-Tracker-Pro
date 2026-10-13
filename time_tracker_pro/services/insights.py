@@ -440,3 +440,75 @@ def build_daily_breakdown(period_df: pd.DataFrame, start_date: date, end_date: d
         ]
         result.append({"date": d, "total": round_half_up(total, 1), "segments": segments})
     return result
+
+
+def build_tag_goal_progress(
+    period_df: pd.DataFrame,
+    period: str,
+    start_date: date,
+    end_date: date,
+    tag_goals: List[Dict[str, Any]],
+    today: Optional[date] = None,
+) -> Optional[Dict[str, Any]]:
+    """Per-category goals ("Soul >= 1h", "Waste <= 3h") on each log's primary tag.
+
+    Same rules as the Growth/Waste goals: day view shows today's hours vs the
+    goal; week/month count the logged days (that have started) that met it.
+    ``calendar`` has one entry per day keyed ``tag_<Tag>`` for the dot rows; an
+    "at least" goal isn't missed today while the day is still going.
+    """
+    if not tag_goals:
+        return None
+    today = today or date.today()
+    if period_df.empty:
+        by_day_tag: Dict[Any, float] = {}
+        logged_days: List[date] = []
+    else:
+        grouped = period_df.groupby(["date", "primary_tag"])["duration"].sum() / 60.0
+        by_day_tag = {key: float(value) for key, value in grouped.items()}
+        logged_days = sorted(d for d in period_df["date"].unique() if d <= max(today, start_date))
+
+    def hours_on(d: date, tag: str) -> float:
+        return by_day_tag.get((d, tag), 0.0)
+
+    def ok(goal: Dict[str, Any], hours: float) -> bool:
+        return hours >= goal["hours"] if goal["kind"] == "min" else hours <= goal["hours"]
+
+    items: List[Dict[str, Any]] = []
+    for goal in tag_goals:
+        tag = goal["tag"]
+        item: Dict[str, Any] = {
+            "tag": tag,
+            "kind": goal["kind"],
+            "hours": goal["hours"],
+            "color": TAG_COLORS.get(tag, "#9CA3AF"),
+            "key": f"tag_{tag}",
+        }
+        if period == "day":
+            actual = sum(h for (d, t), h in by_day_tag.items() if t == tag)
+            target = float(goal["hours"])
+            item["actual"] = round_half_up(actual, 1)
+            item["ok"] = ok(goal, actual)
+            item["pct"] = round_half_up(min(100.0, actual / target * 100.0), 1) if target else (100.0 if actual else 0.0)
+        else:
+            item["met_days"] = sum(1 for d in logged_days if ok(goal, hours_on(d, tag)))
+            item["days"] = len(logged_days)
+        items.append(item)
+
+    logged = set(logged_days)
+    calendar = []
+    for d in _days(start_date, end_date):
+        entry: Dict[str, Any] = {"date": d}
+        state = "future" if d > max(today, start_date) else ("none" if d not in logged else None)
+        for goal in tag_goals:
+            key = f"tag_{goal['tag']}"
+            h = hours_on(d, goal["tag"])
+            if state:
+                entry[key] = state
+            elif ok(goal, h):
+                entry[key] = "met"
+            else:
+                entry[key] = "open" if (goal["kind"] == "min" and d == today) else "missed"
+            entry[f"{key}_hours"] = round_half_up(h, 1)
+        calendar.append(entry)
+    return {"items": items, "calendar": calendar}

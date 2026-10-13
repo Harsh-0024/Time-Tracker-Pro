@@ -523,7 +523,7 @@
         <div id="goals-settings" class="scroll-mt-28 luxury-card rounded-3xl p-8 mt-8">
             <div class="mb-6">
                 <h2 class="text-xl font-semibold text-gray-900">Daily Goals</h2>
-                <p class="text-sm text-gray-600 mt-1">Set a daily target for Growth time (important, not urgent) and a ceiling for Waste. Your dashboard tracks both. Leave a field empty to turn that goal off.</p>
+                <p class="text-sm text-gray-600 mt-1">Set a daily target for Growth time (important, not urgent), a ceiling for Waste, and optional goals per category. Your dashboard tracks them all. Leave a field empty (or Off) to turn that goal off.</p>
             </div>
             {% if goals_error %}
             <div class="mb-4 px-4 py-3 rounded-2xl bg-red-50 border border-red-200 text-sm text-red-700" role="alert">{{ goals_error }}</div>
@@ -547,6 +547,30 @@
                     </div>
                     <span class="block mt-1.5 text-xs text-gray-500">At most this much Waste each day.</span>
                 </label>
+                <fieldset class="sm:col-span-2 mt-2">
+                    <legend class="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1">Category goals</legend>
+                    <p class="text-xs text-gray-500 mb-3">Optional daily goals for a category, e.g. at least 1h of Soul or at most 2h of Rest. Judged on each log's main tag.</p>
+                    <div class="space-y-2">
+                        {% set tag_colors = {'Work': '#10B981', 'Soul': '#6366F1', 'Rest': '#C4B5FD', 'Necessity': '#F59E0B', 'Waste': '#DC2626'} %}
+                        {% for tag in goal_tags %}
+                        {% set saved = tag_goals.get(tag) if tag_goals else None %}
+                        {% set kind_value = goals_form['tag_goal_kind_' ~ tag] if goals_form else (saved.kind if saved else '') %}
+                        {% set hours_value = goals_form['tag_goal_hours_' ~ tag] if goals_form else (('%g' | format(saved.hours)) if saved else '') %}
+                        <div class="tag-goal-row grid grid-cols-[minmax(0,1fr)_auto_7rem] items-center gap-2">
+                            <span class="inline-flex items-center gap-2 text-sm text-gray-800"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background: {{ tag_colors[tag] }}"></span>{{ tag }}</span>
+                            <select name="tag_goal_kind_{{ tag }}" aria-label="{{ tag }} goal type" class="px-3 py-2 rounded-xl bg-white border border-[rgba(148,126,86,0.35)] text-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+                                <option value="" {{ 'selected' if not kind_value }}>Off</option>
+                                <option value="min" {{ 'selected' if kind_value == 'min' }}>At least</option>
+                                <option value="max" {{ 'selected' if kind_value == 'max' }}>At most</option>
+                            </select>
+                            <div class="relative">
+                                <input type="number" name="tag_goal_hours_{{ tag }}" aria-label="{{ tag }} goal hours per day" min="0" max="24" step="0.25" inputmode="decimal" placeholder="h" value="{{ hours_value }}" class="w-full px-3 py-2 pr-8 rounded-xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm" />
+                                <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">h</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </fieldset>
                 <div class="sm:col-span-2 flex justify-end">
                     <button type="submit" class="px-5 py-2.5 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-md active:scale-[0.98] transition-transform">Save goals</button>
                 </div>

@@ -98,6 +98,13 @@ def build_period_summary_text(
             extra.append(f"Waste limit: {_h(w['actual'])} of {_h(w['limit'])}{streak}")
         elif w.get("days"):
             extra.append(f"Under the waste limit on {w['kept_days']} of {w['days']} days")
+    for tg in gp.get("tags") or []:
+        sign = "≥" if tg["kind"] == "min" else "≤"
+        if period == "day":
+            mark = "✓" if tg.get("ok") else "✗"
+            extra.append(f"{tg['tag']} {sign} {_h(tg['hours'])}: {_h(tg['actual'])} {mark}")
+        elif tg.get("days"):
+            extra.append(f"{tg['tag']} {sign} {_h(tg['hours'])} on {tg['met_days']} of {tg['days']} days")
     if extra:
         lines.append("")
         lines.extend(extra)

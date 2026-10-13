@@ -1691,6 +1691,16 @@
                             <div class="mt-1.5 text-[11px] text-gray-500">Best run under the Waste limit: {{ ws.waste_best }} days</div>
                             {% endif %}
                             {% endif %}
+                            {% for tg in goal_progress.tags or [] %}
+                            <div class="goal-row {{ 'mt-3' if goal_progress.growth or goal_progress.waste or not loop.first else '' }}">
+                                <div class="flex items-baseline justify-between text-sm">
+                                    <span class="text-gray-700 inline-flex items-center gap-1.5"><span class="inline-block w-2 h-2 rounded-full" style="background: {{ tg.color }}"></span>{{ tg.tag }}</span>
+                                    <span class="tabular-nums {{ ('text-emerald-700 font-semibold' if tg.ok else 'text-gray-600') if tg.kind == 'min' else ('text-gray-600' if tg.ok else 'text-rose-700 font-semibold') }}">{{ tg.actual }}h <span class="text-gray-400">/ {{ '%g' | format(tg.hours) }}h{{ '' if tg.kind == 'min' else ' max' }}</span>{% if tg.kind == 'min' and tg.ok %} ✓{% endif %}</span>
+                                </div>
+                                <div class="goal-bar {{ ('is-met' if tg.ok else '') if tg.kind == 'min' else ('is-limit' ~ ('' if tg.ok else ' is-over')) }}" role="progressbar" aria-label="{{ tg.tag }} goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ tg.pct }}"><span style="width: {{ tg.pct }}%"></span></div>
+                            </div>
+                            {% if goal_progress.tag_calendar %}{{ goal_dots(goal_progress.tag_calendar, tg.key, tg.tag ~ ' goal, last 7 days', 'goal met' if tg.kind == 'min' else 'under limit', 'below goal' if tg.kind == 'min' else 'over limit') }}{% endif %}
+                            {% endfor %}
                         {% else %}
                             {% if goal_progress.growth %}{% set gp = goal_progress.growth %}
                             <div class="flex items-baseline justify-between text-sm">
@@ -1706,6 +1716,13 @@
                             </div>
                             {% if goal_progress.calendar %}{{ goal_dots(goal_progress.calendar, 'waste', 'Waste limit by day', 'under limit', 'over limit') }}{% endif %}
                             {% endif %}
+                            {% for tg in goal_progress.tags or [] %}
+                            <div class="flex items-baseline justify-between text-sm {{ 'mt-2' if goal_progress.growth or goal_progress.waste or not loop.first else '' }}">
+                                <span class="text-gray-700 inline-flex items-center gap-1.5"><span class="inline-block w-2 h-2 rounded-full" style="background: {{ tg.color }}"></span>{{ tg.tag }} {{ '≥' if tg.kind == 'min' else '≤' }} {{ '%g' | format(tg.hours) }}h</span>
+                                <span class="tabular-nums text-gray-600"><span class="text-lg font-light text-gray-900">{{ tg.met_days }}</span> / {{ tg.days }} days</span>
+                            </div>
+                            {% if goal_progress.tag_calendar %}{{ goal_dots(goal_progress.tag_calendar, tg.key, tg.tag ~ ' goal by day', 'goal met' if tg.kind == 'min' else 'under limit', 'below goal' if tg.kind == 'min' else 'over limit') }}{% endif %}
+                            {% endfor %}
                         {% endif %}
                         <p class="goal-dot-caption mt-2 text-[11px] text-gray-500 hidden" aria-live="polite"></p>
                     </div>

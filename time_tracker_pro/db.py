@@ -249,6 +249,19 @@ def init_db(db_name: str) -> None:
 
     conn.execute(
         """
+        CREATE TABLE IF NOT EXISTS user_tag_goals (
+            user_id INTEGER NOT NULL,
+            tag TEXT NOT NULL,
+            kind TEXT NOT NULL CHECK (kind IN ('min', 'max')),
+            hours REAL NOT NULL,
+            PRIMARY KEY (user_id, tag),
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS user_goals (
             user_id INTEGER PRIMARY KEY,
             growth_hours REAL,

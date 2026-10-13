@@ -19,7 +19,15 @@ from ..core.rows import display_name, row_value
 from ..core.tags import primary_special_tag
 from ..repositories.app_settings import get_app_setting, upsert_app_setting
 from ..repositories.day_notes import get_day_notes
-from ..repositories.goals import get_user_goals, parse_goal_hours, upsert_user_goals
+from ..repositories.goals import (
+    GOAL_TAGS,
+    get_tag_goals,
+    get_user_goals,
+    parse_goal_hours,
+    parse_tag_goals,
+    replace_tag_goals,
+    upsert_user_goals,
+)
 from ..repositories.logs import fetch_local_data, get_first_log_date
 from ..repositories.settings import get_user_settings, upsert_user_settings
 from ..repositories.users import get_user_by_id, get_user_count
@@ -27,6 +35,7 @@ from ..services.insights import (
     build_daily_breakdown,
     build_day_timeline,
     build_goal_progress,
+    build_tag_goal_progress,
     build_insights,
     goal_streaks,
     task_name_suggestions,
@@ -118,6 +127,8 @@ def settings():
         profile_success=session.pop("profile_success", None),
         pending_email=session.get("pending_email_new"),
         goals=get_user_goals(db_name, user_id),
+        tag_goals={g["tag"]: g for g in get_tag_goals(db_name, user_id)},
+        goal_tags=GOAL_TAGS,
         goals_error=session.pop("goals_error", None),
         goals_form=session.pop("goals_form", None),
         goals_success=session.pop("goals_success", None),
@@ -132,16 +143,22 @@ def update_goals():
     try:
         growth = parse_goal_hours(request.form.get("growth_hours"))
         waste = parse_goal_hours(request.form.get("waste_limit_hours"))
-    except ValueError:
-        session["goals_error"] = "Goals must be numbers of hours between 0 and 24."
+        tag_goals = parse_tag_goals(request.form)
+    except ValueError as exc:
+        message = str(exc)
+        if not message or message.startswith("could not convert"):
+            message = "Goals must be numbers of hours between 0 and 24."
+        session["goals_error"] = message
         # Re-show what was typed so it can be corrected rather than retyped.
-        session["goals_form"] = {
-            "growth_hours": (request.form.get("growth_hours") or "")[:20],
-            "waste_limit_hours": (request.form.get("waste_limit_hours") or "")[:20],
-        }
+        form_keys = ["growth_hours", "waste_limit_hours"] + [
+            f"tag_goal_{part}_{tag}" for tag in GOAL_TAGS for part in ("kind", "hours")
+        ]
+        session["goals_form"] = {key: (request.form.get(key) or "")[:20] for key in form_keys}
         return redirect(url_for("main.settings") + "#goals-settings")
     upsert_user_goals(db_name, user_id, growth, waste)
-    session["goals_success"] = "Goals saved." if (growth is not None or waste is not None) else "Goals cleared."
+    replace_tag_goals(db_name, user_id, tag_goals)
+    any_goal = growth is not None or waste is not None or bool(tag_goals)
+    session["goals_success"] = "Goals saved." if any_goal else "Goals cleared."
     return redirect(url_for("main.settings") + "#goals-settings")
 
 
@@ -289,6 +306,20 @@ def dashboard():
         recent_df = df[(df["date"] >= recent_start) & (df["date"] <= selected_date)] if not df.empty else df
         recent = build_goal_progress(recent_df, "week", recent_start, selected_date, goals)
         goal_progress["recent"] = recent["calendar"] if recent else None
+    tag_goals = get_tag_goals(db_name, user_id)
+    if tag_goals:
+        tag_progress = build_tag_goal_progress(period_df, period, start_date, end_date, tag_goals)
+        if goal_progress is None:
+            goal_progress = {"period": period}
+        goal_progress["tags"] = tag_progress["items"]
+        if period == "day":
+            recent_start = selected_date - timedelta(days=6)
+            recent_df = df[(df["date"] >= recent_start) & (df["date"] <= selected_date)] if not df.empty else df
+            goal_progress["tag_calendar"] = build_tag_goal_progress(
+                recent_df, "week", recent_start, selected_date, tag_goals
+            )["calendar"]
+        else:
+            goal_progress["tag_calendar"] = tag_progress["calendar"]
     task_count = int(len(period_df)) if not period_df.empty else 0
 
     idx = (selected_date.weekday() + 1) % 7
