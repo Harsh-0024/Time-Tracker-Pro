@@ -1595,7 +1595,6 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
             const renderStats = () => {
                 const activeTasks = Array.isArray(window.modalActiveTasks) ? window.modalActiveTasks : (data.tasks || []);
                 const totalMinutes = activeTasks.reduce((sum, task) => sum + minutesFromHours(task.duration || 0), 0);
-                const taskCount = activeTasks.length;
                 const sharePct = periodMinutes ? Math.round((totalMinutes / periodMinutes) * 100) : 0;
                 let importantMinutes = 0;
                 let urgentMinutes = 0;
@@ -3146,7 +3145,6 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
             const tagData = DASHBOARD_CONFIG.tagData || [];
             if (tagCtx && tagLabels.length) {
                 const tagColors = tagLabels.map((label, idx) => TAG_COLOR_MAP[label] || tagPalette[idx % tagPalette.length]);
-                const tagTotal = tagData.reduce((sum, v) => sum + Number(v || 0), 0);
                 const tagChartDark = document.documentElement.getAttribute('data-theme') === 'dark';
                 const tagHoursLabel = (idx) => `${Number(tagData[idx] || 0).toFixed(1)}h`;
                 try {
@@ -3257,17 +3255,6 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
                 }
             }
 
-            // Decimal handling helpers: sum in minutes to avoid float drift, format using fixed decimals
-            function ensureFinite(n) {
-                const v = Number(n);
-                return Number.isFinite(v) ? v : 0;
-            }
-            function minutesFromHours(h) {
-                return Math.round(ensureFinite(h) * 60);
-            }
-            function formatHours(h, decimals = 1) {
-                return ensureFinite(h).toFixed(decimals);
-            }
             function hoursToHM(h) {
                 const total = Math.max(0, Math.round(Number(h || 0) * 60));
                 const hrs = Math.floor(total / 60);

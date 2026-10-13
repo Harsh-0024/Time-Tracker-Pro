@@ -231,7 +231,6 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
         const graphFocusBtn = document.getElementById('graphFocusBtn');
         const graphFocusLabel = document.getElementById('graphFocusLabel');
         const graphFocusMenu = document.getElementById('graphFocusMenu');
-        const graphSearchWrap = document.getElementById('graphSearchWrap');
         const graphSearchInput = document.getElementById('graphSearchInput');
         const graphSearchSuggestions = document.getElementById('graphSearchSuggestions');
         const graphSearchApply = document.getElementById('graphSearchApply');
@@ -1157,7 +1156,6 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             });
             const totalMinutes = activeTasks.reduce((sum, task) => sum + Number(task.duration_minutes || 0), 0);
             const taskCount = activeTasks.length;
-            const uniqueTasks = new Set(activeTasks.map(t => normalizeGraphTaskKey(t.task))).size;
             const avgMinutes = taskCount ? totalMinutes / taskCount : 0;
             const activeDates = new Set(
                 activeTasks.map(task => String(task.date || '').trim()).filter(Boolean)
@@ -1170,7 +1168,6 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             const spanDays = activeDateList.length
                 ? Math.round((Math.max(...activeDateList) - Math.min(...activeDateList)) / 86400000) + 1
                 : 0;
-            const periodDays = Math.max(1, spanDays || 0, consistencyDays || 0);
             const canAverage = activeDays > 1;
             if (!canAverage && graphTaskStatsMode === 'avg') {
                 graphTaskStatsMode = 'total';

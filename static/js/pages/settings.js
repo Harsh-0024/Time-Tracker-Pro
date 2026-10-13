@@ -417,7 +417,6 @@ const SETTINGS_CONFIG = JSON.parse(document.getElementById('settingsConfig').tex
         const addApiForm = document.getElementById('addApiForm');
         const cancelAddApiBtn = document.getElementById('cancelAddApi');
         const newApiAccountForm = document.getElementById('newApiAccountForm');
-        const apiAccountsList = document.getElementById('apiAccountsList');
         const sheetyAccountsToggle = document.getElementById('sheetyAccountsToggle');
         const sheetyAccountsPanel = document.getElementById('sheetyAccountsPanel');
         const sheetyAccountsChevron = document.getElementById('sheetyAccountsChevron');
