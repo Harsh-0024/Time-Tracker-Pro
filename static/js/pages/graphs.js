@@ -3455,6 +3455,9 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             } else if (key === 'r' && canReview) {
                 event.preventDefault();
                 reviewBtn.click();
+            } else if (key === 'c' && graphCompareToggle) {
+                event.preventDefault();
+                graphCompareToggle.click();
             } else if (key === 'a' && adminUrl) {
                 window.location.href = adminUrl;
             } else if (key === '/') {
@@ -3479,6 +3482,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                             ${row(['/'], 'Search activities')}
                             ${canReview ? row(['R'], 'Review tasks') : ''}
                             ${row([`1–${rangePills.length}`], 'Time range (7 days … All)')}
+                            ${row(['C'], 'Compare with the previous period')}
                             ${row(['D'], 'Dashboard')}
                             ${row(['S'], 'Settings')}
                             ${adminUrl ? row(['A'], 'Admin') : ''}
