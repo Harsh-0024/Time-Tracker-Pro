@@ -103,7 +103,7 @@ Tests use a temporary database and never contact Sheety or send email.
 time_tracker_pro/
   core/          small pure helpers (dates, tags, admin emails)
   repositories/  SQLite access (users, logs, settings, goals, Sheety accounts, …)
-  services/      sync, parser, insights, email, matrix stats
+  services/      sync, parser, insights, sleep, email, matrix stats
   web/           Flask blueprints: auth, main (pages), api (JSON), admin
 templates/       Jinja pages; per-request values are passed to page scripts in a JSON <script id=...Config> block
 static/          theme.css, tailwind.css (prebuilt), js/pages/*.js + css/pages/*.css (per-page code), icons
