@@ -1521,7 +1521,7 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
                                 <div class="font-medium text-gray-900 mb-1 line-clamp-2 break-words" title="${escapeHtml(task.task)}">${escapeHtml(task.task)}</div>
                                 <div class="flex flex-wrap items-center gap-2 text-[13px] text-gray-600">
                                     ${showDate && !groupByDay ? `<span class="text-gray-500" title="${escapeHtml(task.date)}">${escapeHtml(friendlyTaskDate(task.date))}</span>` : ''}
-                                    <span class="text-gray-500">${escapeHtml(task.start_time)} - ${escapeHtml(task.end_time)}</span>
+                                    <span class="text-gray-500">${escapeHtml(String(task.start_time || '').replace(/^0(?=\d:)/, ''))} – ${escapeHtml(String(task.end_time || '').replace(/^0(?=\d:)/, ''))}</span>
                                     ${tagBadge}
                                     ${badges.join('')}
                                 </div>

@@ -1781,7 +1781,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                                 <div class="font-medium text-gray-900 mb-1 line-clamp-2 break-words">${escapeSuggestionHtml(normalizeGraphTaskName(task.task) || 'Untitled task')}</div>
                                 <div class="flex flex-wrap items-center gap-2 text-[13px] text-gray-600">
                                     ${groupByDay ? '' : `<span class="text-gray-500" title="${escapeSuggestionHtml(task.date)}">${escapeSuggestionHtml(friendlyTaskDate(task.date))}</span>`}
-                                    <span class="text-gray-500">${escapeSuggestionHtml(task.start_time)} - ${escapeSuggestionHtml(task.end_time)}</span>
+                                    <span class="text-gray-500">${escapeSuggestionHtml(String(task.start_time || '').replace(/^0(?=\d:)/, ''))} – ${escapeSuggestionHtml(String(task.end_time || '').replace(/^0(?=\d:)/, ''))}</span>
                                     ${tagBadge}
                                     ${badges.join('')}
                                 </div>
