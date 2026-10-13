@@ -354,6 +354,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - (resolved 2026-10-13) Tailwind is now precompiled to static/css/tailwind.css; the CDN script is gone.
 
 ## Ideas / TODO queue
+- (question, 2026-10-14) CSRF: forms/API rely on the session cookie being SameSite=Lax (blocks cross-site POSTs; JSON PUT/DELETE need CORS) - fine today. Defence in depth would be rejecting state-changing requests whose Origin host differs from the request host, but I don't know how your host's proxy sets Host (no ProxyFix), so I didn't add it: a mismatch would block every form. Easy to add once confirmed.
 - (question, 2026-10-14) Add task pre-fills Start from the last entry's end rounded DOWN to the minute; when logs carry seconds (e.g. 23:21:40) the new entry 'overlaps' the previous one by 40s and the overlap warning lists it. Rounding the pre-fill up (or ignoring <1 min overlaps) would fix it - time handling, so left for you.
 - (question, 22:20 run) Installed app / long-lived tab: the dashboard is server-rendered for the day it was loaded. Reopen the app the next morning (page still in memory) and it shows yesterday as 'today' (Today button hidden, 'Today so far' copy) until you pull to sync/reload. A visibilitychange handler that reloads when the local date changed (or after ~30 min hidden) would fix it. Not done: day rollover is time handling.
 - (done) Chart.js 4.5.1 loaded with an SRI integrity hash; if you bump the version, update integrity= in dashboard.html and graphs.html.
