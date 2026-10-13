@@ -1076,7 +1076,7 @@
                     {% if period == 'day' %}
                     <div class="insight-stat">
                         <div class="insight-stat-label">Longest growth block</div>
-                        <div class="insight-stat-value text-base"><span class="break-words">{{ lb.task }}</span> <span class="insight-stat-sub">{{ lb.hours }}h{% if lb.start_time %} · from {{ lb.start_time }}{% endif %}</span></div>
+                        <div class="insight-stat-value text-base"><span class="break-words">{{ lb.task }}</span> <span class="insight-stat-sub">{{ lb.hours }}h{% if lb.start_time %} · from {{ lb.start_time | trim("0") }}{% endif %}</span></div>
                     </div>
                     {% else %}
                     <a class="insight-stat insight-link" href="/?date={{ lb.date }}&period=day">
