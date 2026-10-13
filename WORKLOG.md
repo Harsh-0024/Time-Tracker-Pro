@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-14 04:10 IST: main session active (owner resumed; keep going until 'stop').
+- 2026-10-14 resumed after usage limit: main session active (owner resumed; keep going until 'stop').
 
 ## 2026-10-14 summary - most important first
 1. BUGS fixed: graphs drew every line too high when 'vs previous period' was on at page load (Chart.js race,
@@ -57,6 +57,7 @@ Verification: 240 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop swee
 - Graphs: a search with no matches says so (with Clear search) instead of a silent flat line.
 - Graphs: 'Sleep per night' focus (per wake-up day, midnight splits merged; saveable as a view). Unlogged nights are gaps, not 0h (averages, weekday bars, compare note, moving average, last 7 days); cards say Avg/Night, Longest Night.
 - Week strip (day view) marks days that have a note with a small dot.
+- Emails: plain-text verification email states the expiry; (c) year no longer hard-coded 2026. Graphs: C = compare shortcut. Page titles unified ('X · Time Tracker Pro').
 - a11y: trend chart canvas has a live summary label; legend-backed modal pies hidden from screen readers.
 - Graphs deep links: /graphs?focus=&search=&range= (applied once, then removed from the URL). Sleep insight has 'Trend ->'.
 - Graphs: 'CSV' button downloads the plotted days (date, hours, moving average).
