@@ -112,7 +112,7 @@
         [data-theme="dark"] .saved-view-chip { background: #0E0C08; border-color: rgba(212, 175, 55, 0.18); }
         [data-theme="dark"] .saved-view-apply { color: #B8A878; }
         [data-theme="dark"] .saved-view-apply:hover { color: #EDE6D3; }
-        .range-pill.active, .ma-pill.active {
+        .range-pill.active, .ma-pill.active, #graphCompareToggle.active {
             background: linear-gradient(135deg, #F8D574, #F5B826);
             color: #3B2A0A;
             box-shadow: 0 12px 26px rgba(185, 132, 40, 0.35);
@@ -462,7 +462,9 @@
                 <div>
                     <h3 class="text-lg md:text-xl font-semibold text-gray-900" id="chartTitle">Work</h3>
                     <p class="text-xs md:text-sm text-gray-500" id="chartSubtitle">Loading…</p>
+                    <p class="text-xs md:text-sm text-gray-500 hidden" id="chartCompareNote" aria-live="polite"></p>
                 </div>
+                <button type="button" id="graphCompareToggle" aria-pressed="false" title="Overlay the same number of days just before this range" class="soft-pill self-start px-3 md:px-4 py-2 rounded-full text-xs font-semibold text-gray-700 whitespace-nowrap">vs previous period</button>
             </div>
             <div class="relative" style="height: 280px;" id="graphCanvasWrap">
                 <canvas id="graphCanvas"></canvas>
@@ -2991,6 +2993,7 @@
                             const y = Number(context?.parsed?.y || 0);
                             if (kind === 'raw') return `Day: ${formatGraphValue(y, valueScale, 2)}`;
                             if (kind === 'goal') return context.dataset.label;
+                            if (kind === 'prev') return `Previous period: ${formatGraphValue(y, valueScale, 2)}`;
                             return `MA (${maWindow}d): ${formatGraphValue(y, valueScale, 2)}`;
                         }
                     };
@@ -3059,6 +3062,7 @@
                                         const y = Number(context?.parsed?.y || 0);
                                         if (kind === 'raw') return `Day: ${formatGraphValue(y, valueScale, 2)}`;
                                         if (kind === 'goal') return context.dataset.label;
+                            if (kind === 'prev') return `Previous period: ${formatGraphValue(y, valueScale, 2)}`;
                                         return `MA (${maWindow}d): ${formatGraphValue(y, valueScale, 2)}`;
                                     }
                                 }
@@ -3138,6 +3142,117 @@
                 subtitleParts.push('Filtered');
             }
             chartSubtitle.textContent = subtitleParts.join(' · ');
+            applyCompareOverlay(labels, values, rangeDays, valueScale);
+        }
+
+        // ---- Compare with the previous period ---------------------------------
+        // Fetches the same number of days just before the visible window (same
+        // focus, search and exclusions) and draws them as a faint dashed line,
+        // index-aligned to the window, plus a 'previous vs now' daily average.
+        const graphCompareToggle = document.getElementById('graphCompareToggle');
+        const chartCompareNote = document.getElementById('chartCompareNote');
+        let graphCompareEnabled = false;
+        try { graphCompareEnabled = localStorage.getItem('ttp-graph-compare') === '1'; } catch (e) {}
+        let graphCompareRequest = 0;
+
+        function syncCompareToggle() {
+            if (!graphCompareToggle) return;
+            const usable = currentRange !== 'all';
+            graphCompareToggle.disabled = !usable;
+            graphCompareToggle.classList.toggle('active', graphCompareEnabled && usable);
+            graphCompareToggle.classList.toggle('opacity-50', !usable);
+            graphCompareToggle.setAttribute('aria-pressed', graphCompareEnabled && usable ? 'true' : 'false');
+            graphCompareToggle.title = usable
+                ? 'Overlay the same number of days just before this range'
+                : 'Pick a time range (not All) to compare with the previous period';
+        }
+
+        function clearCompareOverlay() {
+            if (chartCompareNote) { chartCompareNote.classList.add('hidden'); chartCompareNote.textContent = ''; }
+            if (!chartInstance) return;
+            const datasets = chartInstance.data.datasets || [];
+            const idx = datasets.findIndex(d => d.__kind === 'prev');
+            if (idx >= 0) { datasets.splice(idx, 1); chartInstance.update('none'); }
+        }
+
+        function isoMinusDays(iso, days) {
+            const d = parseIsoDate(iso);
+            if (!d) return '';
+            d.setDate(d.getDate() - days);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        async function applyCompareOverlay(labels, values, rangeDays, valueScale) {
+            syncCompareToggle();
+            const request = ++graphCompareRequest;
+            if (!graphCompareEnabled || currentRange === 'all' || !Array.isArray(labels) || !labels.length) {
+                clearCompareOverlay();
+                return;
+            }
+            const { startIndex, endIndex } = getRangeBounds(labels, rangeDays);
+            const span = endIndex - startIndex + 1;
+            const prevEnd = isoMinusDays(labels[startIndex], 1);
+            if (!prevEnd || span <= 0) { clearCompareOverlay(); return; }
+            const params = new URLSearchParams();
+            params.set('metric', currentMetric);
+            params.set('days', String(span));
+            params.set('end', prevEnd);
+            if (graphSearchQuery) params.set('search', graphSearchQuery);
+            if (graphExcludedIds.size) params.set('exclude', Array.from(graphExcludedIds).join(','));
+            let prev;
+            try {
+                const resp = await fetch(`/api/graph-data?${params.toString()}`, { credentials: 'include' });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                prev = await resp.json();
+            } catch (e) {
+                console.warn('Could not load the previous period', e);
+                return;
+            }
+            if (request !== graphCompareRequest || !chartInstance) return;  // a newer render won
+            const prevValues = Array.isArray(prev.values) ? prev.values.slice(-span) : [];
+            const aligned = labels.map((_, i) => (i >= startIndex && i <= endIndex) ? (Number(prevValues[i - startIndex]) || 0) : null);
+            const dark = typeof isDarkTheme === 'function' && isDarkTheme();
+            const dataset = {
+                __kind: 'prev',
+                label: 'Previous period',
+                data: aligned,
+                borderColor: dark ? 'rgba(184, 168, 120, 0.55)' : 'rgba(100, 116, 139, 0.55)',
+                borderWidth: 1.5,
+                borderDash: [2, 4],
+                fill: false,
+                tension: 0.35,
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                pointHitRadius: 0,
+                spanGaps: false
+            };
+            const datasets = chartInstance.data.datasets;
+            const idx = datasets.findIndex(d => d.__kind === 'prev');
+            if (idx >= 0) datasets[idx] = dataset; else datasets.push(dataset);
+            chartInstance.update('none');
+
+            const windowValues = values.slice(startIndex, endIndex + 1).map(v => Number(v) || 0);
+            const nowAvg = windowValues.reduce((a, b) => a + b, 0) / Math.max(1, span);
+            const prevAvg = prevValues.reduce((a, b) => a + (Number(b) || 0), 0) / Math.max(1, span);
+            if (chartCompareNote) {
+                const delta = nowAvg - prevAvg;
+                const sign = delta > 0.05 ? '▲' : (delta < -0.05 ? '▼' : '=');
+                chartCompareNote.textContent = `Previous ${span} days ${formatGraphValue(prevAvg, valueScale, 1)}/day → now ${formatGraphValue(nowAvg, valueScale, 1)}/day ${sign === '=' ? '(same)' : sign + ' ' + formatGraphValue(Math.abs(delta), valueScale, 1)}`;
+                chartCompareNote.classList.remove('hidden');
+            }
+        }
+
+        if (graphCompareToggle) {
+            graphCompareToggle.addEventListener('click', () => {
+                if (currentRange === 'all') return;
+                graphCompareEnabled = !graphCompareEnabled;
+                try { localStorage.setItem('ttp-graph-compare', graphCompareEnabled ? '1' : '0'); } catch (e) {}
+                if (lastGraphPayload) {
+                    updateChart(lastGraphPayload, currentMetric, currentDays);
+                } else {
+                    syncCompareToggle();
+                }
+            });
         }
 
         function buildGraphUrl(includeTasks = false) {

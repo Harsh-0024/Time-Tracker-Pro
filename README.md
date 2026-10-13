@@ -21,7 +21,8 @@ Eisenhower matrix (urgent × important).
     (written back to the sheet), with task-name autocomplete, "Again" to re-log a task, and tap-a-gap to fill missing time.
   - On phones, swipe the week strip or the day-by-day chart to move between periods.
 - **Graphs:** trends for any category, quadrant or search expression over time, with a moving average,
-  goal/limit reference lines, saved views, by-weekday and by-time-of-day breakdowns, and a calendar heatmap.
+  goal/limit reference lines, a 'vs previous period' overlay, saved views, by-weekday and by-time-of-day breakdowns,
+  and a calendar heatmap.
 - **Accounts:**
   - Email-verified registration and password or email-code (OTP) login.
   - "Remember me" sessions, password reset, login throttling, and a resend cooldown on email codes.

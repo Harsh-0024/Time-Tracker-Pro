@@ -256,6 +256,7 @@
     color: var(--pill-text-hover);
 }
 [data-theme="dark"] .range-pill.active,
+[data-theme="dark"] #graphCompareToggle.active,
 [data-theme="dark"] .ma-pill.active {
     background: linear-gradient(135deg, #8A6800, #D4AF37) !important;
     color: #FFF8DC !important;
