@@ -16,7 +16,7 @@ Eisenhower matrix (urgent × important).
     7-day average (week/month: vs the previous period), best and worst days, fully-logged days, and
     sleep (day: last night vs your previous 7 nights; week/month: hours a night and typical bed/wake times; from tasks named "Sleep").
   - **Copy summary:** a plain-text recap of the period for a journal or message; **Export Summary** downloads its rows.
-  - **Day notes:** a private line or two about the day (autosaved, `J`); week/month views, the full log and graphs show them, and Copy summary / JSON export include them. API: `GET /api/day-notes?start=YYYY-MM-DD&end=YYYY-MM-DD`, `PUT /api/day-notes/YYYY-MM-DD` with `{"note": "..."}`.
+  - **Day notes:** a private line or two about the day (autosaved, `J`); week/month views, the full log and graphs show them, and Copy summary / JSON export include them (the JSON export also carries your goals). API: `GET /api/day-notes?start=YYYY-MM-DD&end=YYYY-MM-DD`, `PUT /api/day-notes/YYYY-MM-DD` with `{"note": "..."}`.
   - **Daily goals:** a Growth target, a Waste limit and a sleep goal (hours a night), plus optional per-category goals (e.g. Soul ≥ 1h, Rest ≤ 2h),
     with progress, streaks, and a met/missed dot per day.
   - **Full log modal:** search (`gym, reading` · `only lunch` · `-waste` · `note:tired` for days whose note mentions it), sort, export, and create/edit/delete entries

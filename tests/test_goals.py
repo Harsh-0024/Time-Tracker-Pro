@@ -223,3 +223,15 @@ def test_sleep_goal_column_added_to_old_databases(tmp_path):
     conn.close()
     init_db(path)
     assert get_user_goals(path, 1) == {"growth_hours": 4.0, "waste_limit_hours": 2.0, "sleep_hours": None}
+
+
+def test_json_export_includes_goals(db_path, login):
+    import json
+
+    uid = make_user(db_path)
+    client = login(uid)
+    client.post("/settings/goals", data={"growth_hours": "4", "waste_limit_hours": "", "sleep_hours": "7.5",
+                                          "tag_goal_kind_Soul": "min", "tag_goal_hours_Soul": "1"})
+    data = json.loads(client.get("/api/export-csv?mode=all&format=json").get_data(as_text=True))
+    assert data["goals"] == {"growth_hours": 4.0, "waste_limit_hours": None, "sleep_hours": 7.5}
+    assert data["category_goals"] == [{"tag": "Soul", "kind": "min", "hours": 1.0}]

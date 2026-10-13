@@ -17,6 +17,7 @@ from ..core.dates import get_period_range, parse_period_param
 from ..core.tags import filter_special_tags, normalize_tag, primary_special_tag
 from ..db import get_db_connection
 from ..repositories.day_notes import get_day_notes
+from ..repositories.goals import get_tag_goals, get_user_goals
 from ..repositories.graph_search_history import (
     list_top_graph_search_combos,
     record_graph_search_combo,
@@ -1910,6 +1911,9 @@ def export_csv():
             "columns": headers,
             "rows": export_rows,
             "notes": [{"date": day.isoformat(), "note": text} for day, text in sorted(notes.items())],
+            # Settings worth keeping in a backup (local only, like the notes).
+            "goals": get_user_goals(db_name, user_id),
+            "category_goals": get_tag_goals(db_name, user_id),
         }
         buffer = BytesIO(json.dumps(payload, ensure_ascii=True, indent=2).encode("utf-8"))
         resp = send_file(
