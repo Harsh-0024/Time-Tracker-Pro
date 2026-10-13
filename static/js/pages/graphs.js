@@ -2582,6 +2582,26 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             });
         }
 
+        // The plotted series as CSV: one row per day with the moving average beside it.
+        document.getElementById('graphDownloadCsv')?.addEventListener('click', () => {
+            if (!graphRawDates.length) return;
+            const focus = graphFocusValue === 'search_only' ? 'search' : graphFocusValue;
+            const rows = [['date', 'hours', `moving_average_${maWindow}d`]];
+            graphRawDates.forEach((day, i) => {
+                const ma = Number(graphMaValues[i]);
+                rows.push([day, Number(graphRawValues[i] || 0).toFixed(2), Number.isFinite(ma) ? ma.toFixed(2) : '']);
+            });
+            const csv = rows.map(r => r.join(',')).join('\n') + '\n';
+            const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `time-tracker-${focus}-${graphRawDates[0]}-to-${graphRawDates[graphRawDates.length - 1]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        });
+
         function buildGraphUrl(includeTasks = false) {
             const params = new URLSearchParams();
             params.set('metric', currentMetric);
