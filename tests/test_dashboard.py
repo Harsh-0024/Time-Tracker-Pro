@@ -174,3 +174,12 @@ def test_dashboard_lists_overlaps(db_path, login):
     assert "overlapping entry this week" in week and "/?date=2026-09-20&period=day" in week
     add_log(db_path, uid, "2026-09-21", "09:00:00", "2026-09-21", "10:00:00", task="Solo")
     assert "counted twice" not in client.get("/?date=2026-09-21").get_data(as_text=True)
+
+
+def test_content_security_policy_on_pages_only(app):
+    client = app.test_client()
+    page = client.get("/login")
+    csp = page.headers["Content-Security-Policy"]
+    assert "default-src 'self'" in csp and "connect-src 'self'" in csp and "object-src 'none'" in csp
+    assert "https://cdn.jsdelivr.net" in csp and "https://fonts.googleapis.com" in csp
+    assert "Content-Security-Policy" not in client.get("/manifest.webmanifest").headers

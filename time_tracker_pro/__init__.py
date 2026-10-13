@@ -24,6 +24,24 @@ _raw_auth_user_id = (os.getenv("LOCAL_AUTH_USER_ID") or "").strip()
 LOCAL_AUTH_USER_ID: Optional[int] = int(_raw_auth_user_id) if _raw_auth_user_id.isdigit() else None
 
 
+CONTENT_SECURITY_POLICY = "; ".join(
+    [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com data:",
+        "img-src 'self' data: blob:",
+        "connect-src 'self'",
+        "worker-src 'self'",
+        "manifest-src 'self'",
+        "frame-ancestors 'self'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "object-src 'none'",
+    ]
+)
+
+
 def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
     load_dotenv()
 
@@ -119,12 +137,19 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
         if limit and request.content_length is not None and request.content_length > limit:
             abort(413)
 
+    # Pages may only load scripts from here and the pinned Chart.js CDN, fonts from Google
+    # Fonts, and talk to this server. 'unsafe-inline' is needed for the templates' inline
+    # scripts/handlers. DISABLE_CSP=1 turns it off if a deployment needs something else.
+    csp_enabled = (os.getenv("DISABLE_CSP") or "").strip().lower() not in {"1", "true", "yes", "on"}
+
     @app.after_request
     def _security_headers(response):
         # Cheap hardening that doesn't interfere with the inline scripts/CDN assets.
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        if csp_enabled and response.mimetype == "text/html":
+            response.headers.setdefault("Content-Security-Policy", CONTENT_SECURITY_POLICY)
         return response
 
     # Static files: url_for('static', ...) gets ?v=<mtime>, and versioned requests are
