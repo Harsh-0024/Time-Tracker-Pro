@@ -99,4 +99,8 @@ def test_graphs_page_exposes_tag_goals(db_path, login):
     uid = make_user(db_path)
     replace_tag_goals(db_path, uid, [{"tag": "Soul", "kind": "min", "hours": 1.0}])
     html = login(uid).get("/graphs").get_data(as_text=True)
-    assert 'const USER_TAG_GOALS = [{"hours": 1.0, "kind": "min", "tag": "Soul"}];' in html
+    import json
+    import re
+
+    config = json.loads(re.search(r'id="graphsConfig">(.*?)</script>', html, re.S).group(1))
+    assert config["tagGoals"] == [{"hours": 1.0, "kind": "min", "tag": "Soul"}]

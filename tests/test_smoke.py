@@ -226,10 +226,20 @@ def test_manifest_shortcuts(app):
     assert "/#add-task" in urls and "/graphs" in urls
 
 
+def app_static(rel):
+    import os
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, "static", rel), encoding="utf-8") as fh:
+        return fh.read()
+
+
 def test_graphs_has_calendar_card(db_path, login):
     html = login(make_user(db_path)).get("/graphs").get_data(as_text=True)
     assert 'id="calendarCard"' in html and 'id="calendarGrid"' in html
-    assert "updateCalendarHeatmap(labels, values, valueScale);" in html
+    assert "js/pages/graphs.js" in html
+    script = app_static("js/pages/graphs.js")
+    assert "updateCalendarHeatmap(labels, values, valueScale);" in script
 
 
 def test_service_worker_and_offline_page_are_public(app):
