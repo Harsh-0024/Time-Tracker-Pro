@@ -32,6 +32,13 @@ Eisenhower matrix (urgent × important).
   Admins cannot see other users' data.
 - **Interface:** light, dark and system themes; installable as a PWA (long-press the icon for Add task / This week / Graphs; pull down to sync; a friendly offline page); keyboard shortcuts (press `?`).
 
+### How sleep is counted
+
+Sleep features (day/week/month insights, the graphs 'Sleep per night' focus and the Sleep goal) use logs whose
+task is exactly "Sleep" (case and a trailing " ." ignored). Consecutive Sleep rows up to 15 minutes apart are one
+night (so "23:30-00:00" + "00:00-06:30" is one 7h night), a night counts on the day you woke up, and blocks under
+3 hours are naps and left out. A day without a logged night is treated as missing, not as 0h of sleep.
+
 ## Running locally
 
 ```bash
