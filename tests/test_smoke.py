@@ -214,10 +214,10 @@ def test_static_urls_are_versioned_and_long_cached(client_with_data):
     html = client_with_data.get("/settings").get_data(as_text=True)
     match = re.search(r'/static/js/theme\.js\?v=(\d+)', html)
     assert match, "static URLs carry ?v=<mtime>"
-    versioned = client_with_data.get(f"/static/js/theme.js?v={match.group(1)}")
-    assert "max-age=31536000" in versioned.headers.get("Cache-Control", "")
-    plain = client_with_data.get("/static/js/theme.js")
-    assert "max-age=31536000" not in plain.headers.get("Cache-Control", "")
+    with client_with_data.get(f"/static/js/theme.js?v={match.group(1)}") as versioned:
+        assert "max-age=31536000" in versioned.headers.get("Cache-Control", "")
+    with client_with_data.get("/static/js/theme.js") as plain:
+        assert "max-age=31536000" not in plain.headers.get("Cache-Control", "")
 
 
 def test_manifest_shortcuts(app):
@@ -267,3 +267,22 @@ def test_pages_and_json_are_private_no_cache(client_with_data):
     css = re.search(r'/static/css/theme\.css\?v=\d+', html).group(0)
     with client_with_data.get(css) as resp:
         assert "max-age=31536000" in resp.headers["Cache-Control"]
+
+
+def test_versioned_static_js_and_css_are_gzipped(client_with_data):
+    import gzip
+    import re
+
+    html = client_with_data.get("/graphs").get_data(as_text=True)
+    for url in (re.search(r'/static/js/pages/graphs\.js\?v=\d+', html).group(0),
+                re.search(r'/static/css/tailwind\.css\?v=\d+', html).group(0)):
+        with client_with_data.get(url, headers={"Accept-Encoding": "gzip"}) as zipped:
+            assert zipped.headers["Content-Encoding"] == "gzip", url
+            assert "max-age=31536000" in zipped.headers["Cache-Control"]
+            body = gzip.decompress(zipped.get_data())
+        with client_with_data.get(url) as plain:
+            assert "Content-Encoding" not in plain.headers
+            assert plain.get_data() == body
+    # Unversioned requests (revalidated every time) stay as they were.
+    with client_with_data.get("/static/js/theme.js", headers={"Accept-Encoding": "gzip"}) as resp:
+        assert "Content-Encoding" not in resp.headers

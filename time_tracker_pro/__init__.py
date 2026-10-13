@@ -7,7 +7,7 @@ import threading
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from dotenv import load_dotenv
 from flask import Flask, abort, jsonify, render_template, request, url_for
@@ -180,12 +180,54 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
 
     _GZIP_MIMETYPES = {"text/html", "application/json", "text/css", "text/javascript", "application/javascript"}
 
+    # Versioned page scripts/styles (?v=<mtime>, cached for a year) are ~190KB each but
+    # ~38KB gzipped; compress them once per file version and keep the bytes in memory.
+    _static_gzip_cache: Dict[Tuple[str, float], bytes] = {}
+
+    def _gzip_static_candidate(response) -> bool:
+        return (
+            request.endpoint == "static"
+            and bool(request.args.get("v"))
+            and response.status_code == 200
+            and response.mimetype in ("text/css", "text/javascript", "application/javascript")
+            and "Content-Encoding" not in response.headers
+            and bool(request.accept_encodings["gzip"])
+        )
+
+    def _gzip_static(response):
+        filename = (request.view_args or {}).get("filename") or ""
+        path = os.path.realpath(os.path.join(static_folder, filename))
+        if not path.startswith(os.path.realpath(static_folder) + os.sep):
+            return response
+        try:
+            key = (path, os.path.getmtime(path))
+            data = _static_gzip_cache.get(key)
+            if data is None:
+                with open(path, "rb") as fh:
+                    data = gzip.compress(fh.read(), compresslevel=9)
+                _static_gzip_cache[key] = data
+        except OSError:
+            return response
+        if hasattr(response.response, "close"):
+            response.response.close()  # the file send_file had opened
+        response.direct_passthrough = False
+        response.set_data(data)
+        response.headers["Content-Encoding"] = "gzip"
+        response.vary.add("Accept-Encoding")
+        etag = response.headers.get("ETag")
+        if etag:
+            # A different representation needs a different validator.
+            response.headers["ETag"] = etag[:-1] + '-gz"' if etag.endswith('"') else etag + "-gz"
+        return response
+
     @app.after_request
     def _gzip_response(response):
         # The dashboard page is ~290KB of HTML (~50KB gzipped) and neither Flask nor
         # gunicorn compresses. Files (send_file/static), streams and tiny bodies are left alone.
         if os.getenv("DISABLE_GZIP") == "1" or app.config.get("DISABLE_GZIP"):
             return response
+        if _gzip_static_candidate(response):
+            return _gzip_static(response)
         if (
             response.direct_passthrough
             or response.is_streamed

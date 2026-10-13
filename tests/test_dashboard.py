@@ -68,11 +68,11 @@ def test_today_insights_framed_as_so_far(db_path, login):
 
 
 def test_default_app_icon_is_a_real_png(app):
-    resp = app.test_client().get("/app-icon.png")
-    assert resp.status_code == 200
-    assert resp.data.startswith(b"\x89PNG")
-    # IHDR width/height: the old fallback was a 1x1 transparent pixel.
-    assert int.from_bytes(resp.data[16:20], "big") == 512
+    with app.test_client().get("/app-icon.png") as resp:
+        assert resp.status_code == 200
+        assert resp.data.startswith(b"\x89PNG")
+        # IHDR width/height: the old fallback was a 1x1 transparent pixel.
+        assert int.from_bytes(resp.data[16:20], "big") == 512
 
 
 def test_favicon_redirects_to_icon(app):
