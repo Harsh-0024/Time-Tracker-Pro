@@ -2614,8 +2614,11 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             const focus = graphFocusValue === 'search_only' ? 'search' : graphFocusValue;
             const rows = [['date', 'hours', `moving_average_${maWindow}d`]];
             graphRawDates.forEach((day, i) => {
-                const ma = Number(graphMaValues[i]);
-                rows.push([day, Number(graphRawValues[i] || 0).toFixed(2), Number.isFinite(ma) ? ma.toFixed(2) : '']);
+                const raw = Number(graphRawValues[i] || 0);
+                const ma = graphMaValues[i] == null ? NaN : Number(graphMaValues[i]);
+                // Sleep: a night that wasn't logged is blank, not 0.
+                const hours = currentMetric === 'sleep' && raw <= 0 ? '' : raw.toFixed(2);
+                rows.push([day, hours, Number.isFinite(ma) ? ma.toFixed(2) : '']);
             });
             const csv = rows.map(r => r.join(',')).join('\n') + '\n';
             const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
