@@ -157,6 +157,10 @@
             border-color: rgba(212,175,55,0.14);
             box-shadow: 0 12px 36px rgba(0,0,0,0.48), inset 0 1px 0 rgba(212,175,55,0.03);
         }
+        @media (max-width: 639px) {
+            /* 2x2 on phones: tighter so 'Account & Security' fits in half the width. */
+            .settings-nav-btn { gap: 0.5rem; padding: 0.75rem 0.8rem; font-size: 0.85rem; line-height: 1.2; }
+        }
         [data-theme="dark"] .settings-nav-btn {
             background: rgba(14,12,8,0.84);
             border-color: rgba(212,175,55,0.16);
@@ -249,7 +253,7 @@
             </div>
         {% endif %}
 
-        <div class="settings-nav-buttons mb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 rounded-3xl border p-2.5">
+        <div class="settings-nav-buttons mb-10 grid grid-cols-2 lg:grid-cols-4 gap-3 rounded-3xl border p-2.5">
             <button type="button" class="settings-nav-btn" data-shortcut="1" data-target="account-settings" onclick="scrollToSection('account-settings')">
                 <svg class="settings-nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="8" r="4"/></svg>
                 <span class="settings-nav-label flex-1 text-left">Account &amp; Security</span>
