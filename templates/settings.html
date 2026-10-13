@@ -121,7 +121,7 @@
                             </div>
                             <div class="flex flex-wrap gap-2 text-xs">
                                 <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="username" data-mode="password">Use password</button>
-                                <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="username" data-mode="otp">Change via OTP</button>
+                                <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="username" data-mode="otp">Use email code</button>
                             </div>
                         </div>
                         <form id="usernameOtpForm" method="POST" action="{{ url_for('auth.profile_request_otp') }}">
@@ -184,7 +184,7 @@
                             </div>
                             <div class="flex flex-wrap gap-2 text-xs">
                                 <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="password" data-mode="password">Use password</button>
-                                <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="password" data-mode="otp">Change via OTP</button>
+                                <button type="button" class="profile-auth-toggle px-3 py-1.5 rounded-full border border-[rgba(148,126,86,0.35)] text-gray-700 bg-white/80 hover:bg-[#F7F1E6] transition-all" data-target="password" data-mode="otp">Use email code</button>
                             </div>
                         </div>
                         <form id="passwordOtpForm" method="POST" action="{{ url_for('auth.profile_request_otp') }}">
