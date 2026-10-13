@@ -56,6 +56,7 @@ Verification: 236 tests (py3.14 + 3.12), browser pane + iPhone 17 Pro simulator.
 - Sleep goal (Settings > Daily Goals, 'h / night'; new column user_goals.sleep_hours added on startup): goal row + dots per night on the dashboard, reference line on the Sleep graph, Copy summary.
 - JSON export also carries goals + category goals (backup).
 - Settings > Daily Goals shows 'Your last 30 days: X' under Growth / Waste / Sleep and next to each category.
+- Phone sweep at 360/375px over 9 pages (clipped text, page overflow, overlapping siblings, spilling text): nothing else found.
 - FIX (phones): Settings category goal rows squeezed names to ~36px at 375px; rows now stack there.
 - Tests no longer leak files/SQLite connections (ResourceWarnings gone; app code was already clean).
 - Full log opened for one activity no longer shows the whole day's 'Missing time' card.
