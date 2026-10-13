@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from markupsafe import escape
 
 from ..core.rows import display_name, row_value
@@ -57,7 +59,7 @@ def send_account_deletion_email(user_row, message: str) -> bool:
                     </tr>
                     <tr>
                         <td style="background: #F9FAFB; padding: 20px 24px; text-align: center; border-top: 1px solid #E5E7EB;">
-                            <p style="margin: 0; color: #6B7280; font-size: 12px;">&copy; 2026 Time Tracker Pro. All rights reserved.</p>
+                            <p style="margin: 0; color: #6B7280; font-size: 12px;">&copy; {datetime.now().year} Time Tracker Pro. All rights reserved.</p>
                         </td>
                     </tr>
                 </table>

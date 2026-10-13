@@ -35,3 +35,17 @@ def test_emails_escape_the_users_name(db_path, monkeypatch):
     for html in sent:
         assert '<a href="https://evil.example">' not in html
         assert "&lt;a href=" in html
+
+
+def test_verification_email_text_states_expiry_and_current_year(db_path, monkeypatch):
+    from datetime import datetime
+
+    from time_tracker_pro.services import verification
+
+    sent = []
+    monkeypatch.setattr(verification, "send_email", lambda to, subject, body, html: sent.append((body, html)) or True)
+    row = _user_row(db_path, make_user(db_path))
+    verification.send_verification_email(db_path, row)
+    body, html = sent[0]
+    assert f"expires in {verification.VERIFICATION_CODE_TTL_MINUTES} minutes" in body
+    assert f"&copy; {datetime.now().year} Time Tracker Pro" in html
