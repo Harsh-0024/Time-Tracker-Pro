@@ -2236,16 +2236,21 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 pointHitRadius: 0
             };
 
+            // Long ranges on a narrow chart: dots and dashes every few pixels turn into noise,
+            // so draw the daily series as a thin, faint solid line under the average instead.
+            const plotWidth = (ctx.canvas.parentElement || ctx.canvas).clientWidth || 600;
+            const visiblePoints = Math.max(1, rangeBounds.endIndex - rangeBounds.startIndex + 1);
+            const denseRaw = visiblePoints > plotWidth / 6;
             const rawDataset = {
                 __kind: 'raw',
                 label: `${metricLabels[metricKey] || 'Time'} (daily)`,
                 data: values,
-                borderColor: avgColor,
-                borderWidth: 2,
-                borderDash: [6, 6],
+                borderColor: denseRaw ? hexToRgba(color, isDark ? 0.45 : 0.4) : avgColor,
+                borderWidth: denseRaw ? 1 : 2,
+                borderDash: denseRaw ? [] : [6, 6],
                 fill: false,
-                tension: 0.35,
-                pointRadius: 2,
+                tension: denseRaw ? 0 : 0.35,
+                pointRadius: denseRaw ? 0 : 2,
                 pointHoverRadius: 5,
                 pointBackgroundColor: '#FFFFFF',
                 pointBorderColor: avgColor,
