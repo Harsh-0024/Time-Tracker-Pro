@@ -293,8 +293,11 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 deltaEl.innerHTML = '&nbsp;';
                 return;
             }
-            const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
-            avgEl.textContent = `${formatGraphValue(recentAvg, scale, 1)}/day`;
+            // Sleep: per night logged (a missing night isn't 0h).
+            const perNight = currentMetric === 'sleep';
+            const counted = perNight ? recent.filter(v => v > 0) : recent;
+            const recentAvg = counted.length ? counted.reduce((a, b) => a + b, 0) / counted.length : 0;
+            avgEl.textContent = `${formatGraphValue(recentAvg, scale, 1)}/${perNight ? 'night' : 'day'}`;
             if (recentAvg === 0 && series.length > 7) {
                 // Nothing in the window: "▼ x vs avg" would read like a slump, so say when it last happened.
                 let lastIdx = -1;
