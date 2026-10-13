@@ -15,21 +15,23 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
    reproduced by stepping the animator); the full-log pie ignored the search box (0.0h stats next to a full pie);
    phones: Settings category-goal names squeezed to ~36px, graphs 'Tasks in this graph' stats spilling out of
    their cards, matrix cards misaligned when a subtitle wrapped; Waste 'at least' goals got red dots.
-2. SLEEP (tasks named exactly "Sleep", nights merged across midnight, counted on the wake-up day, naps < 3h ignored):
+2. SECURITY: login throttling counted failures per typed identifier, so alternating username / user ID / email
+   gave 3x the guesses; now per account.
+3. SLEEP (tasks named exactly "Sleep", nights merged across midnight, counted on the wake-up day, naps < 3h ignored):
    day view 'Sleep last night'; week/month hours a night + typical bed/wake times (±spread); graphs 'Sleep per
    night' focus (unlogged nights are gaps, not 0h); Sleep goal in Settings > Daily Goals (dots per night + graph
    goal line, streak on the day view). New nullable column user_goals.sleep_hours (auto-added on startup).
-3. Insights: 'Biggest changes vs last week/month' for activities outside the top five.
-4. Settings: each goal shows your last-30-days average next to it.
-5. Graphs: deep links (/graphs?focus=sleep&range=90, ?search=gym), CSV download of the plotted days, no-match
+4. Insights: 'Biggest changes vs last week/month' for activities outside the top five.
+5. Settings: each goal shows your last-30-days average next to it.
+6. Graphs: deep links (/graphs?focus=sleep&range=90, ?search=gym), CSV download of the plotted days, no-match
    message, long ranges drawn as a thin line on narrow charts, C = compare shortcut.
-6. Perf: versioned static JS/CSS now gzipped (first-load graphs.js 179KB -> 38KB; fixes a regression from the 10-13
+7. Perf: versioned static JS/CSS now gzipped (first-load graphs.js 179KB -> 38KB; fixes a regression from the 10-13
    move of page scripts to static files).
-7. a11y: axe-core across 10 pages x 2 themes: light mode clean; dark mode's only failures are the --text-faint
+8. a11y: axe-core across 10 pages x 2 themes: light mode clean; dark mode's only failures are the --text-faint
    colour (your call, see Ideas); dark tag badges fixed.
-8. Small: week strip marks days with a note; notes in chart tooltips; times without leading zeros; one activity's entries don't show the day's Missing time card;
+9. Small: week strip marks days with a note; notes in chart tooltips; times without leading zeros; one activity's entries don't show the day's Missing time card;
    Cache-Control: private, no-cache on pages/JSON; JSON export includes goals; a11y labels; consistent page titles.
-Verification: 243 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop sweeps) + iPhone 17 Pro simulator
+Verification: 248 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop sweeps) + iPhone 17 Pro simulator
 (light + dark). Nothing pushed.
 
 ## 2026-10-13 run (main session)
