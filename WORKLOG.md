@@ -10,7 +10,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - 2026-10-14 resumed after usage limit: main session active (owner resumed; keep going until 'stop').
 
 ## 2026-10-14 summary - most important first
-1. BUGS fixed: graphs kept the previous (longer) range's Total/Avg/Best, weekday bars and calendar after
+1. BUGS fixed (several pre-existing): graphs kept the previous (longer) range's Total/Avg/Best, weekday bars and calendar after
    switching to a shorter range (pre-existing; now refetches); graphs drew every line too high when 'vs previous period' was on at page load (Chart.js race,
    reproduced by stepping the animator); the full-log pie ignored the search box (0.0h stats next to a full pie);
    phones: Settings category-goal names squeezed to ~36px, graphs 'Tasks in this graph' stats spilling out of
@@ -23,9 +23,13 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 4. Settings: each goal shows your last-30-days average next to it.
 5. Graphs: deep links (/graphs?focus=sleep&range=90, ?search=gym), CSV download of the plotted days, no-match
    message, long ranges drawn as a thin line on narrow charts, C = compare shortcut.
-6. Small: week strip marks days with a note; one activity's entries don't show the day's Missing time card;
+6. Perf: versioned static JS/CSS now gzipped (first-load graphs.js 179KB -> 38KB; fixes a regression from the 10-13
+   move of page scripts to static files).
+7. a11y: axe-core across 10 pages x 2 themes: light mode clean; dark mode's only failures are the --text-faint
+   colour (your call, see Ideas); dark tag badges fixed.
+8. Small: week strip marks days with a note; notes in chart tooltips; times without leading zeros; one activity's entries don't show the day's Missing time card;
    Cache-Control: private, no-cache on pages/JSON; JSON export includes goals; a11y labels; consistent page titles.
-Verification: 240 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop sweeps) + iPhone 17 Pro simulator
+Verification: 243 tests (py3.14 + 3.12), browser pane (phone/tablet/desktop sweeps) + iPhone 17 Pro simulator
 (light + dark). Nothing pushed.
 
 ## 2026-10-13 run (main session)
