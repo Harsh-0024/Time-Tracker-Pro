@@ -297,7 +297,7 @@ Also: styled error pages, Edit-task tag chips. All 124 tests pass (3.14 and 3.12
 - (question) graph/full-log search: '-' is the NOT operator even inside words, so 'deep-work' = deep AND NOT work and a date like 2026-10-05 searches '2026 NOT 10 NOT 05'. Quoting ("e-mail") works. Could treat '-' as NOT only after whitespace/start - left as is since it changes query semantics.
 - (question) Full Day Log 'Missing time' for TODAY lists the rest of the day (e.g. '2:00 PM - 12:00 AM') as unlogged, including hours that haven't happened yet. Graphs 'Last 7 days' also includes today's partial day. Both are time-handling, so left for you.
 - (question) Adding a task REQUIRES a connected Sheety account (create_task posts to Sheety first; local-only users get an error). Update/delete of local-only rows work. If you want local-only users to add tasks, create_task needs a local path - left alone since it touches the sync model.
-- (question) Sessions are bound to the User-Agent (ua_hash). Every browser auto-update (UA version bump) or Safari 'Request Desktop Website' logs the user out. Consider hashing only the browser family/OS, not the full UA.
+- (done 2026-10-13) Session UA binding now ignores version numbers (browser updates no longer log out); old sessions upgraded in place.
 - (note) dark --text-faint (#6E6045) is 3.2:1 - axe flags ~10 small labels (timeline axis, insight labels). Earlier session chose it for hierarchy; bump to ~#877858 for AA if you prefer.
 - (question) /sync-status answers anonymous callers with config booleans (sheety configured, db exists). Harmless-ish; could 401.
 - (note) a dev server with LOCAL_AUTH_BYPASS was blocked by the session's permission classifier; verification done via pytest/Flask test client.
