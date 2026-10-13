@@ -11,7 +11,8 @@ Eisenhower matrix (urgent × important).
   - Priority Breakdown (extended Eisenhower matrix), with each quadrant's change vs the previous period.
   - **Day view:** an hour-by-hour 24h timeline.
   - **Week and Month views:** a "Day by day" stacked chart.
-  - **Insights:** top activities (each with its change vs the previous period, or vs your usual day), the day vs your
+  - **Insights:** top activities (each with its change vs the previous period, or vs your usual day), the biggest
+    changes among the other activities, the day vs your
     7-day average (week/month: vs the previous period), best and worst days, fully-logged days, and
     sleep (day: last night vs your previous 7 nights; week/month: hours a night and typical bed/wake times; from tasks named "Sleep").
   - **Copy summary:** a plain-text recap of the period for a journal or message; **Export Summary** downloads its rows.
