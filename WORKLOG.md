@@ -18,7 +18,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 2. SLEEP (tasks named exactly "Sleep", nights merged across midnight, counted on the wake-up day, naps < 3h ignored):
    day view 'Sleep last night'; week/month hours a night + typical bed/wake times (±spread); graphs 'Sleep per
    night' focus (unlogged nights are gaps, not 0h); Sleep goal in Settings > Daily Goals (dots per night + graph
-   goal line). New nullable column user_goals.sleep_hours (auto-added on startup).
+   goal line, streak on the day view). New nullable column user_goals.sleep_hours (auto-added on startup).
 3. Insights: 'Biggest changes vs last week/month' for activities outside the top five.
 4. Settings: each goal shows your last-30-days average next to it.
 5. Graphs: deep links (/graphs?focus=sleep&range=90, ?search=gym), CSV download of the plotted days, no-match
