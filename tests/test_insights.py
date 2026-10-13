@@ -366,3 +366,23 @@ def test_sleep_last_night_on_day_view(db_path, login):
 
     summary = json.loads(re.search(r'id="periodSummaryText">(.*?)</script>', html, re.S).group(1))
     assert "Sleep last night: 7.0h (11:30 PM – 6:30 AM)" in summary
+
+
+def test_graph_data_sleep_per_night(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-14", "23:30:00", "2026-09-15", "00:00:00", task="Sleep")
+    add_log(db_path, uid, "2026-09-15", "00:00:00", "2026-09-15", "07:00:00", task="Sleep")
+    add_log(db_path, uid, "2026-09-15", "14:00:00", "2026-09-15", "15:00:00", task="Sleep")  # nap
+    add_log(db_path, uid, "2026-09-15", "23:00:00", "2026-09-16", "06:00:00", task="Sleep .")
+    add_log(db_path, uid, "2026-09-16", "08:00:00", "2026-09-16", "10:00:00", task="Study")
+    data = login(uid).get("/api/graph-data?metric=sleep&days=3&end=2026-09-16").get_json()
+    assert data["labels"] == ["2026-09-14", "2026-09-15", "2026-09-16"]
+    assert data["values"] == [0.0, 7.5, 7.0]
+    assert data["max_hours"] == 7.5
+
+
+def test_graph_view_can_save_sleep_focus(db_path, login):
+    client = login(make_user(db_path))
+    resp = client.post("/api/graph-views", json={"name": "Sleep", "focus": "sleep", "search": "", "range": "30", "ma": 7})
+    assert resp.status_code in (200, 201), resp.get_json()
+    assert client.get("/api/graph-views").get_json()["views"][0]["focus"] == "sleep"

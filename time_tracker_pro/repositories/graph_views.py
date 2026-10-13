@@ -10,7 +10,7 @@ from ..db import get_db_connection
 
 ALLOWED_FOCUS = {
     "search_only", "work", "necessity", "soul", "rest", "waste",
-    "important", "urgent", "q1", "q2", "q3", "q4", "total",
+    "important", "urgent", "q1", "q2", "q3", "q4", "total", "sleep",
 }
 ALLOWED_MA = {7, 14, 30, 48}
 MAX_VIEWS_PER_USER = 20

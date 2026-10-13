@@ -25,6 +25,7 @@ from ..repositories.logs import fetch_local_data
 from ..repositories.users import get_user_count, get_user_by_id
 from ..core.rows import row_value
 from ..services.import_csv import import_csv_content
+from ..services.insights import is_sleep_task, sleep_minutes_by_night
 from ..services.sync import sync_cloud_data, sync_status_payload, get_last_sync_stats
 from .decorators import api_or_login_required, resolve_request_user_id, token_is_valid
 from .utils import get_current_user_id, request_date_param
@@ -499,6 +500,9 @@ def graph_data():
         df = df[(df["urgent"]) & (~df["important"])]
     elif metric == "q4":
         df = df[(~df["urgent"]) & (~df["important"])]
+    elif metric == "sleep":
+        # Per night, counted on the day you woke up (see services.insights.sleep_summary).
+        df = df[is_sleep_task(df["task"])]
 
     if search:
         search_expr = parse_graph_search(search)
@@ -524,12 +528,13 @@ def graph_data():
         end_date_to_use = today if has_today_data else today - timedelta(days=1)
 
     start_date = end_date_to_use - timedelta(days=days - 1)
+    nights = sleep_minutes_by_night(df, start_date, end_date_to_use) if metric == "sleep" else None
     df = df[(df["date"] >= start_date) & (df["date"] <= end_date_to_use)]
     if df.empty:
         labels = [(start_date + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
         return jsonify({"labels": labels, "values": [0 for _ in labels], "total_hours": 0, "avg_hours": 0, "max_hours": 0, "by_hour": [0] * 24})
 
-    daily = df.groupby("date")["duration"].sum() if not df.empty else {}
+    daily = nights if nights is not None else (df.groupby("date")["duration"].sum() if not df.empty else {})
     labels: List[str] = []
     values: List[float] = []
     for i in range(days):

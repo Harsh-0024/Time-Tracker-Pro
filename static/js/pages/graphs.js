@@ -13,7 +13,8 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             necessity: '#F59E0B',
             soul: '#6366F1',
             rest: '#C4B5FD',
-            waste: '#DC2626'
+            waste: '#DC2626',
+            sleep: '#8B5CF6'
         };
 
         const metricLabels = {
@@ -28,7 +29,8 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             necessity: 'Necessity',
             soul: 'Soul',
             rest: 'Rest',
-            waste: 'Waste'
+            waste: 'Waste',
+            sleep: 'Sleep per night'
         };
 
         const TAG_COLOR_MAP = {
@@ -311,7 +313,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             deltaEl.textContent = `${delta > 0 ? '▲' : '▼'} ${formatGraphValue(Math.abs(delta), scale, 1)} vs avg`;
             // Colour by whether the move is good for this focus (more Work is good, more Waste isn't).
             const lowerIsBetter = ['waste', 'q3', 'q4', 'urgent'].includes(currentMetric);
-            const neutral = ['total', 'necessity', 'rest', 'q1'].includes(currentMetric) || graphFocusValue === 'search_only';
+            const neutral = ['total', 'necessity', 'rest', 'q1', 'sleep'].includes(currentMetric) || graphFocusValue === 'search_only';
             const good = lowerIsBetter ? delta < 0 : delta > 0;
             deltaEl.className = 'text-[11px] mt-0.5 font-medium ' + (neutral ? 'text-gray-600' : (good ? 'text-emerald-700' : 'text-rose-700'));
         }

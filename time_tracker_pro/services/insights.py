@@ -696,3 +696,15 @@ def sleep_last_night(df: pd.DataFrame, day: date) -> Optional[Dict[str, Any]]:
         result["delta_hours"] = round_half_up((minutes - avg) / 60.0, 1) + 0.0
         result["avg_nights"] = len(before)
     return result
+
+
+def sleep_minutes_by_night(df: pd.DataFrame, start_date: date, end_date: date) -> Dict[date, float]:
+    """Minutes slept per wake-up day (3h+ "Sleep" blocks, midnight splits merged)."""
+    totals: Dict[date, float] = {}
+    for night in _sleep_nights(df, start_date, end_date):
+        totals[night["date"]] = totals.get(night["date"], 0.0) + night["minutes"]
+    return totals
+
+
+def is_sleep_task(tasks: pd.Series) -> pd.Series:
+    return _activity_keys(tasks) == "sleep"

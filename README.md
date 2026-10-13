@@ -21,7 +21,7 @@ Eisenhower matrix (urgent × important).
   - **Full log modal:** search (`gym, reading` · `only lunch` · `-waste` · `note:tired` for days whose note mentions it), sort, export, and create/edit/delete entries
     (written back to the sheet), with task-name autocomplete, "Again" to re-log a task, and tap-a-gap to fill missing time.
   - On phones, swipe the week strip or the day-by-day chart to move between periods.
-- **Graphs:** trends for any category, quadrant or search expression over time, with a moving average,
+- **Graphs:** trends for any category, quadrant, search expression or sleep per night over time, with a moving average,
   goal/limit reference lines, a 'vs previous period' overlay, saved views, by-weekday and by-time-of-day breakdowns,
   and a calendar heatmap.
 - **Accounts:**
