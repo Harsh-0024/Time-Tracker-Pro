@@ -1008,7 +1008,7 @@
                         {% if insights.sleep_night %}
                         {% set sn = insights.sleep_night %}
                         <div class="insight-stat">
-                            <div class="insight-stat-label">Sleep last night</div>
+                            <div class="insight-stat-label" title="From tasks named Sleep: rows split at midnight count as one night, on the day you woke up; naps under 3h are left out.">Sleep last night</div>
                             <div class="insight-stat-value">{{ sn.hours }}h{% if sn.avg_hours is defined %} <span class="insight-stat-sub">avg {{ sn.avg_hours }}h</span>{% endif %}</div>
                             <div class="insight-note">{{ sn.bedtime | clock }} – {{ sn.wake | clock }}{% if sn.delta_hours is defined %} · {% if sn.delta_hours == 0 %}same as your average{% else %}{{ '+' if sn.delta_hours > 0 else '−' }}{{ sn.delta_hours | abs }}h vs your last {{ sn.avg_nights }} nights{% endif %}{% endif %}
                                 · <a class="hover:underline" href="/graphs?focus=sleep&range=30">Trend →</a></div>
@@ -1045,7 +1045,7 @@
                         {% if insights.sleep %}
                         {% set sl = insights.sleep %}
                         <div class="insight-stat">
-                            <div class="insight-stat-label">Sleep</div>
+                            <div class="insight-stat-label" title="From tasks named Sleep: rows split at midnight count as one night, on the day you woke up; naps under 3h are left out.">Sleep</div>
                             <div class="insight-stat-value text-base">{{ sl.avg_hours }}h a night <span class="insight-stat-sub">{{ sl.nights }} nights</span></div>
                             {% if sl.bedtime or sl.wake %}
                             <div class="insight-note">{% if sl.bedtime %}to bed ~{{ sl.bedtime | clock }}{% if sl.bedtime_spread_min %} <span title="How much your bedtime moves around (circular standard deviation)">(±{{ sl.bedtime_spread_min | human_minutes }})</span>{% endif %}{% endif %}{% if sl.bedtime and sl.wake %} · {% endif %}{% if sl.wake %}up ~{{ sl.wake | clock }}{% endif %}</div>
