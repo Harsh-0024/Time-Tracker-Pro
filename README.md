@@ -12,19 +12,20 @@ Eisenhower matrix (urgent × important).
   - **Day view:** an hour-by-hour 24h timeline.
   - **Week and Month views:** a "Day by day" stacked chart.
   - **Insights:** top activities (each with its change vs the previous period, or vs your usual day), the biggest
-    changes among the other activities, the day vs your
-    7-day average (week/month: vs the previous period), best and worst days, fully-logged days, and
-    sleep (day: last night vs your previous 7 nights; week/month: hours a night and typical bed/wake times; from tasks named "Sleep").
+    changes among the other activities, the day vs your 7-day average (week/month: vs the previous period), best and
+    worst days, fully-logged days, and sleep (day: last night vs your previous 7 nights; week/month: hours a night and
+    typical bed/wake times). See [How sleep is counted](#how-sleep-is-counted).
   - **Copy summary:** a plain-text recap of the period for a journal or message; **Export Summary** downloads its rows.
   - **Day notes:** a private line or two about the day (autosaved, `J`); week/month views, the full log and graphs show them, and Copy summary / JSON export include them (the JSON export also carries your goals). API: `GET /api/day-notes?start=YYYY-MM-DD&end=YYYY-MM-DD`, `PUT /api/day-notes/YYYY-MM-DD` with `{"note": "..."}`.
   - **Daily goals:** a Growth target, a Waste limit and a sleep goal (hours a night), plus optional per-category goals (e.g. Soul ≥ 1h, Rest ≤ 2h),
-    with progress, streaks, and a met/missed dot per day.
+    with progress, streaks, and a met/missed dot per day (per night for sleep). Settings shows your last 30 days next to each goal.
   - **Full log modal:** search (`gym, reading` · `only lunch` · `-waste` · `note:tired` for days whose note mentions it), sort, export, and create/edit/delete entries
     (written back to the sheet), with task-name autocomplete, "Again" to re-log a task, and tap-a-gap to fill missing time.
   - On phones, swipe the week strip or the day-by-day chart to move between periods.
 - **Graphs:** trends for any category, quadrant, search expression or sleep per night over time, with a moving average,
   goal/limit reference lines, a 'vs previous period' overlay, saved views, by-weekday and by-time-of-day breakdowns,
-  and a calendar heatmap. Link to a view with `/graphs?focus=sleep&range=90` or `/graphs?search=gym`.
+  a calendar heatmap, day notes in tooltips and a CSV download of the plotted days. Link to a view with
+  `/graphs?focus=sleep&range=90` or `/graphs?search=gym`.
 - **Accounts:**
   - Email-verified registration and password or email-code (OTP) login.
   - "Remember me" sessions, password reset, login throttling, and a resend cooldown on email codes.
