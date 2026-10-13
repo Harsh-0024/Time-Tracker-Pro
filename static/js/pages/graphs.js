@@ -329,10 +329,14 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const sums = new Array(7).fill(0);
             const counts = new Array(7).fill(0);
+            // Sleep: a day without a logged night is missing data, not a night of 0h.
+            const skipZeros = currentMetric === 'sleep';
             (Array.isArray(labels) ? labels : []).forEach((label, i) => {
                 const d = parseIsoDate(label);
                 if (!d) return;
-                sums[d.getDay()] += Number(values?.[i]) || 0;
+                const v = Number(values?.[i]) || 0;
+                if (skipZeros && v <= 0) return;
+                sums[d.getDay()] += v;
                 counts[d.getDay()] += 1;
             });
             const avgs = sums.map((sum, i) => (counts[i] ? sum / counts[i] : 0));
@@ -343,7 +347,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 const pct = max > 0 ? Math.max(3, Math.round((avgs[i] / max) * 100)) : 3;
                 const value = formatGraphValue(avgs[i], scale, 1);
                 const isBest = i === best;
-                return `<div class="flex flex-col items-center gap-1.5 min-w-0" role="listitem" aria-label="${name}: ${value} per day">
+                return `<div class="flex flex-col items-center gap-1.5 min-w-0" role="listitem" aria-label="${name}: ${value} per ${skipZeros ? 'night' : 'day'}">
                     <span class="text-[10px] md:text-xs tabular-nums ${isBest ? 'font-semibold text-gray-900' : 'text-gray-500'}">${value}</span>
                     <div class="w-full h-20 md:h-24 rounded-lg bg-[rgba(148,126,86,0.10)] flex items-end overflow-hidden">
                         <div class="w-full rounded-lg" style="height:${pct}%;background:${color};opacity:${isBest ? 1 : 0.45}"></div>
@@ -353,7 +357,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             }).join('');
             if (caption) {
                 caption.textContent = best >= 0
-                    ? `Average per day · most on ${names[best]}`
+                    ? `${skipZeros ? 'Average per night logged' : 'Average per day'} · most on ${names[best]}`
                     : 'Nothing logged in this range';
             }
         }
@@ -1894,11 +1898,16 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             return `${yyyy}-${mm}-${dd}`;
         }
 
-        function movingAverage(values, windowSize = 7) {
+        // skipMissing (sleep): average only the days that have a value; null when none do.
+        function movingAverage(values, windowSize = 7, skipMissing = false) {
             const result = [];
             for (let i = 0; i < values.length; i++) {
                 const start = Math.max(0, i - windowSize + 1);
-                const slice = values.slice(start, i + 1);
+                let slice = values.slice(start, i + 1);
+                if (skipMissing) {
+                    slice = slice.filter(v => Number(v) > 0);
+                    if (!slice.length) { result.push(null); continue; }
+                }
                 const sum = slice.reduce((acc, v) => acc + v, 0);
                 const avg = slice.length ? sum / slice.length : 0;
                 result.push(Number(avg.toFixed(2)));
@@ -2142,6 +2151,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
         function getLastFinitePoint(values) {
             if (!Array.isArray(values) || !values.length) return { index: null, value: null };
             for (let i = values.length - 1; i >= 0; i--) {
+                if (values[i] == null) continue;  // a gap (Number(null) would be 0)
                 const num = Number(values[i]);
                 if (Number.isFinite(num)) return { index: i, value: num };
             }
@@ -2172,7 +2182,10 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             const gradient = ctx.createLinearGradient(0, 0, 0, 320);
             gradient.addColorStop(0, hexToRgba(colors.primary, 0.55));
             gradient.addColorStop(1, hexToRgba(colors.secondary || colors.primary, 0.05));
-            const avgValues = movingAverage(values, maWindow);
+            // Sleep: a day without a logged night is a gap, not a 0h night.
+            const missingAsGap = metricKey === 'sleep';
+            const avgValues = movingAverage(values, maWindow, missingAsGap);
+            const plottedValues = missingAsGap ? values.map(v => (Number(v) > 0 ? v : null)) : values;
             const valueScale = getValueScale(values, avgValues);
             const avgColor = color.startsWith('#') && color.length === 7 ? `${color}99` : 'rgba(17,24,39,0.55)';
             const isDark = isDarkTheme();
@@ -2249,7 +2262,7 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             const rawDataset = {
                 __kind: 'raw',
                 label: `${metricLabels[metricKey] || 'Time'} (daily)`,
-                data: values,
+                data: plottedValues,
                 borderColor: denseRaw ? hexToRgba(color, isDark ? 0.45 : 0.4) : avgColor,
                 borderWidth: denseRaw ? 1 : 2,
                 borderDash: denseRaw ? [] : [6, 6],
@@ -2565,12 +2578,19 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             chartInstance.update();
 
             const windowValues = values.slice(startIndex, endIndex + 1).map(v => Number(v) || 0);
-            const nowAvg = windowValues.reduce((a, b) => a + b, 0) / Math.max(1, span);
-            const prevAvg = prevValues.reduce((a, b) => a + (Number(b) || 0), 0) / Math.max(1, span);
+            // Sleep: per night logged (a missing night isn't 0h); everything else: per day.
+            const perLogged = currentMetric === 'sleep';
+            const average = (list) => {
+                const nums = list.map(v => Number(v) || 0).filter(v => !perLogged || v > 0);
+                return nums.reduce((a, b) => a + b, 0) / Math.max(1, perLogged ? nums.length : span);
+            };
+            const nowAvg = average(windowValues);
+            const prevAvg = average(prevValues);
             if (chartCompareNote) {
                 const delta = nowAvg - prevAvg;
                 const sign = delta > 0.05 ? '▲' : (delta < -0.05 ? '▼' : '=');
-                chartCompareNote.textContent = `Previous ${span} days ${formatGraphValue(prevAvg, valueScale, 1)}/day → now ${formatGraphValue(nowAvg, valueScale, 1)}/day ${sign === '=' ? '(same)' : sign + ' ' + formatGraphValue(Math.abs(delta), valueScale, 1)}`;
+                const unit = perLogged ? '/night' : '/day';
+                chartCompareNote.textContent = `Previous ${span} days ${formatGraphValue(prevAvg, valueScale, 1)}${unit} → now ${formatGraphValue(nowAvg, valueScale, 1)}${unit} ${sign === '=' ? '(same)' : sign + ' ' + formatGraphValue(Math.abs(delta), valueScale, 1)}`;
                 chartCompareNote.classList.remove('hidden');
             }
         }

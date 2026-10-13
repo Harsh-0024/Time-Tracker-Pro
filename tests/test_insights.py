@@ -421,3 +421,12 @@ def test_biggest_changes_skips_top_activities(db_path, login):
 
     summary = json.loads(re.search(r'id="periodSummaryText">(.*?)</script>', html, re.S).group(1))
     assert "Biggest changes vs last week: Reading −1.0h/day" in summary
+
+
+def test_graph_data_sleep_average_skips_unlogged_nights(db_path, login):
+    uid = make_user(db_path)
+    add_log(db_path, uid, "2026-09-13", "23:00:00", "2026-09-14", "07:00:00", task="Sleep")  # 8h
+    add_log(db_path, uid, "2026-09-15", "00:00:00", "2026-09-15", "06:00:00", task="Sleep")  # 6h
+    # Sep 16-20: nothing logged.
+    data = login(uid).get("/api/graph-data?metric=sleep&days=7&end=2026-09-20").get_json()
+    assert data["avg_hours"] == 7.0  # per night logged, not 14h / 7 days
