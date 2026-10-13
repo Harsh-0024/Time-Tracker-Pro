@@ -446,13 +446,13 @@
         a.goal-dot:hover { transform: scale(1.35); }
         .goal-dot.is-met { background: #10B981; }
         .goal-dot.is-missed { background: #F5B826; }
-        .goal-dots[aria-label^="Waste"] .goal-dot.is-missed { background: #E11D48; }
+        .goal-dots.is-limit .goal-dot.is-missed { background: #E11D48; }  /* over a limit */
         .goal-dot.is-open { border: 2px solid #F5B826; }
         [data-theme="dark"] .goal-dot.is-open { border-color: #F4D03F; }
         .goal-dot.is-none { border: 1.5px dashed rgba(148, 126, 86, 0.45); }
         .goal-dot.is-future { background: rgba(148, 126, 86, 0.12); }
         [data-theme="dark"] .goal-dot.is-met { background: #34D399; }
-        [data-theme="dark"] .goal-dots[aria-label^="Waste"] .goal-dot.is-missed { background: #FB7185; }
+        [data-theme="dark"] .goal-dots.is-limit .goal-dot.is-missed { background: #FB7185; }
         [data-theme="dark"] .goal-dot.is-none { border-color: rgba(212, 175, 55, 0.35); }
         [data-theme="dark"] .goal-dot.is-future { background: rgba(212, 175, 55, 0.10); }
         [data-theme="dark"] .goal-bar.is-limit > span { background: linear-gradient(90deg, #57534E, #78716C); }

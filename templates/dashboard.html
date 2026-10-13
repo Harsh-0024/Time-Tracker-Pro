@@ -874,7 +874,7 @@
 
                 <div class="luxury-card rounded-2xl p-5 md:p-6 flex flex-col gap-4">
 {% macro goal_dots(calendar, key, label, verb_met, verb_missed) %}
-                            <div class="goal-dots{{ ' is-month' if calendar|length > 7 }}" role="group" aria-label="{{ label }}">
+                            <div class="goal-dots{{ ' is-month' if calendar|length > 7 }}{{ ' is-limit' if verb_missed == 'over limit' }}" role="group" aria-label="{{ label }}">
                             {% for c in calendar %}{% set st = c[key] %}{% set tip = c.date.strftime('%a %-d %b') ~ ': ' ~ ({'met': verb_met ~ ' (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'missed': verb_missed ~ ' (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'open': 'so far (' ~ ('%g'|format(c[key ~ '_hours'])) ~ 'h)', 'none': 'nothing logged', 'future': 'not yet'}[st]) %}
                                 {% if st in ('met', 'missed', 'open') %}<a class="goal-dot is-{{ st }}" href="/?date={{ c.date }}&period=day" tabindex="-1" title="{{ tip }}" aria-label="{{ tip }}"></a>{% else %}<span class="goal-dot is-{{ st }}" title="{{ tip }}" role="img" aria-label="{{ tip }}"></span>{% endif %}
                             {% endfor %}
