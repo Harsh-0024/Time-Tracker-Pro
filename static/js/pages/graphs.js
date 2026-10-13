@@ -559,7 +559,11 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
             const scale = getValueScale(graphRawValues, graphMaValues);
             if (graphPointDetailTitle) graphPointDetailTitle.textContent = formatGraphDetailDate(dateStr);
             if (graphPointDetailBody) {
-                graphPointDetailBody.textContent = `Day: ${formatGraphValue(actual, scale, 2)} · MA (${maWindow}d): ${formatGraphValue(ma, scale, 2)}`;
+                const maText = ma == null ? '–' : formatGraphValue(ma, scale, 2);
+                const note = graphNotes[dateStr] ? String(graphNotes[dateStr]) : '';
+                const noteText = note ? `\n“${note.length > 140 ? `${note.slice(0, 139)}…` : note}”` : '';
+                graphPointDetailBody.classList.add('whitespace-pre-line');
+                graphPointDetailBody.textContent = `Day: ${formatGraphValue(actual, scale, 2)} · MA (${maWindow}d): ${maText}${noteText}`;
             }
             graphPointDetail.dataset.date = dateStr;
             graphDetailIndex = pointIndex;
