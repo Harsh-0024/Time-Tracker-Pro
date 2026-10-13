@@ -274,7 +274,12 @@ def init_db(db_name: str) -> None:
 
     goal_cols = [row["name"] for row in conn.execute("PRAGMA table_info(user_goals)").fetchall()]
     if "sleep_hours" not in goal_cols:
-        conn.execute("ALTER TABLE user_goals ADD COLUMN sleep_hours REAL")
+        try:
+            conn.execute("ALTER TABLE user_goals ADD COLUMN sleep_hours REAL")
+        except sqlite3.OperationalError as exc:
+            # Another worker starting at the same time may have just added it.
+            if "duplicate column" not in str(exc).lower():
+                raise
 
     conn.execute(
         """
