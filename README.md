@@ -23,7 +23,7 @@ Eisenhower matrix (urgent × important).
   - On phones, swipe the week strip or the day-by-day chart to move between periods.
 - **Graphs:** trends for any category, quadrant, search expression or sleep per night over time, with a moving average,
   goal/limit reference lines, a 'vs previous period' overlay, saved views, by-weekday and by-time-of-day breakdowns,
-  and a calendar heatmap.
+  and a calendar heatmap. Link to a view with `/graphs?focus=sleep&range=90` or `/graphs?search=gym`.
 - **Accounts:**
   - Email-verified registration and password or email-code (OTP) login.
   - "Remember me" sessions, password reset, login throttling, and a resend cooldown on email codes.

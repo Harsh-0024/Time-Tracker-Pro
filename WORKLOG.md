@@ -38,6 +38,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - BUG: full-log pie ignored the search box (stats said 0.0h next to a full pie); now follows it, empty pie area collapses.
 - Graphs: a search with no matches says so (with Clear search) instead of a silent flat line.
 - Graphs: 'Sleep per night' focus (per wake-up day, midnight splits merged; saveable as a view).
+- Graphs deep links: /graphs?focus=&search=&range= (applied once, then removed from the URL). Sleep insight has 'Trend ->'.
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
