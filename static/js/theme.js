@@ -46,6 +46,14 @@
         }
     }
 
+    // Print in the light theme (white paper), then restore the user's choice.
+    window.addEventListener('beforeprint', function () {
+        document.documentElement.setAttribute('data-theme', 'light');
+    });
+    window.addEventListener('afterprint', function () {
+        applyTheme(getPreference());
+    });
+
     function syncAppearanceButtons(pref) {
         const map = { dark: 'appearanceDark', light: 'appearanceLight', system: 'appearanceSystem' };
         Object.entries(map).forEach(function(entry) {
