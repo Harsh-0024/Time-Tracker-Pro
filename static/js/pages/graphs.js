@@ -276,7 +276,6 @@ function tagBadgeTextColor(hex) {
         let graphRawDates = [];
         let graphRawValues = [];
         let graphMaValues = [];
-        let graphDetailIndex = null;
 
         function formatHours(value, decimals = 1, suffix = true) {
             const num = Number(value) || 0;
@@ -557,7 +556,6 @@ function tagBadgeTextColor(hex) {
             graphPointDetail.style.left = '';
             graphPointDetail.style.top = '';
             graphPointDetail.dataset.date = '';
-            graphDetailIndex = null;
         }
 
         function showGraphPointDetail(chart, pointIndex, activePoint) {
@@ -576,7 +574,6 @@ function tagBadgeTextColor(hex) {
                 graphPointDetailBody.textContent = `Day: ${formatGraphValue(actual, scale, 2)} · MA (${maWindow}d): ${maText}${noteText}`;
             }
             graphPointDetail.dataset.date = dateStr;
-            graphDetailIndex = pointIndex;
 
             const element = activePoint?.element || null;
             const position = element && typeof element.tooltipPosition === 'function'
