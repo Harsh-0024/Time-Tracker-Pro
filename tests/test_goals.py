@@ -259,3 +259,19 @@ def test_settings_shows_recent_averages_next_to_goals(db_path, login):
     }
     html = login(uid).get("/settings").get_data(as_text=True)
     assert 'name="sleep_hours"' in html
+
+
+def test_sleep_goal_streak_on_day_view(db_path, login):
+    uid = make_user(db_path)
+    # 8h nights ending Sep 14, 15, 16; 5h night ending Sep 17; 8h ending Sep 18 and 19.
+    # Split at midnight like real logs, so each wake-up day has its own rows.
+    for wake in ("14", "15", "16", "18", "19"):
+        add_log(db_path, uid, f"2026-09-{int(wake) - 1:02d}", "23:00:00", f"2026-09-{wake}", "00:00:00", task="Sleep")
+        add_log(db_path, uid, f"2026-09-{wake}", "00:00:00", f"2026-09-{wake}", "07:00:00", task="Sleep")
+    add_log(db_path, uid, "2026-09-17", "02:00:00", "2026-09-17", "07:00:00", task="Sleep")
+    client = login(uid)
+    client.post("/settings/goals", data={"growth_hours": "", "waste_limit_hours": "", "sleep_hours": "7"})
+    assert "3 nights in a row" in client.get("/?date=2026-09-16").get_data(as_text=True)
+    html = client.get("/?date=2026-09-19").get_data(as_text=True)
+    assert "2 nights in a row" in html and "best 3" in html
+    assert "Best sleep streak: 3 nights" in client.get("/?date=2026-09-17").get_data(as_text=True)

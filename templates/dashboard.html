@@ -929,6 +929,13 @@
                                 <div class="goal-bar {{ ('is-met' if tg.ok else '') if tg.kind == 'min' else ('is-limit' ~ ('' if tg.ok else ' is-over')) }}" role="progressbar" aria-label="{{ tg.tag }} goal" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ tg.pct }}"><span style="width: {{ tg.pct }}%"></span></div>
                             </div>
                             {% if goal_progress.tag_calendar %}{{ goal_dots(goal_progress.tag_calendar, tg.key, tg.tag ~ ' goal, last 7 days', 'goal met' if tg.kind == 'min' else 'under limit', 'below goal' if tg.kind == 'min' else 'over limit') }}{% endif %}
+                            {% if tg.streak is defined %}
+                            {% if tg.streak > 1 %}
+                            <div class="mt-1.5 text-[11px] text-emerald-700 goal-streak">🔥 {{ tg.streak }} nights in a row{% if tg.streak_best > tg.streak %} <span class="text-gray-500">· best {{ tg.streak_best }}</span>{% endif %}</div>
+                            {% elif tg.streak_best > 1 %}
+                            <div class="mt-1.5 text-[11px] text-gray-500">Best sleep streak: {{ tg.streak_best }} nights</div>
+                            {% endif %}
+                            {% endif %}
                             {% endfor %}
                         {% else %}
                             {% if goal_progress.growth %}{% set gp = goal_progress.growth %}

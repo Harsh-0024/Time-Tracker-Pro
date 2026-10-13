@@ -792,6 +792,21 @@ def build_sleep_goal_progress(
         item["actual"] = round_half_up(actual, 1)
         item["ok"] = actual >= target
         item["pct"] = round_half_up(min(100.0, actual / target * 100.0), 1) if target else 100.0
+        # Streaks over the past year: consecutive wake-up days whose night met the goal
+        # (a night that wasn't logged ends a run).
+        year = sleep_minutes_by_night(df, end_date - timedelta(days=365), end_date)
+        met = {d for d, minutes in year.items() if minutes / 60.0 >= target}
+        current, cursor = 0, end_date
+        while cursor in met:
+            current += 1
+            cursor -= timedelta(days=1)
+        best = run = 0
+        previous: Optional[date] = None
+        for d in sorted(met):
+            run = run + 1 if previous is not None and d - previous == timedelta(days=1) else 1
+            best = max(best, run)
+            previous = d
+        item["streak"], item["streak_best"] = current, best
     else:
         item["met_days"] = sum(1 for h in hours.values() if h >= target)
         item["days"] = len(hours)
