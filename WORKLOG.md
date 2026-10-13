@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-14 00:30 IST: main session active (owner resumed; keep going until 'stop').
+- 2026-10-14 00:45 IST: main session active (owner resumed; keep going until 'stop').
 
 ## 2026-10-13 run (main session)
 - pyflakes cleanups outside sync
@@ -37,6 +37,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 - Phones: matrix cards keep hours aligned per row when a subtitle wraps (Waste at 375px).
 - BUG: full-log pie ignored the search box (stats said 0.0h next to a full pie); now follows it, empty pie area collapses.
 - Graphs: a search with no matches says so (with Clear search) instead of a silent flat line.
+- Graphs: 'Sleep per night' focus (per wake-up day, midnight splits merged; saveable as a view).
 
 ## 22:20 run summary - most important first
 1. SECURITY: Settings stored your typed NEW PASSWORD (+ confirmation) in sessionStorage as plaintext. 'Send code' now works in the background, nothing is stored, old entries purged.
