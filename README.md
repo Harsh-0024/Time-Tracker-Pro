@@ -96,7 +96,7 @@ time_tracker_pro/
   repositories/  SQLite access (users, logs, settings, goals, Sheety accounts, …)
   services/      sync, parser, insights, email, matrix stats
   web/           Flask blueprints: auth, main (pages), api (JSON), admin
-templates/       Jinja pages (Tailwind via CDN, Chart.js)
-static/          theme.css, theme.js, icons
+templates/       Jinja pages; per-request values are passed to page scripts in a JSON <script id=...Config> block
+static/          theme.css, tailwind.css (prebuilt), js/pages/*.js + css/pages/*.css (per-page code), icons
 tests/           pytest suite
 ```
