@@ -2219,9 +2219,12 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
                 updateMobileLegend(chart);
                 updateDesktopLegend(chart);
                 window.__modalRefreshChart = () => {
-                    applyChartView(chart);
+                    const view = applyChartView(chart);
                     updateMobileLegend(chart);
                     updateDesktopLegend(chart);
+                    // A search with no matches: no empty 280px hole above "No tasks found".
+                    const canvasWrap = ctx.canvas.parentElement;
+                    if (canvasWrap) canvasWrap.classList.toggle('hidden', !view.labels.length && !!String(window.modalQuery || '').trim());
                 };
                 const legendClickHandler = (e) => {
                     const legendItem = e.target.closest('[data-legend-key]');
