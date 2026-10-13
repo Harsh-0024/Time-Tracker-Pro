@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-14 02:30 IST: main session active (owner resumed; keep going until 'stop').
+- 2026-10-14 02:45 IST: main session active (owner resumed; keep going until 'stop').
 
 ## 2026-10-14 summary - most important first
 1. BUGS fixed: graphs drew every line too high when 'vs previous period' was on at page load (Chart.js race,
@@ -44,7 +44,7 @@ Verification: 236 tests (py3.14 + 3.12), browser pane + iPhone 17 Pro simulator.
 - Shared toast / error-boundary / form-busy scripts are static files too (were ~15KB inline on every page).
 - Week/month Insights: Sleep (hours a night from tasks named 'Sleep', midnight-split rows merged, naps <3h ignored;
   typical bed/wake via circular mean, hidden when too scattered - your real data is often irregular; shortest night link). Also in Copy summary.
-  Day view: 'Sleep last night' (hours, bed - wake, vs previous 7 nights).
+  Day view: 'Sleep last night' (hours, bed - wake, vs previous 7 nights). Bedtime spread shown as ±N min.
 - Removed unused JS variables/helpers flagged by eslint; a11y scan (unlabelled controls) of 5 pages: none.
 - Graphs: 90+ day ranges on narrow charts draw the daily series as a thin faint line (dots/dashes were noise).
 - Phones: matrix cards keep hours aligned per row when a subtitle wraps (Waste at 375px).
@@ -55,6 +55,7 @@ Verification: 236 tests (py3.14 + 3.12), browser pane + iPhone 17 Pro simulator.
 - Graphs: 'CSV' button downloads the plotted days (date, hours, moving average).
 - Sleep goal (Settings > Daily Goals, 'h / night'; new column user_goals.sleep_hours added on startup): goal row + dots per night on the dashboard, reference line on the Sleep graph, Copy summary.
 - JSON export also carries goals + category goals (backup).
+- Full log opened for one activity no longer shows the whole day's 'Missing time' card.
 - HTML/JSON responses now send Cache-Control: private, no-cache (had none). Sweep of 330 dashboard/graph requests over the real-data copy: all 200, ~24 ms each.
 - Goal dots: larger tap target; every 'at most' goal shows over-limit days red (was Waste only, matched by label).
 - Week/month Insights: 'Biggest changes vs last week' (other activities moving >= 0.3h/day; in Copy summary).
