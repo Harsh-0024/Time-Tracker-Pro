@@ -2449,8 +2449,26 @@ const GRAPHS_CONFIG = JSON.parse(document.getElementById('graphsConfig').textCon
                 subtitleParts.push('Filtered');
             }
             chartSubtitle.textContent = subtitleParts.join(' · ');
+            updateGraphEmptyState(values, displayedDays);
             applyCompareOverlay(labels, values, rangeDays, valueScale);
         }
+
+        // A search or exclusion that leaves nothing would otherwise draw a silent flat line.
+        function updateGraphEmptyState(values, days) {
+            const box = document.getElementById('graphEmpty');
+            const text = document.getElementById('graphEmptyText');
+            if (!box || !text) return;
+            const filtered = Boolean(graphSearchQuery) || graphExcludedIds.size > 0;
+            const empty = filtered && !(values || []).some(v => Number(v) > 0);
+            box.classList.toggle('hidden', !empty);
+            box.classList.toggle('flex', empty);
+            if (!empty) return;
+            text.textContent = graphSearchQuery
+                ? `No entries match “${graphSearchQuery}” in the last ${days} days.`
+                : `Nothing left in the last ${days} days after the excluded tasks.`;
+            document.getElementById('graphEmptyClear').classList.toggle('hidden', !graphSearchQuery);
+        }
+        document.getElementById('graphEmptyClear')?.addEventListener('click', () => graphSearchClear.click());
 
         // ---- Compare with the previous period ---------------------------------
         // Fetches the same number of days just before the visible window (same
