@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-14 02:20 IST: main session active (owner resumed; keep going until 'stop').
+- 2026-10-14 02:30 IST: main session active (owner resumed; keep going until 'stop').
 
 ## 2026-10-14 summary - most important first
 1. BUGS fixed: graphs drew every line too high when 'vs previous period' was on at page load (Chart.js race,
@@ -55,6 +55,7 @@ Verification: 236 tests (py3.14 + 3.12), browser pane + iPhone 17 Pro simulator.
 - Graphs: 'CSV' button downloads the plotted days (date, hours, moving average).
 - Sleep goal (Settings > Daily Goals, 'h / night'; new column user_goals.sleep_hours added on startup): goal row + dots per night on the dashboard, reference line on the Sleep graph, Copy summary.
 - JSON export also carries goals + category goals (backup).
+- HTML/JSON responses now send Cache-Control: private, no-cache (had none). Sweep of 330 dashboard/graph requests over the real-data copy: all 200, ~24 ms each.
 - Goal dots: larger tap target; every 'at most' goal shows over-limit days red (was Waste only, matched by label).
 - Week/month Insights: 'Biggest changes vs last week' (other activities moving >= 0.3h/day; in Copy summary).
 - BUG (graphs): with 'vs previous period' on, lines were drawn too high vs their axis labels when the page loaded (Chart.js update('none') during the entry animation). Fixed + reproduced by stepping the animator.
