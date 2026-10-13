@@ -422,8 +422,8 @@
                 <button type="button" class="day-timeline-seg"
                     style="left: {{ seg.left }}%; width: {{ seg.width }}%; --seg-color: {{ seg.color }};"
                     data-activity="{{ seg.task }}" onclick="window.viewActivity(this.dataset.activity)"
-                    title="{{ seg.task }} · {{ seg.start }} – {{ seg.end }} · {{ seg.tag }}"
-                    aria-label="{{ seg.task }}, {{ seg.start }} to {{ seg.end }}, {{ seg.tag }}"></button>
+                    title="{{ seg.task }} · {{ seg.start | clock }} – {{ seg.end | clock }} · {{ seg.tag }}"
+                    aria-label="{{ seg.task }}, {{ seg.start | clock }} to {{ seg.end | clock }}, {{ seg.tag }}"></button>
                 {% endfor %}
             </div>
             <div class="day-timeline-axis" aria-hidden="true">
@@ -444,8 +444,8 @@
                 {% for o in overlaps.pairs %}
                 <li class="text-sm">
                     {% if period != 'day' %}<a href="/?date={{ o.date }}&period=day" class="text-xs font-semibold text-gray-500 hover:text-gray-800 underline-offset-2 hover:underline">{{ o.date.strftime('%a %-d %b') }}</a> · {% endif %}
-                    <span class="text-gray-800">{{ o.second.task or 'Untitled' }}</span> <span class="text-gray-500">{{ o.second.start }}–{{ o.second.end }}</span>
-                    overlaps <span class="text-gray-800">{{ o.first.task or 'Untitled' }}</span> <span class="text-gray-500">{{ o.first.start }}–{{ o.first.end }}</span>
+                    <span class="text-gray-800">{{ o.second.task or 'Untitled' }}</span> <span class="text-gray-500">{{ o.second.start | clock }}–{{ o.second.end | clock }}</span>
+                    overlaps <span class="text-gray-800">{{ o.first.task or 'Untitled' }}</span> <span class="text-gray-500">{{ o.first.start | clock }}–{{ o.first.end | clock }}</span>
                     <span class="text-xs text-rose-700 whitespace-nowrap">({{ o.minutes | human_minutes }})</span>
                 </li>
                 {% endfor %}
@@ -1010,7 +1010,7 @@
                         <div class="insight-stat">
                             <div class="insight-stat-label">Sleep last night</div>
                             <div class="insight-stat-value">{{ sn.hours }}h{% if sn.avg_hours is defined %} <span class="insight-stat-sub">avg {{ sn.avg_hours }}h</span>{% endif %}</div>
-                            <div class="insight-note">{{ sn.bedtime | trim('0') }} – {{ sn.wake | trim('0') }}{% if sn.delta_hours is defined %} · {% if sn.delta_hours == 0 %}same as your average{% else %}{{ '+' if sn.delta_hours > 0 else '−' }}{{ sn.delta_hours | abs }}h vs your last {{ sn.avg_nights }} nights{% endif %}{% endif %}
+                            <div class="insight-note">{{ sn.bedtime | clock }} – {{ sn.wake | clock }}{% if sn.delta_hours is defined %} · {% if sn.delta_hours == 0 %}same as your average{% else %}{{ '+' if sn.delta_hours > 0 else '−' }}{{ sn.delta_hours | abs }}h vs your last {{ sn.avg_nights }} nights{% endif %}{% endif %}
                                 · <a class="hover:underline" href="/graphs?focus=sleep&range=30">Trend →</a></div>
                         </div>
                         {% endif %}
@@ -1048,7 +1048,7 @@
                             <div class="insight-stat-label">Sleep</div>
                             <div class="insight-stat-value text-base">{{ sl.avg_hours }}h a night <span class="insight-stat-sub">{{ sl.nights }} nights</span></div>
                             {% if sl.bedtime or sl.wake %}
-                            <div class="insight-note">{% if sl.bedtime %}to bed ~{{ sl.bedtime | trim('0') }}{% if sl.bedtime_spread_min %} <span title="How much your bedtime moves around (circular standard deviation)">(±{{ sl.bedtime_spread_min | human_minutes }})</span>{% endif %}{% endif %}{% if sl.bedtime and sl.wake %} · {% endif %}{% if sl.wake %}up ~{{ sl.wake | trim('0') }}{% endif %}</div>
+                            <div class="insight-note">{% if sl.bedtime %}to bed ~{{ sl.bedtime | clock }}{% if sl.bedtime_spread_min %} <span title="How much your bedtime moves around (circular standard deviation)">(±{{ sl.bedtime_spread_min | human_minutes }})</span>{% endif %}{% endif %}{% if sl.bedtime and sl.wake %} · {% endif %}{% if sl.wake %}up ~{{ sl.wake | clock }}{% endif %}</div>
                             {% else %}
                             <div class="insight-note">Bed and wake times vary too much to average.</div>
                             {% endif %}
@@ -1076,7 +1076,7 @@
                     {% if period == 'day' %}
                     <div class="insight-stat">
                         <div class="insight-stat-label">Longest growth block</div>
-                        <div class="insight-stat-value text-base"><span class="break-words">{{ lb.task }}</span> <span class="insight-stat-sub">{{ lb.hours }}h{% if lb.start_time %} · from {{ lb.start_time | trim("0") }}{% endif %}</span></div>
+                        <div class="insight-stat-value text-base"><span class="break-words">{{ lb.task }}</span> <span class="insight-stat-sub">{{ lb.hours }}h{% if lb.start_time %} · from {{ lb.start_time | clock }}{% endif %}</span></div>
                     </div>
                     {% else %}
                     <a class="insight-stat insight-link" href="/?date={{ lb.date }}&period=day">

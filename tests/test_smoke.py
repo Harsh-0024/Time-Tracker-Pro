@@ -286,3 +286,9 @@ def test_versioned_static_js_and_css_are_gzipped(client_with_data):
     # Unversioned requests (revalidated every time) stay as they were.
     with client_with_data.get("/static/js/theme.js", headers={"Accept-Encoding": "gzip"}) as resp:
         assert "Content-Encoding" not in resp.headers
+
+
+def test_clock_filter(app):
+    clock = app.jinja_env.filters["clock"]
+    assert clock("04:06 AM") == "4:06 AM" and clock("12:00 AM") == "12:00 AM"
+    assert clock("10:30 PM") == "10:30 PM" and clock(None) == "" and clock("0") == "0"

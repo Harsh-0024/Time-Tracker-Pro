@@ -113,6 +113,13 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
 
     app.jinja_env.filters["human_minutes"] = _human_minutes
 
+    def _clock(value: Any) -> str:
+        """'04:06 AM' -> '4:06 AM' (display only)."""
+        text = "" if value is None else str(value)
+        return text[1:] if len(text) > 2 and text[0] == "0" and text[1].isdigit() and text[2] == ":" else text
+
+    app.jinja_env.filters["clock"] = _clock
+
     from .web.admin import bp as admin_bp
     from .web.api import bp as api_bp
     from .web.auth import bp as auth_bp
