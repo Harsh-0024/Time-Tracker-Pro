@@ -831,3 +831,14 @@
             transition: opacity 0.2s ease-in-out;
         }
     
+
+/* Touch screens have no real hover: after a tap the card stayed "lifted" until the
+   next tap elsewhere. Keep the lift for mouse/trackpad users only. */
+@media (hover: none) {
+    [data-theme] .luxury-card:hover,
+    [data-theme] .matrix-card:hover,
+    [data-theme] .daily-col:hover .daily-col-bar,
+    [data-theme] a.goal-dot:hover {
+        transform: none !important;
+    }
+}
