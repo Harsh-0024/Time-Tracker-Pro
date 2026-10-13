@@ -241,6 +241,13 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.08);
         }
+        /* Phones: a subtitle that wraps to two lines would push that card's hours below
+           its neighbour's; keep hours and share at the bottom so each row lines up. */
+        @media (max-width: 767px) {
+            .matrix-card { display: flex; flex-direction: column; }
+            .matrix-card > .relative.z-10 { flex: 1 1 auto; display: flex; flex-direction: column; }
+            .matrix-card > .relative.z-10 > :first-child { flex: 1 0 auto; }
+        }
         #datePicker input[type="date"] {
             position: absolute;
             opacity: 0;
