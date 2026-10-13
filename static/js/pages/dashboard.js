@@ -1713,7 +1713,10 @@ const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').t
                     return;
                 }
                 const period = window.currentPeriod || 'day';
-                if (period !== 'day' || filterType !== 'all') {
+                // Whole-day gaps belong to the full day log, not to one activity's entries
+                // (opened from the timeline or an insight with its name pre-filled).
+                const openedForActivity = Boolean(String(window.modalQuery || '').trim());
+                if (period !== 'day' || filterType !== 'all' || openedForActivity) {
                     missingContainer.classList.add('hidden');
                     missingContainer.innerHTML = '';
                     return;
