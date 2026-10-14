@@ -7,7 +7,7 @@ Do not touch untracked *.db files. Commit small, focused changes locally on this
 Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 
 ## Status / last heartbeat
-- 2026-10-14 (after usage-limit reset, ~05:15 local): main session active; keep going until 'stop'.
+- 2026-10-14: STOPPED at the owner's request. Resume task disabled; nothing pushed.
 
 ## 2026-10-14 summary - most important first (78 non-worklog commits on top of 28754e1)
 1. BUGS fixed (several pre-existing): editing a task that ends at midnight pre-filled an end date before the
