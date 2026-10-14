@@ -186,11 +186,13 @@ const SETTINGS_CONFIG = JSON.parse(document.getElementById('settingsConfig').tex
                 if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) strength += 20;
                 if (/\d/.test(pwd)) strength += 20;
                 if (/[^a-zA-Z0-9]/.test(pwd)) strength += 20;
+                // Label colours meet WCAG AA (4.5:1) for this small text in each theme.
+                const darkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
                 const colors = {
-                    0: { bg: '#EF4444', text: 'Weak', color: '#DC2626' },
-                    40: { bg: '#F59E0B', text: 'Fair', color: '#D97706' },
-                    60: { bg: '#10B981', text: 'Good', color: '#059669' },
-                    80: { bg: '#059669', text: 'Strong', color: '#047857' }
+                    0: { bg: '#EF4444', text: 'Weak', color: darkTheme ? '#F87171' : '#B91C1C' },
+                    40: { bg: '#F59E0B', text: 'Fair', color: darkTheme ? '#FBBF24' : '#B45309' },
+                    60: { bg: '#10B981', text: 'Good', color: darkTheme ? '#34D399' : '#047857' },
+                    80: { bg: '#059669', text: 'Strong', color: darkTheme ? '#6EE7B7' : '#065F46' }
                 };
                 let level = colors[0];
                 if (strength >= 80) level = colors[80];
