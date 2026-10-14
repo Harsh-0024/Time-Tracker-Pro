@@ -491,7 +491,9 @@ function tagBadgeTextColor(hex) {
                 if (shownValues[i] > 0) { active += 1; run += 1; best = Math.max(best, run); } else { run = 0; }
             });
             const summary = active
-                ? `${active} of ${counted} days active · longest run ${best} day${best === 1 ? '' : 's'}`
+                ? (currentMetric === 'sleep'
+                    ? `${active} of ${counted} nights logged · longest run ${best} night${best === 1 ? '' : 's'}`
+                    : `${active} of ${counted} days active · longest run ${best} day${best === 1 ? '' : 's'}`)
                 : 'Nothing logged in this range';
             if (caption) caption.textContent = summary;
             grid.setAttribute('aria-label', `Calendar of ${counted} days: ${summary}`);
