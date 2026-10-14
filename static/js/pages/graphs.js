@@ -1759,7 +1759,7 @@ function tagBadgeTextColor(hex) {
                     const totals = dayTotals[lastDay] || { count: 0, hours: 0 };
                     dayHeader = `
                         <div class="flex items-baseline justify-between gap-3 px-1 ${index ? 'pt-4' : 'pt-1'} pb-2">
-                            <h4 class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-600" title="${escapeSuggestionHtml(lastDay)}">${escapeSuggestionHtml(friendlyTaskDate(lastDay))}</h4>
+                            <h3 class="text-xs font-semibold uppercase tracking-[0.14em] text-gray-600" title="${escapeSuggestionHtml(lastDay)}">${escapeSuggestionHtml(friendlyTaskDate(lastDay))}</h3>
                             <span class="text-xs text-gray-500 tabular-nums">${totals.count} ${totals.count === 1 ? 'task' : 'tasks'} · ${hoursToHuman(totals.hours)}</span>
                         </div>${graphNotes[lastDay] ? `
                         <p class="px-1 pb-2 -mt-1 text-xs text-gray-600 italic whitespace-pre-line">“${escapeSuggestionHtml(graphNotes[lastDay])}”</p>` : ''}`;
