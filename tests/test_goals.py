@@ -295,4 +295,10 @@ def test_week_sleep_insight_shows_debt_against_goal(db_path, login):
     assert sleep_debt(df, _date(2026, 9, 13), _date(2026, 9, 19), 9.0) == {"hours": 5.5, "nights": 3}
     client = login(uid)
     client.post("/settings/goals", data={"growth_hours": "", "waste_limit_hours": "", "sleep_hours": "7"})
-    assert "1.0h short of your 7h goal over 1 night" in client.get("/?date=2026-09-15&period=week").get_data(as_text=True)
+    html = client.get("/?date=2026-09-15&period=week").get_data(as_text=True)
+    assert "1.0h short of your 7h goal over 1 night" in html
+    import json
+    import re
+
+    summary = json.loads(re.search(r'id="periodSummaryText">(.*?)</script>', html, re.S).group(1))
+    assert "a night" in summary and "; 1.0h short of the 7.0h goal" in summary

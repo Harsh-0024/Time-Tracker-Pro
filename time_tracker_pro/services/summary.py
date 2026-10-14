@@ -85,7 +85,9 @@ def build_period_summary_text(
     sleep = insights.get("sleep")
     if sleep:
         times = [f"{label} ~{t.lstrip('0')}" for label, t in (("bed", sleep.get("bedtime")), ("up", sleep.get("wake"))) if t]
-        extra.append(f"Sleep: {_h(sleep['avg_hours'])} a night" + (f" ({', '.join(times)})" if times else ""))
+        debt = sleep.get("debt") or {}
+        short = f"; {_h(debt['hours'])} short of the {_h(sleep['goal_hours'])} goal" if debt.get("nights") else ""
+        extra.append(f"Sleep: {_h(sleep['avg_hours'])} a night" + (f" ({', '.join(times)})" if times else "") + short)
     best = insights.get("best_growth_day")
     if best:
         extra.append(f"Best growth day: {_day(best['date'])} ({_h(best['hours'])})")
