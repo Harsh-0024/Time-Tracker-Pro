@@ -2,15 +2,27 @@
 // Per-request values come from the JSON block #dashboardConfig rendered by the template.
 const DASHBOARD_CONFIG = JSON.parse(document.getElementById('dashboardConfig').textContent || '{}');
 
-// Tag badges: the tag colour itself is too dark to read on the dark theme's near-black
-// cards (Waste red 3.9:1, Soul indigo 4.2:1), so mix in white there to pass WCAG AA.
+// Tag badges: the raw tag colours don't all read as text (on light cards Necessity amber
+// is ~2.1:1 and Work green ~2.5:1; on the dark cards Waste red is ~3.9:1). Darken (light
+// theme) or lighten (dark theme) each colour just enough to reach WCAG AA (4.5:1).
 function tagBadgeTextColor(hex) {
-    if (document.documentElement.getAttribute('data-theme') !== 'dark') return hex;
     const m = /^#([0-9a-f]{6})$/i.exec(String(hex || ''));
     if (!m) return hex;
     const n = parseInt(m[1], 16);
-    const mix = (c) => Math.round(c + (255 - c) * 0.45);
-    return `rgb(${mix((n >> 16) & 255)}, ${mix((n >> 8) & 255)}, ${mix(n & 255)})`;
+    const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const background = dark ? [22, 19, 16] : [252, 250, 245];
+    const luminance = (c) => {
+        const [r, g, b] = c.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const contrast = (a, b) => { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    const target = dark ? 255 : 0;
+    let out = rgb;
+    for (let t = 0; t <= 1.0001 && contrast(out, background) < 4.5; t += 0.05) {
+        out = rgb.map(v => Math.round(v + (target - v) * t));
+    }
+    return out === rgb ? hex : `rgb(${out[0]}, ${out[1]}, ${out[2]})`;
 }
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, ch => ({

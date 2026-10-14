@@ -42,9 +42,19 @@ def test_moving_average_skips_missing_nights_only_when_asked():
     assert _run([src], "movingAverage([8, 0, 6, 0, 0], 2, true)") == [8, 8, 6, 6, None]
 
 
-def test_tag_badge_text_colour_is_lightened_only_in_dark_mode():
+def test_tag_badge_text_colours_reach_aa_contrast_in_both_themes():
     src = _function_source("js/pages/dashboard.js", "tagBadgeTextColor")
     stub = "const document = { documentElement: { getAttribute: () => globalThis.__theme } };"
-    assert _run([stub, src], "(globalThis.__theme = 'light', tagBadgeTextColor('#DC2626'))") == "#DC2626"
-    assert _run([stub, src], "(globalThis.__theme = 'dark', tagBadgeTextColor('#DC2626'))") == "rgb(236, 136, 136)"
+    helpers = """
+    const lum = (c) => { const [r, g, b] = c.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    const parse = (s) => s.startsWith('#') ? [1, 3, 5].map(i => parseInt(s.slice(i, i + 2), 16)) : s.match(/\\d+/g).map(Number);
+    const tags = ['#10B981', '#F59E0B', '#6366F1', '#C4B5FD', '#DC2626'];
+    const check = (theme, bg) => { globalThis.__theme = theme; return tags.map(t => Math.round(ratio(parse(tagBadgeTextColor(t)), bg) * 10) / 10); };
+    """
+    light = _run([stub, src, helpers], "check('light', [252, 250, 245])")
+    dark = _run([stub, src, helpers], "check('dark', [22, 19, 16])")
+    assert min(light) >= 4.5 and min(dark) >= 4.5, (light, dark)
+    # A colour that already passes is left as it is; junk passes through.
+    assert _run([stub, src], "(globalThis.__theme = 'light', tagBadgeTextColor('#111827'))") == "#111827"
     assert _run([stub, src], "(globalThis.__theme = 'dark', tagBadgeTextColor('not-a-colour'))") == "not-a-colour"
