@@ -30,7 +30,8 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 7. Perf: versioned static JS/CSS now gzipped (first-load graphs.js 179KB -> 38KB; fixes a regression from the 10-13
    move of page scripts to static files).
 8. a11y: axe-core across 10 pages x 2 themes: light mode clean; dark mode's only failures are the --text-faint
-   colour (your call, see Ideas); dark tag badges fixed.
+   colour (your call, see Ideas). Fixed: tag badges (light + dark, adaptive to 4.5:1; axe had skipped them because
+   of gradient cards) and the password-strength label.
 9. Small: week strip marks days with a note; notes in chart tooltips; times without leading zeros; one activity's entries don't show the day's Missing time card;
    Cache-Control: private, no-cache on pages/JSON; JSON export includes goals; a11y labels; consistent page titles.
 Verification: 248 tests (py3.14 + 3.12), gunicorn -w 2 smoke run on a copy of the real DB (sleep_hours added once, no errors),
