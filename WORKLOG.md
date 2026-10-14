@@ -9,7 +9,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
 ## Status / last heartbeat
 - 2026-10-14 (after usage-limit reset, ~05:15 local): main session active; keep going until 'stop'.
 
-## 2026-10-14 summary - most important first
+## 2026-10-14 summary - most important first (78 non-worklog commits on top of 28754e1)
 1. BUGS fixed (several pre-existing): editing a task that ends at midnight pre-filled an end date before the
    start, so saving failed (prefill now uses the task's end_date; close to time handling, revert it if you prefer:
    commits 'fix: editing a task that ends at midnight' and 'fix: Prev end start mode'); graphs kept the previous (longer) range's Total/Avg/Best, weekday bars and calendar after
@@ -35,7 +35,7 @@ Note: *.md is gitignored; this file is force-added (git add -f WORKLOG.md).
    text on the gold pills/selected day (was cream on gold ~2:1).
 9. Small: week strip marks days with a note; notes in chart tooltips; times without leading zeros; one activity's entries don't show the day's Missing time card;
    Cache-Control: private, no-cache on pages/JSON; JSON export includes goals; a11y labels; consistent page titles.
-Verification: 248 tests (py3.14 + 3.12), gunicorn -w 2 smoke run on a copy of the real DB (sleep_hours added once, no errors),
+Verification: 249 tests (py3.14 + 3.12), gunicorn -w 2 smoke run on a copy of the real DB (sleep_hours added once, no errors),
 2,400 randomized requests (graph-data, tasks, dashboard params, day notes, saved views, goals) with no 5xx, browser pane (phone/tablet/desktop sweeps) + iPhone 17 Pro simulator
 (light + dark). Nothing pushed.
 
