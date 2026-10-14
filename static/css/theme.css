@@ -258,8 +258,8 @@
 [data-theme="dark"] .range-pill.active,
 [data-theme="dark"] #graphCompareToggle.active,
 [data-theme="dark"] .ma-pill.active {
-    background: linear-gradient(135deg, #8A6800, #D4AF37) !important;
-    color: #FFF8DC !important;
+    background: linear-gradient(135deg, #A88508, #D4AF37) !important;
+    color: #1A1200 !important;
     border-color: rgba(212,175,55,0.40) !important;
     box-shadow: 0 4px 16px rgba(212,175,55,0.30), inset 0 1px 0 rgba(255,255,255,0.08) !important;
 }
@@ -273,8 +273,8 @@
 [data-theme="dark"] .period-btn { color: var(--pill-text) !important; background: transparent !important; }
 [data-theme="dark"] .period-btn:hover { background: rgba(212,175,55,0.08) !important; color: var(--pill-text-hover) !important; }
 [data-theme="dark"] .period-btn.active {
-    background: linear-gradient(135deg, #8A6800, #D4AF37) !important;
-    color: #FFF8DC !important;
+    background: linear-gradient(135deg, #A88508, #D4AF37) !important;
+    color: #1A1200 !important;
     box-shadow: 0 4px 16px rgba(212,175,55,0.30) !important;
 }
 
@@ -336,7 +336,7 @@
 
 /* ── CTAs: premium gold gradient ── */
 [data-theme="dark"] .primary-cta {
-    background: linear-gradient(135deg, #8A6800 0%, #D4AF37 50%, #F4D03F 100%) !important;
+    background: linear-gradient(135deg, #A88508 0%, #D4AF37 50%, #F4D03F 100%) !important;
     color: #1A1200 !important;
     border-color: rgba(212,175,55,0.40) !important;
     box-shadow: 0 6px 24px rgba(212,175,55,0.30), inset 0 1px 0 rgba(255,255,255,0.15) !important;
@@ -491,9 +491,9 @@
 
 /* ── Date picker selected day ── */
 [data-theme="dark"] .selected-day {
-    background: linear-gradient(135deg, #8A6800, #D4AF37) !important;
+    background: linear-gradient(135deg, #A88508, #D4AF37) !important;
     box-shadow: 0 4px 20px rgba(212,175,55,0.40), 0 0 0 2px rgba(212,175,55,0.12) !important;
-    color: #FFF8DC !important;
+    color: #1A1200 !important;
 }
 
 /* ── Scrollbar ── */
@@ -619,8 +619,8 @@
     border-color: rgba(212,175,55,0.30);
 }
 [data-theme="dark"] .theme-btn.theme-btn-active {
-    background: linear-gradient(135deg, #8A6800, #D4AF37);
-    color: #FFF8DC;
+    background: linear-gradient(135deg, #A88508, #D4AF37);
+    color: #1A1200;
     border-color: rgba(212,175,55,0.35);
     box-shadow: 0 4px 16px rgba(212,175,55,0.25);
 }
@@ -633,8 +633,8 @@
     box-shadow: 0 4px 16px rgba(185,132,40,0.28) !important;
 }
 [data-theme="dark"] .appearance-theme-btn-active {
-    background: linear-gradient(135deg, #8A6800, #D4AF37) !important;
-    color: #FFF8DC !important;
+    background: linear-gradient(135deg, #A88508, #D4AF37) !important;
+    color: #1A1200 !important;
     border-color: rgba(212,175,55,0.40) !important;
     box-shadow: 0 4px 20px rgba(212,175,55,0.28) !important;
 }

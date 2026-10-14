@@ -716,7 +716,7 @@
             border-color: rgba(212,175,55,0.24) !important;
         }
         [data-theme="dark"] .primary-cta {
-            background: linear-gradient(135deg, #8A6800 0%, #D4AF37 50%, #F4D03F 100%) !important;
+            background: linear-gradient(135deg, #A88508 0%, #D4AF37 50%, #F4D03F 100%) !important;
             color: #1A1200 !important;
             border-color: rgba(212,175,55,0.40) !important;
             box-shadow: 0 6px 24px rgba(212,175,55,0.30), inset 0 1px 0 rgba(255,255,255,0.15) !important;
