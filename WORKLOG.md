@@ -68,6 +68,7 @@ Verification: 248 tests (py3.14 + 3.12), gunicorn -w 2 smoke run on a copy of th
 - Graphs: 'Sleep per night' focus (per wake-up day, midnight splits merged; saveable as a view). Unlogged nights are gaps, not 0h (averages, weekday bars, by time of day, compare note, moving average, last 7 days); cards say Avg/Night, Longest Night.
 - Week strip (day view) marks days that have a note with a small dot.
 - BUG (graphs, pre-existing): range pills re-zoomed the loaded payload, so stats/weekday/calendar described the old range. Now refetch.
+- axe on both modals (light + dark): only a heading-order issue in the graphs review list, fixed. Sleep wording: calendar 'nights logged', goal '/ N nights'.
 - Phone bottom nav: bottom padding restored (inline safe-area style had zeroed it).
 - Touch screens: hover 'lift' no longer sticks after a tap. Sleep goal counts 'nights'.
 - Copy: 'email code' instead of 'OTP' on buttons. DB: sleep_hours migration tolerates concurrent workers.
