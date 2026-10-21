@@ -75,11 +75,14 @@
             <div class="flex flex-col gap-3 md:gap-4">
                 <div>
                     <h1 class="text-xl md:text-2xl font-semibold text-gray-900 tracking-tight">Admin Console</h1>
-                    <p class="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1">Manage users and access</p>
+                    <p class="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1">Manage users, access and feedback</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 md:gap-3">
                     <a href="{{ url_for('main.settings') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-white/85 border border-[rgba(148,126,86,0.35)] text-sm font-semibold text-gray-800 shadow-sm hover:bg-[#F7F1E6] transition-all">
                         {{ current_user.display_name }}
+                    </a>
+                    <a href="{{ url_for('feedback.admin_feedback') }}" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white/85 border border-[rgba(148,126,86,0.35)] text-sm font-semibold text-gray-700 shadow-sm hover:bg-[#F7F1E6] transition-all">
+                        Feedback{% if feedback_counts.new %}<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-900 text-amber-200">{{ feedback_counts.new }} new</span>{% endif %}
                     </a>
                     <a href="{{ url_for('main.dashboard') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-white/85 border border-[rgba(148,126,86,0.35)] text-sm font-semibold text-gray-700 shadow-sm hover:bg-[#F7F1E6] transition-all">Dashboard</a>
                     <a href="{{ url_for('auth.logout') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-white/85 border border-[rgba(148,126,86,0.35)] text-sm text-gray-700 shadow-sm hover:bg-[#F7F1E6] transition-all">Logout</a>
@@ -99,6 +102,23 @@
                 {{ success }}
             </div>
         {% endif %}
+
+        <a href="{{ url_for('feedback.admin_feedback') }}" class="luxury-card rounded-3xl p-6 md:p-8 flex items-center justify-between gap-4 hover:shadow-lg transition-all">
+            <div class="min-w-0">
+                <h2 class="text-xl font-semibold text-gray-900">User Feedback</h2>
+                <p class="text-sm text-gray-600 mt-1">
+                    {% if feedback_counts.total %}
+                        {{ feedback_counts.total }} message{{ '' if feedback_counts.total == 1 else 's' }} · {{ feedback_counts.idea }} idea{{ '' if feedback_counts.idea == 1 else 's' }}, {{ feedback_counts.improve }} to improve, {{ feedback_counts.dislike }} dislike{{ '' if feedback_counts.dislike == 1 else 's' }}, {{ feedback_counts.like }} like{{ '' if feedback_counts.like == 1 else 's' }}
+                    {% else %}
+                        Nothing yet. People send it from Settings → Feedback.
+                    {% endif %}
+                </p>
+            </div>
+            <span class="flex items-center gap-3 shrink-0">
+                {% if feedback_counts.new %}<span class="px-3 py-1 rounded-full text-xs font-semibold bg-gray-900 text-amber-200">{{ feedback_counts.new }} new</span>{% endif %}
+                <span class="text-gray-400 text-lg" aria-hidden="true">→</span>
+            </span>
+        </a>
 
         <section class="luxury-card rounded-3xl p-8">
             <h2 class="text-xl font-semibold text-gray-900">All Users <span class="text-sm font-normal text-gray-500">({{ users | length }})</span></h2>

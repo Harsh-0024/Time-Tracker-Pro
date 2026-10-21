@@ -39,6 +39,7 @@ _USER_OWNED_TABLES = (
     "user_goals",
     "user_tag_goals",
     "day_notes",
+    "feedback",
 )
 
 

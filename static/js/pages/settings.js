@@ -587,6 +587,7 @@ const SETTINGS_CONFIG = JSON.parse(document.getElementById('settingsConfig').tex
             '2': 'ai-keys',
             '3': 'goals-settings',
             '4': 'appearance-settings',
+            '5': 'feedback-settings',
         };
         let shortcutToast = null;
 
@@ -627,6 +628,10 @@ const SETTINGS_CONFIG = JSON.parse(document.getElementById('settingsConfig').tex
                                     <span class="toast-kbd-label">Appearance</span>
                                 </div>
                                 <div class="flex items-center gap-2">
+                                    <kbd class="toast-kbd">5</kbd>
+                                    <span class="toast-kbd-label">Feedback</span>
+                                </div>
+                                <div class="flex items-center gap-2">
                                     <kbd class="toast-kbd">D</kbd>
                                     <span class="toast-kbd-label">Dashboard</span>
                                 </div>
@@ -653,6 +658,30 @@ const SETTINGS_CONFIG = JSON.parse(document.getElementById('settingsConfig').tex
                 scrollToSection(sectionShortcuts[key]);
             }
         });
+
+        // Feedback: a hint per kind, and Send only once something is written.
+        const feedbackForm = document.getElementById('feedbackForm');
+        if (feedbackForm) {
+            const message = document.getElementById('feedbackMessage');
+            const sendBtn = document.getElementById('feedbackSend');
+            const hints = {
+                like: 'What do you enjoy? It helps to know what to keep.',
+                dislike: 'What gets in your way or annoys you?',
+                improve: 'What could work better, and how?',
+                idea: 'What would you like Time Tracker Pro to do?',
+            };
+            const syncHint = () => {
+                const picked = feedbackForm.querySelector('input[name="kind"]:checked');
+                if (picked && hints[picked.value]) message.placeholder = hints[picked.value];
+            };
+            const syncSend = () => { sendBtn.disabled = !message.value.trim(); };
+            feedbackForm.querySelectorAll('input[name="kind"]').forEach((radio) => {
+                radio.addEventListener('change', () => { syncHint(); message.focus(); });
+            });
+            message.addEventListener('input', syncSend);
+            syncHint();
+            syncSend();
+        }
 
         function scrollToSection(sectionId) {
             if (!sectionId) return;

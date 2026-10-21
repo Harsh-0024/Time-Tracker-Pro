@@ -6,6 +6,7 @@ from flask import Blueprint, current_app, redirect, render_template, request, ur
 from ..core.admins import is_admin_email
 from ..core.rows import display_name, row_value
 from ..repositories.admin import delete_user_cascade, list_users
+from ..repositories.feedback import feedback_counts
 from ..repositories.users import get_user_by_id
 from ..services.account_deletion_email import send_account_deletion_email
 from .decorators import admin_required
@@ -35,6 +36,7 @@ def admin_users():
         "admin_users.html",
         users=users,
         current_user=current_user,
+        feedback_counts=feedback_counts(db_name),
         error=request.args.get("error"),
         success=request.args.get("success"),
     )

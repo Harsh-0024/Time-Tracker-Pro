@@ -19,6 +19,7 @@ from ..core.rows import display_name, row_value
 from ..core.tags import primary_special_tag
 from ..repositories.app_settings import get_app_setting, upsert_app_setting
 from ..repositories.day_notes import get_day_notes
+from ..repositories.feedback import FEEDBACK_KINDS, MAX_FEEDBACK_LENGTH, list_user_feedback
 from ..repositories.goals import (
     GOAL_TAGS,
     get_tag_goals,
@@ -137,6 +138,12 @@ def settings():
         goals_error=session.pop("goals_error", None),
         goals_form=session.pop("goals_form", None),
         goals_success=session.pop("goals_success", None),
+        feedback_kinds=FEEDBACK_KINDS,
+        feedback_max=MAX_FEEDBACK_LENGTH,
+        my_feedback=list_user_feedback(db_name, user_id),
+        feedback_error=session.pop("feedback_error", None),
+        feedback_form=session.pop("feedback_form", None),
+        feedback_success=session.pop("feedback_success", None),
     )
 
 

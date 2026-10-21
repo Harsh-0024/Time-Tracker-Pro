@@ -74,6 +74,11 @@
                 <span class="settings-nav-label flex-1 text-left">Appearance</span>
                 <span class="sr-only">Shortcut 4</span>
             </button>
+            <button type="button" class="settings-nav-btn col-span-2 lg:col-span-4" data-shortcut="5" data-target="feedback-settings" onclick="scrollToSection('feedback-settings')">
+                <svg class="settings-nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span class="settings-nav-label flex-1 text-left">Feedback</span>
+                <span class="sr-only">Shortcut 5</span>
+            </button>
         </div>
 
         <div id="account-settings" class="scroll-mt-28 luxury-card rounded-3xl p-8 mb-6">
@@ -415,6 +420,67 @@
                 </button>
             </div>
             <p class="mt-4 text-xs text-gray-500">System follows your OS preference automatically.</p>
+        </div>
+
+        <!-- Feedback -->
+        <div id="feedback-settings" class="scroll-mt-28 luxury-card rounded-3xl p-8 mt-8 mb-6">
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-900">Feedback</h2>
+                <p class="text-sm text-gray-600 mt-1">Tell the developer what works for you, what doesn't, and what you'd like next. Every note is read.</p>
+            </div>
+            {% if feedback_error %}
+            <div class="mb-4 px-4 py-3 rounded-2xl bg-red-50 border border-red-200 text-sm text-red-700" role="alert">{{ feedback_error }}</div>
+            {% elif feedback_success %}
+            <div class="mb-4 px-4 py-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-sm text-emerald-700" role="status">{{ feedback_success }}</div>
+            {% endif %}
+            {% set fb_kind = (feedback_form.kind if feedback_form else '') or 'idea' %}
+            <form method="POST" action="{{ url_for('feedback.send') }}" id="feedbackForm">
+                <fieldset>
+                    <legend class="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">What is it about?</legend>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {% set fb_icons = {
+                            'like': '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>',
+                            'dislike': '<path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.7a2 2 0 0 0-2 1.7l-1.4 9a2 2 0 0 0 2 2.3z"/><path d="M17 2h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/>',
+                            'improve': '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>',
+                            'idea': '<path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.1 14c.2-1 .7-1.7 1.4-2.5A5 5 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>',
+                        } %}
+                        {% for key, (label, short) in feedback_kinds.items() %}
+                        <label class="feedback-kind">
+                            <input type="radio" name="kind" value="{{ key }}" class="sr-only" {{ 'checked' if key == fb_kind }}>
+                            <span class="feedback-kind-face">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ fb_icons[key] | safe }}</svg>
+                                <span>{{ label }}</span>
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                <label class="block mt-5">
+                    <span class="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Your words</span>
+                    <textarea name="message" id="feedbackMessage" rows="5" maxlength="{{ feedback_max }}" required placeholder="What would you like Time Tracker Pro to do?" class="w-full px-4 py-3 rounded-2xl bg-white border border-[rgba(148,126,86,0.35)] focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm leading-relaxed resize-y">{{ feedback_form.message if feedback_form else '' }}</textarea>
+                </label>
+                <div class="mt-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p class="text-xs text-gray-500" id="feedbackNote">Sent with your name and email, so the developer can follow up.</p>
+                    <button type="submit" id="feedbackSend" class="px-5 py-2.5 rounded-full bg-gray-900 text-amber-300 text-sm font-semibold shadow-md active:scale-[0.98] transition-transform disabled:opacity-50">Send feedback</button>
+                </div>
+            </form>
+
+            {% if my_feedback %}
+            <div class="mt-8">
+                <div class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">What you've sent</div>
+                <div class="space-y-3">
+                    {% for item in my_feedback %}
+                    <div class="rounded-2xl border border-[rgba(148,126,86,0.25)] bg-white/80 px-4 py-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <p class="text-sm text-gray-900 whitespace-pre-wrap break-words min-w-0">{{ item.message }}</p>
+                            <span class="feedback-state shrink-0" data-state="{{ item.status }}">{{ {'new': 'Sent', 'seen': 'Read', 'done': 'Done'}[item.status] or 'Sent' }}</span>
+                        </div>
+                        <div class="mt-1 text-xs text-gray-500">{{ item.kind_short }} · {{ item.created_at | short_date }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </main>
 

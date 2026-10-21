@@ -199,3 +199,60 @@
             border-color: rgba(212,175,55,0.16) !important;
         }
     
+
+        /* Feedback: four kinds to pick from, and what you've sent */
+        .feedback-kind { display: block; height: 100%; cursor: pointer; }
+        .feedback-kind-face {
+            height: 100%;
+            min-height: 4.4rem;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.75rem 0.95rem;
+            border-radius: 0.9rem;
+            border: 1px solid rgba(148,126,86,0.28);
+            background: rgba(255,255,255,0.86);
+            color: #4B5563;
+            font-size: 0.85rem;
+            font-weight: 600;
+            line-height: 1.25;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+        }
+        .feedback-kind-face svg { width: 18px; height: 18px; stroke-width: 1.9; color: #9CA3AF; transition: color 0.18s ease; }
+        .feedback-kind:hover .feedback-kind-face { transform: translateY(-1px); border-color: rgba(185,132,40,0.5); }
+        .feedback-kind input:checked + .feedback-kind-face {
+            background: #FDF6E7;
+            border-color: rgba(185,132,40,0.65);
+            color: #111827;
+            box-shadow: 0 10px 22px rgba(148,126,86,0.16);
+        }
+        .feedback-kind input:checked + .feedback-kind-face svg { color: #7C5E24; }
+        .feedback-kind input:focus-visible + .feedback-kind-face { outline: 2px solid rgba(212,175,55,0.48); outline-offset: 2px; }
+        [data-theme="dark"] .feedback-kind-face {
+            background: rgba(14,12,8,0.84);
+            border-color: rgba(212,175,55,0.16);
+            color: #B8A878;
+        }
+        [data-theme="dark"] .feedback-kind-face svg { color: #6E6045; }
+        [data-theme="dark"] .feedback-kind input:checked + .feedback-kind-face {
+            background: rgba(38,27,12,0.6);
+            border-color: rgba(212,175,55,0.45);
+            color: #EDE6D3;
+        }
+        [data-theme="dark"] .feedback-kind input:checked + .feedback-kind-face svg { color: #D4AF37; }
+
+        .feedback-state {
+            padding: 0.15rem 0.6rem;
+            border-radius: 999px;
+            border: 1px solid rgba(148,126,86,0.3);
+            color: #6B7280;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .feedback-state[data-state="seen"] { color: #7C5E24; border-color: rgba(185,132,40,0.5); }
+        .feedback-state[data-state="done"] { color: #047857; border-color: rgba(4,120,87,0.35); }
+        [data-theme="dark"] .feedback-state { color: #8C7C58; border-color: rgba(212,175,55,0.16); }
+        [data-theme="dark"] .feedback-state[data-state="seen"] { color: #D4AF37; border-color: rgba(212,175,55,0.4); }
+        [data-theme="dark"] .feedback-state[data-state="done"] { color: #6EE7B7; border-color: rgba(110,231,183,0.3); }

@@ -294,6 +294,23 @@ def init_db(db_name: str) -> None:
         """
     )
 
+    # What people tell the developer from Settings -> Feedback; read on /admin/feedback.
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            message TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'new',
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id, created_at)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at)")
+
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS login_failures (

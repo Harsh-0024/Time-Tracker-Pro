@@ -123,10 +123,12 @@ def create_app(config_overrides: Optional[Dict[str, Any]] = None) -> Flask:
     from .web.admin import bp as admin_bp
     from .web.api import bp as api_bp
     from .web.auth import bp as auth_bp
+    from .web.feedback import bp as feedback_bp
     from .web.main import bp as main_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(feedback_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(main_bp)
 
